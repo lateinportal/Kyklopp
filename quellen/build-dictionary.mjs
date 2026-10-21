@@ -124,7 +124,7 @@ for(const c of cards){
  // Keep assimilated spellings alongside the source's unassimilated variants.
  if(['attingere','afferre','appetere'].includes(n))records.push(...records.map(([f,id])=>[f.replace(/^adting/,'atting').replace(/^adfer/,'affer').replace(/^adtul/,'attul').replace(/^adlat/,'allat').replace(/^adpet/,'appet'),id]));
  // Plural-only entries must not invent singular senses.
- if(/\bPl\./.test(c.grammar)||['ceteri','pauci','plurimi','plures'].includes(n))records=records.filter(([,id])=>data.pos[id]?.[2]==='p');
+ if(/\bPl\./.test(c.grammar.replace(/\bGen\.\s*Pl\./gi,''))||['ceteri','pauci','plurimi','plures'].includes(n))records=records.filter(([,id])=>data.pos[id]?.[2]==='p');
  if(n===norm('novisse/nosse'))records=records.filter(([,id])=>['r','l','t'].includes(data.pos[id]?.[3]));
  if(['oportet','refert','constat'].includes(n))records=records.filter(([,id])=>{let t=data.pos[id];return t?.[0]==='v'&&t[5]==='a'&&(t[4]==='n'||t[1]==='3'&&t[2]==='s');});
  const generated=records.length;records.push([c.latin,0]);
