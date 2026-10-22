@@ -561,7 +561,7 @@ function grammarStatus(topic){
 function grammarStatusLabel(topic){const p=grammarStatus(topic);return p.available?(p.rounds?p.rounds+' Runden geübt':'Übungen bereit'):!p.total?'In Vorbereitung':p.complete?'Abgeschlossen':p.started?p.done+' von '+p.total+' Übungen geschafft':'Noch nicht begonnen'}
 function grammarStars(score){const count=score>=100?3:score>=80?2:score>=60?1:0;return '<span class="grammar-stars" role="img" aria-label="'+count+' von 3 Sternen">'+[1,2,3].map(n=>'<span class="'+(n<=count?'is-earned':'')+'" aria-hidden="true">★</span>').join('')+'</span>';}
 function grammarPracticeProgress(topic){
- const saved=state.grammarProgress?.topics?.[topic.id]||{},hasScore=Number.isFinite(saved.bestRoundPercent),score=hasScore?Math.max(0,Math.min(100,saved.bestRoundPercent)):0,rounds=Math.min(3,saved.qualifyingRounds||0),types=new Set(saved.completedTypes||[]).size,progress=saved.completedAt?100:Math.min(99,Math.round((rounds/3*.8+Math.min(5,types)/5*.2)*100));
+ const saved=state.grammarProgress?.topics?.[topic.id]||{},hasScore=Number.isFinite(saved.bestRoundPercent),score=hasScore?Math.max(0,Math.min(100,saved.bestRoundPercent)):0,rounds=Math.min(3,saved.qualifyingRounds||0),typeCount=Object.keys(A_TYPES).length,types=Object.keys(A_TYPES).filter(type=>(saved.completedTypes||[]).includes(type)).length,progress=saved.completedAt?100:Math.min(99,Math.round((rounds/3*.8+types/typeCount*.2)*100));
  return '<span class="grammar-practice-progress">'+grammarMeter(progress,100,'Themenfortschritt: '+topic.title)+'<span class="grammar-score-line">'+(saved.completedAt?'<span>✓ Abgeschlossen</span>':'')+grammarStars(score)+'</span></span>';
 }
 function grammarGroupArt(group){return '<span class="grammar-group-art"><img src="vokabelbilder/grammatik/'+esc(group.id)+'.webp" alt="" width="180" height="120" decoding="async"></span>'}
@@ -598,7 +598,7 @@ function grammarTopicOverview(id){
 // The a-declension practice is independent from vocabulary medals and due dates.
 const A_TOPIC_ID='lessons-1-6.substantive-deklinationen.a-deklination';
 const A_CASES=['Nominativ','Genitiv','Dativ','Akkusativ','Ablativ'];
-const A_TYPES={form:'Form bilden',choice:'Form auswählen',table:'Deklinationstabelle',gap:'Tabellenlücke',translation:'Latein–Deutsch'};
+const A_TYPES={form:'Form bilden',choice:'Form auswählen',gap:'Tabellenlücke',translation:'Latein–Deutsch'};
 function aScopeCards(){const plan=activeExam();return plan?examCards(plan):eligible();}
 function aWords(){return aScopeCards().filter(c=>c.pos==='Substantiv'&&/^a-Deklination/.test(c.cls)&&/^[\p{L}]+$/u.test(c.latin)&&/a(?:e)?$/.test(E.normalize(c.latin)))}
 function aNumbers(c){return E.normalize(c.latin).endsWith('ae')?['pl']:['sg','pl']}
@@ -631,7 +631,6 @@ function aTask(c,type,number,index=0){
 function aTaskBank(words=aWords()){
  const bank=[];
  for(const c of words)for(const number of aNumbers(c)){
-  bank.push(aTask(c,'table',number));
   for(let index=0;index<5;index++)for(const type of ['form','choice','gap','translation']){
    if(type==='translation'&&!aGermanAnswers(c,number,index).length)continue;
    bank.push(aTask(c,type,number,index));
