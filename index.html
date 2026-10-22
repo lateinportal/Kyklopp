@@ -648,9 +648,9 @@ function aTaskBank(words=aWords()){
 function aBuildRound(count=15,words=aWords()){
  const bank=aTaskBank(words),recent=state.grammarProgress?.topics?.[A_TOPIC_ID]?.recentTasks||[],used=new Set(),queue=[];
  if(!bank.length)return queue;
- const availableTypes=Object.keys(A_TYPES).filter(type=>bank.some(t=>t.type===type)),cycle=shuffle(availableTypes);
+ const availableTypes=Object.keys(A_TYPES).filter(type=>bank.some(t=>t.type===type)),cycle=availableTypes;
  for(let i=0;i<Math.min(count,bank.length);i++){
-  const type=cycle[i%cycle.length];let candidates=shuffle(bank.filter(t=>t.type===type&&!used.has(t.key)));if(!candidates.length)candidates=shuffle(bank.filter(t=>!used.has(t.key)));
+  const type=cycle[Math.min(cycle.length-1,Math.floor(i*cycle.length/Math.min(count,bank.length)))];let candidates=shuffle(bank.filter(t=>t.type===type&&!used.has(t.key)));if(!candidates.length)candidates=shuffle(bank.filter(t=>!used.has(t.key)));
   // Prefer unseen tasks, then the oldest tasks, without repeating a card back-to-back when possible.
   candidates.sort((a,b)=>{const rank=t=>recent.includes(t.key)?recent.indexOf(t.key)+1:0;return rank(a)-rank(b)});
   const unseen=candidates.filter(t=>!recent.includes(t.key));if(unseen.length)candidates=unseen;
