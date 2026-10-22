@@ -600,7 +600,7 @@ function grammarTopicOverview(id){
 // The a-declension practice is independent from vocabulary medals and due dates.
 const A_TOPIC_ID='lessons-1-6.substantive-deklinationen.a-deklination';
 const A_CASES=['Nominativ','Genitiv','Dativ','Akkusativ','Ablativ'];
-const A_TYPES={form:'Form bilden',choice:'Form auswählen',gap:'Tabellenlücke',translation:'Latein–Deutsch'};
+const A_TYPES={choice:'Form auswählen',gap:'Tabellenlücke',form:'Form bilden',translation:'Latein–Deutsch'};
 function aScopeCards(){const plan=activeExam();return plan?examCards(plan):eligible();}
 function aWords(){return aScopeCards().filter(c=>c.pos==='Substantiv'&&/^a-Deklination/.test(c.cls)&&/^[\p{L}]+$/u.test(c.latin)&&/a(?:e)?$/.test(E.normalize(c.latin)))}
 function aNumbers(c){return E.normalize(c.latin).endsWith('ae')?['pl']:['sg','pl']}
