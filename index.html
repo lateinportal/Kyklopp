@@ -578,7 +578,7 @@ function trainingExamSummary(plan){
 function trainingOverviewMarkup(){
  const exam=activeExam(),plan=exam?null:dailyTrainingPlan(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
  const tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount,reviews=cards.length-fresh;
- return header()+`<h1>Training</h1><section class="panel training-start-panel"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):'Für heute geschafft!'}</h2>${exam?trainingExamSummary(exam):trainingLevelSummary()}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:'<p>'+trainingCompletedCopy()+'</p>'}<div class="training-start-actions">${!tasks?'<button class="btn secondary" type="button" id="training-preview-free">Freies Üben</button>':''}<button class="btn ${tasks?'':'ghost'}" type="button" id="training-preview-start">${tasks?'Training starten':'Zeitplan ansehen'}</button></div></div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>`;
+ return header()+`<h1>Training</h1><section class="panel training-start-panel"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):'Für heute geschafft!'}</h2>${exam?trainingExamSummary(exam):trainingLevelSummary()}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:'<p>'+trainingCompletedCopy()+'</p>'}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>`;
 }
 let examDisclosureOpen=false;
 function trainingOverview(){openExamPlan(false,false)}
@@ -594,9 +594,8 @@ function scheduleClassExamBoundary(){
 }
 function examTrainingFrame(content){return trainingOverviewMarkup()+'<details class="panel training-exam-disclosure" id="training-exam-disclosure" '+(examDisclosureOpen?'open':'')+'><summary>'+examDisclosureTitle()+(activeExam()?'<span class="exam-countdown-pill">'+examCountdown(activeExam())+'</span>':'')+'</summary><div class="training-exam-content">'+content+'</div></details>'}
 function bindTrainingExamFrame(){
- const freeButton=document.querySelector('#training-preview-free');if(freeButton)freeButton.onclick=()=>navigate('free');
  scheduleClassExamBoundary();
- document.querySelector('#training-preview-start').onclick=()=>{const p=activeExam(),cards=p?examTrainingSelection():dailyTrainingPlan().cards;return trainingTaskCount(cards,p?examLevel(p):state.level)?start('training'):showTrainingSchedule()};
+ const startButton=document.querySelector('#training-preview-start');if(startButton)startButton.onclick=()=>{const p=activeExam(),cards=p?examTrainingSelection():dailyTrainingPlan().cards;return trainingTaskCount(cards,p?examLevel(p):state.level)?start('training'):showTrainingSchedule()};
  document.querySelector('#training-level-edit').onclick=()=>activeExam()?openExamPlan(true):showTrainingLevelEditor();
  document.querySelector('#training-exam-disclosure').ontoggle=e=>examDisclosureOpen=e.target.open;
 }
