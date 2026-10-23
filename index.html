@@ -738,8 +738,8 @@ function gradeGrammarAnswer(values,reveal=false){
  if(!task.choice)task.fields.forEach((field,i)=>{const input=document.querySelector('#grammar-answer-'+i),badge=document.querySelector('#grammar-field-'+i);input.disabled=true;const filled=!reveal&&Boolean(values[i]?.trim());badge.hidden=!filled;if(filled){badge.className='field-badge '+(fieldResults[i]?'field-good':'field-warning');badge.textContent=fieldResults[i]?'✓':'!';badge.setAttribute('aria-hidden','false');badge.setAttribute('aria-label',fieldResults[i]?'Richtig':'Noch nicht richtig');input.setAttribute('aria-invalid',String(!fieldResults[i]));}});
  document.querySelectorAll('[data-grammar-option]').forEach(button=>{
   button.disabled=true;const label=button.textContent,right=task.fields[0].answers.some(value=>E.normalize(value)===E.normalize(label)),selected=!reveal&&(task.multi?String(values[0]).split(',').map(v=>E.normalize(v.trim())).includes(E.normalize(label)):E.normalize(label)===E.normalize(values[0]));
-  if(task.type==='determine'){
-   button.classList.remove('is-selected');const feedback=right?(selected?'correct':'missing'):selected?'wrong':null;
+  if(task.multi){
+   button.classList.remove('is-selected');const picked=reveal?[]:String(values[0]).split(',').map(v=>E.normalize(v.trim())),missing=right&&(task.type==='determine'||task.fields[0].answerGroups.some(group=>group.some(answer=>E.normalize(answer)===E.normalize(label))&&!group.some(answer=>picked.includes(E.normalize(answer)))));const feedback=right?(selected?'correct':missing?'missing':null):selected?'wrong':null;
    if(feedback){button.classList.add(feedback);button.setAttribute('data-feedback',feedback);const description=feedback==='correct'?'Richtig ausgewählt':feedback==='missing'?'Richtige Antwort fehlt':'Falsch ausgewählt';button.setAttribute('aria-label',label+' – '+description);button.setAttribute('title',description);}
   }else if(right)button.classList.add('correct');else if(selected)button.classList.add('wrong');
  });
