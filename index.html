@@ -576,7 +576,7 @@ function grammarStatusLabel(topic){const p=grammarStatus(topic);return p.availab
 function grammarStars(score){const count=score>=100?3:score>=80?2:score>=60?1:0;return '<span class="grammar-stars" role="img" aria-label="'+count+' von 3 Sternen">'+[1,2,3].map(n=>'<span class="'+(n<=count?'is-earned':'')+'" aria-hidden="true">★</span>').join('')+'</span>';}
 function grammarPracticeProgress(topic){
  const saved=state.grammarProgress?.topics?.[topic.id]||{},hasScore=Number.isFinite(saved.bestRoundPercent),score=hasScore?Math.max(0,Math.min(100,saved.bestRoundPercent)):0,rounds=Math.min(3,saved.qualifyingRounds||0),typeCount=Object.keys(A_TYPES).length,types=Object.keys(A_TYPES).filter(type=>(saved.completedTypes||[]).includes(type)).length,progress=saved.completedAt?100:Math.min(99,Math.round((rounds/3*.8+types/typeCount*.2)*100));
- return '<span class="grammar-practice-progress">'+grammarMeter(progress,100,'Themenfortschritt: '+topic.title)+'<span class="grammar-score-line">'+(saved.completedAt?'<span>✓ Abgeschlossen</span>':'')+grammarStars(score)+'</span></span>';
+ return '<span class="grammar-practice-progress">'+grammarMeter(progress,100,'Themenfortschritt: '+topic.title)+'<span class="grammar-score-line">'+grammarStars(score)+'</span></span>';
 }
 function grammarGroupArt(group){return '<span class="grammar-group-art"><img src="vokabelbilder/grammatik/'+esc(group.id)+'.webp" alt="" width="180" height="120" decoding="async"></span>'}
 function grammarMeter(done,total,label){return total?'<span class="grammar-meter" role="progressbar" aria-label="'+esc(label)+'" aria-valuemin="0" aria-valuemax="'+total+'" aria-valuenow="'+done+'"><i style="width:'+Math.round(done/total*100)+'%"></i></span>':''}
@@ -637,8 +637,8 @@ function aGermanAnswers(c,number,index){
  return [...new Set(result)];
 }
 function aGermanGroupsForForm(c,number,index){
- const shown=aLatinAnswers(c,number,index)[0]?.normalize('NFC').toLowerCase(),groups=[];
- for(const n of aNumbers(c))for(let i=0;i<5;i++)if(aLatinAnswers(c,n,i).some(form=>form.normalize('NFC').toLowerCase()===shown)){const answers=aGermanAnswers(c,n,i);if(answers.length)groups.push(answers);}
+ const shown=E.normalize(aLatinAnswers(c,number,index)[0]||''),groups=[];
+ for(const n of aNumbers(c))for(let i=0;i<5;i++)if(aLatinAnswers(c,n,i).some(form=>E.normalize(form)===shown)){const answers=aGermanAnswers(c,n,i);if(answers.length)groups.push(answers);}
  return groups;
 }
 function aGermanForForm(c,number,index){return [...new Set(aGermanGroupsForForm(c,number,index).flat())];}
@@ -654,8 +654,8 @@ function aTask(c,type,number,index=0){
  const translation=type.startsWith('translation'),table=type==='table',accepted=translation?aGermanForForm(c,number,index):aLatinAnswers(c,number,index);
  const choice=['choice','gap','determine','translation-choice'].includes(type);
  if(type==='determine'){const answers=aFormReadings(c,number,index);return {key:[c.id,type,aPlainForm(c,number,index)].join(':'),c,type,number,caseIndex:index,choice:true,multi:true,fields:[{label:'Kasus und Numerus',answers,answerGroups:answers.map(answer=>[answer])}]};}
- return {key:[c.id,type,number,table?'all':index].join(':'),c,type,number,caseIndex:index,choice,
-  fields:table?A_CASES.map((name,i)=>({label:name+' '+aNumberLabel(number),answers:aLatinAnswers(c,number,i)})):[{label:translation?'Deutsche Übersetzung':A_CASES[index]+' '+aNumberLabel(number),answers:accepted,...(translation&&!choice?{answerGroups:aGermanGroupsForForm(c,number,index)}:{})}]};
+ return {key:[c.id,type,number,table?'all':index].join(':'),c,type,number,caseIndex:index,choice,multi:type==='translation-choice',
+  fields:table?A_CASES.map((name,i)=>({label:name+' '+aNumberLabel(number),answers:aLatinAnswers(c,number,i)})):[{label:translation?'Übersetzung(en)':A_CASES[index]+' '+aNumberLabel(number),answers:accepted,...(translation?{answerGroups:aGermanGroupsForForm(c,number,index)}:{})}]};
 }
 function aTaskBank(words=aWords()){
  const bank=[];
@@ -682,6 +682,7 @@ function aBuildRound(count=15,words=aWords()){
  return queue;
 }
 function aRoundOptions(task){
+ if(task.multi&&task.type.startsWith('translation')){const answers=task.fields[0].answers,core=[...new Set(task.fields[0].answerGroups.map(group=>group[0]))],other=shuffle(A_CASES.flatMap((_,i)=>aGermanAnswers(task.c,task.number,i))).filter(value=>!answers.includes(value)),extra=shuffle(answers.filter(value=>!core.includes(value)));return shuffle([...core,...extra.slice(0,Math.max(0,3-core.length)),...other.slice(0,Math.max(1,4-Math.max(3,core.length)))]);}
  if(task.multi){const answers=task.fields[0].answers,other=shuffle(['sg','pl'].flatMap(n=>A_CASES.map(name=>name+' '+aNumberLabel(n)))).filter(label=>!answers.includes(label));return shuffle([...answers,...other.slice(0,Math.max(1,4-answers.length))]);}
  const correct=task.fields[0].answers[0],all=task.type.startsWith('translation')?A_CASES.flatMap((_,i)=>aGermanAnswers(task.c,task.number,i)):
   aNumbers(task.c).flatMap(n=>A_CASES.flatMap((_,i)=>aLatinAnswers(task.c,n,i)));
@@ -700,7 +701,7 @@ function startADeclension(count=15,repeatTasks=null){
 }
 function aQuestion(task){if(task.type==='determine')return 'Bestimme die Form. Wähle alle passenden Antworten aus.';const detail=A_CASES[task.caseIndex]+' '+aNumberLabel(task.number);return task.type==='table'?'Vervollständige die Deklinationstabelle im '+aNumberLabel(task.number)+'.':task.type==='gap'?'Wähle die fehlende Form.':task.type.startsWith('translation')?(task.choice?'Wähle die richtige Übersetzung aus.':'Gib alle möglichen Übersetzungen ein, durch Kommas getrennt.'):(task.choice?'Wähle':'Bilde')+' den '+detail+'.'}
 function aCardTable(task,solved=false){
- if(task.type.startsWith('translation'))return '<div class="a-translation-form">'+esc(aLatinAnswers(task.c,task.number,task.caseIndex)[0])+'</div>';
+ if(task.type.startsWith('translation'))return '<div class="a-translation-form">'+esc(aPlainForm(task.c,task.number,task.caseIndex))+'</div>';
  if(task.type!=='gap')return '';
  const translate=task.type==='translation',indices=translate?[1,3,4]:[0,1,2,3,4];
  // Include the requested case even when it is not in the three-row translation excerpt.
