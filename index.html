@@ -676,7 +676,7 @@ function aTranslationSolution(task){
  return '<div class="a-translation-solution">'+aNumbers(task.c).flatMap(number=>A_CASES.map((_,index)=>{
   if(!aLatinAnswers(task.c,number,index).some(form=>E.normalize(form)===shown))return '';
   const answers=aGermanAnswers(task.c,number,index);if(!answers.length)return '';
-  return '<div class="a-translation-solution-row"><span class="a-case-tag">'+abbreviations[index]+(number==='pl'?' Pl.':'')+'</span><strong>'+esc(answers.join(', '))+'</strong></div>';
+  return '<div class="a-translation-solution-row"><span class="a-case-tag">'+abbreviations[index]+(number==='pl'?' Pl.':' Sg.')+'</span><strong>'+esc(answers.join(', '))+'</strong></div>';
  })).join('')+'</div>';
 }
 function aGermanForForm(c,number,index){return [...new Set(aGermanGroupsForForm(c,number,index).flat())];}
