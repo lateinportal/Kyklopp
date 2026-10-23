@@ -810,7 +810,7 @@ function trainingLevelSummary(){
  return '<section class="training-level-summary" aria-label="Dein Lernstand"><div class="training-level-summary-row"><div><span class="training-level-summary-label">Dein Lernstand</span><p class="training-level-summary-value"><strong>Lektion '+state.level+'</strong><span>· '+esc(pack)+'</span></p></div><button class="btn secondary" id="training-level-edit" type="button" aria-haspopup="dialog">Ändern</button></div></section>';
 }
 function trainingExamSummary(plan){
- return '<section class="training-level-summary training-exam-summary" aria-label="Dein Klassenarbeitsplan"><div class="training-level-summary-row"><div><span class="training-level-summary-label">Deine Klassenarbeit am '+examDateLabel(plan)+'</span><p class="training-level-summary-value"><strong>'+esc(examScopeLabel(plan))+'</strong></p></div><button class="btn secondary" id="training-level-edit" type="button">Plan ändern</button></div><p class="training-level-summary-hint">Diese Auswahl gilt für deine gesamte Vorbereitung. Hat sich etwas geändert? Passe deinen Plan an.</p></section>';
+ return '<section class="training-level-summary training-exam-summary" aria-label="Dein Klassenarbeitsplan"><div class="training-level-summary-row"><div><span class="training-level-summary-label">Deine Klassenarbeit am '+examDateLabel(plan)+'</span><p class="training-level-summary-value"><strong>'+esc(examScopeLabel(plan))+'</strong></p></div><button class="btn secondary" id="training-level-edit" type="button">Plan ändern</button></div></section>';
 }
 function trainingOverviewMarkup(){
  const exam=activeExam(),plan=exam?null:dailyTrainingPlan(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
