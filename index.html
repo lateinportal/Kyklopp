@@ -667,7 +667,6 @@ function aGermanAnswers(c,number,index){
   let word=number==='pl'?noun.pl:index===1?(noun.gen||noun.sg):[2,4].includes(index)?(noun.dat||noun.sg):index===3?(noun.acc||noun.sg):noun.sg;
   if(number==='pl'&&[2,4].includes(index)&&!/[ns]$/i.test(word))word+='n';
   result.push(articles[index]+' '+word);
-  if(index===4)result.push(articles[index].replace(/^mit /,'von ')+' '+word);
  }
  return [...new Set(result)];
 }
