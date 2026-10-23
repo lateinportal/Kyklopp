@@ -747,7 +747,7 @@ function startADeclension(count=15,repeatTasks=null){
  session={mode:'free',goal:'grammar',grammarRound:true,topicId:A_TOPIC_ID,startedAt:Date.now(),queue,total:queue.length,done:0,index:0,correct:0,wrong:0,results:[],feedback:null,isMistakeRound:!!repeatTasks,level:state.level};
  document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav==='free'));view='quiz';grammarQuiz();window.scrollTo(0,0);
 }
-function aQuestion(task){if(task.type==='determine')return 'Bestimme die Form. Wähle alle passenden Antworten aus.';const detail=A_CASES[task.caseIndex]+' '+aNumberLabel(task.number);return task.type==='table'?'Vervollständige die Deklinationstabelle im '+aNumberLabel(task.number)+'.':task.type==='gap'?'Ergänze die fehlende Form.':task.type.startsWith('translation')?(task.choice?'Wähle die richtige Übersetzung aus.':'Gib alle möglichen Übersetzungen ein, durch Kommas getrennt.'):(task.choice?'Wähle':'Bilde')+' den '+detail+'.'}
+function aQuestion(task){if(task.type==='determine')return 'Bestimme die Form. Wähle alle passenden Antworten aus.';const detail=A_CASES[task.caseIndex]+' '+aNumberLabel(task.number);return task.type==='table'?'Vervollständige die Deklinationstabelle im '+aNumberLabel(task.number)+'.':task.type==='gap'?'Ergänze die fehlende Form.':task.type.startsWith('translation')?(task.choice?'Wähle die richtige(n) Übersetzung(en) aus.':'Gib alle möglichen Übersetzungen ein, durch Kommas getrennt.'):(task.choice?'Wähle':'Bilde')+' den '+detail+'.'}
 function aCardTable(task,solved=false){
  if(task.type.startsWith('translation'))return '<div class="a-translation-form">'+esc(aPlainForm(task.c,task.number,task.caseIndex))+'</div>';
  if(task.type!=='gap')return '';
