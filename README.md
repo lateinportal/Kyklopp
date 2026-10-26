@@ -1,6 +1,6 @@
 # Kyklopp
 
-Online-Testversion des Lateintrainers. Anmeldung mit persoenlichem Zugangscode; Lernstaende werden getrennt in Supabase gespeichert. Die a-Deklination ist nutzbar; weitere Grammatikuebungen sind noch in Vorbereitung.
+Online-Testversion des Lateintrainers. Anmeldung mit persoenlichem Zugangscode; Lernstaende werden getrennt in Supabase gespeichert. Die a-Deklination und die o-Deklination auf -us und -(e)r sind nutzbar; weitere Grammatikuebungen sind noch in Vorbereitung.
 
 ## GitHub Pages
 Settings → Pages → Deploy from a branch → main → / (root) → Save.
