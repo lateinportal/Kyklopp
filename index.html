@@ -669,7 +669,7 @@ function aLatinAnswers(c,number,index){
  if(index===0&&((number==='sg'&&!pluralOnly)||(number==='pl'&&pluralOnly)))return [c.latin];
  return [stem+endings[index]];
 }
-function aGermanAnswers(c,number,index){
+function aGermanAnswers(c,number,index,includeDurch=false){
  const result=[];
  for(const noun of (oIsWord(c)?O_GERMAN:A_GERMAN)[c.id]||[]){
   if(number==='pl'&&!noun.pl)continue;
@@ -677,24 +677,24 @@ function aGermanAnswers(c,number,index){
   let word=number==='pl'?noun.pl:index===1?(noun.gen||noun.sg):[2,4].includes(index)?(noun.dat||noun.sg):index===3?(noun.acc||noun.sg):noun.sg;
   if(number==='pl'&&[2,4].includes(index)&&!/[ns]$/i.test(word))word+='n';
   result.push(articles[index]+' '+word);
-  if(index===4)result.push(articles[index].replace(/^mit /,'von ')+' '+word);
+  if(index===4){result.push(articles[index].replace(/^mit /,'von ')+' '+word);if(includeDurch){const article=number==='pl'?'die':({f:'die',m:'den',n:'das'}[noun.gender]),accusative=number==='pl'?noun.pl:(noun.acc||noun.sg);result.push('durch '+article+' '+accusative);}}
  }
  return [...new Set(result)];
 }
-function aGermanGroupsForForm(c,number,index){
+function aGermanGroupsForForm(c,number,index,includeDurch=false){
  const shown=E.normalize(aLatinAnswers(c,number,index)[0]||''),groups=[];
- for(const n of aNumbers(c))for(let i=0;i<5;i++)if(aLatinAnswers(c,n,i).some(form=>E.normalize(form)===shown)){const answers=aGermanAnswers(c,n,i);if(answers.length)groups.push(answers);}
+ for(const n of aNumbers(c))for(let i=0;i<5;i++)if(aLatinAnswers(c,n,i).some(form=>E.normalize(form)===shown)){const answers=aGermanAnswers(c,n,i,includeDurch);if(answers.length)groups.push(answers);}
  return groups;
 }
 function aTranslationSolution(task){
  const shown=E.normalize(aLatinAnswers(task.c,task.number,task.caseIndex)[0]),abbreviations=['Nom.','Gen.','Dat.','Akk.','Abl.'];
  return '<div class="a-translation-solution">'+aNumbers(task.c).flatMap(number=>A_CASES.map((_,index)=>{
   if(!aLatinAnswers(task.c,number,index).some(form=>E.normalize(form)===shown))return '';
-  const answers=aGermanAnswers(task.c,number,index);if(!answers.length)return '';
+  const answers=aGermanAnswers(task.c,number,index,task.type==='translation');if(!answers.length)return '';
   return '<div class="a-translation-solution-row"><span class="a-case-tag">'+abbreviations[index]+(number==='pl'?' Pl.':' Sg.')+'</span><strong>'+esc(answers.join(', '))+'</strong></div>';
  })).join('')+'</div>';
 }
-function aGermanForForm(c,number,index){return [...new Set(aGermanGroupsForForm(c,number,index).flat())];}
+function aGermanForForm(c,number,index,includeDurch=false){return [...new Set(aGermanGroupsForForm(c,number,index,includeDurch).flat())];}
 function aFieldMatches(field,value){
  if(!field.answerGroups)return field.answers.some(answer=>E.normalize(answer)===E.normalize(value));
  const parts=String(value||'').split(',').map(part=>E.normalize(part.trim()));
@@ -709,11 +709,11 @@ function aFieldExample(field){return field.answerGroups?[...new Set(field.answer
 function aPlainForm(c,number,index){return aLatinAnswers(c,number,index)[0].normalize('NFD').replace(/[\u0304\u0306]/g,'').normalize('NFC');}
 function aFormReadings(c,number,index){const shown=E.normalize(aPlainForm(c,number,index)),result=[];for(const n of aNumbers(c))for(let i=0;i<5;i++)if(aLatinAnswers(c,n,i).some(form=>E.normalize(form)===shown))result.push(A_CASES[i]+' '+aNumberLabel(n));return result;}
 function aTask(c,type,number,index=0){
- const translation=type.startsWith('translation'),table=type==='table',accepted=translation?aGermanForForm(c,number,index).filter(answer=>type!=='translation-choice'||!answer.startsWith('von ')):aLatinAnswers(c,number,index);
+ const translation=type.startsWith('translation'),table=type==='table',accepted=translation?aGermanForForm(c,number,index,type==='translation').filter(answer=>type!=='translation-choice'||!answer.startsWith('von ')):aLatinAnswers(c,number,index);
  const choice=['choice','determine','translation-choice'].includes(type);
  if(type==='determine'){const answers=aFormReadings(c,number,index);return {key:[c.id,type,aPlainForm(c,number,index)].join(':'),c,type,number,caseIndex:index,choice:true,multi:true,fields:[{label:'Kasus und Numerus',answers,answerGroups:answers.map(answer=>[answer])}]};}
  return {key:[c.id,type,number,table?'all':index].join(':'),c,type,number,caseIndex:index,choice,multi:type==='translation-choice',
-  fields:table?A_CASES.map((name,i)=>({label:name+' '+aNumberLabel(number),answers:aLatinAnswers(c,number,i)})):[{label:translation?'Übersetzung(en)':type==='gap'?'Fehlende Form':A_CASES[index]+' '+aNumberLabel(number),answers:accepted,...(translation?{answerGroups:aGermanGroupsForForm(c,number,index).map(group=>group.filter(answer=>type!=='translation-choice'||!answer.startsWith('von ')))}:{})}]};
+  fields:table?A_CASES.map((name,i)=>({label:name+' '+aNumberLabel(number),answers:aLatinAnswers(c,number,i)})):[{label:translation?'Übersetzung(en)':type==='gap'?'Fehlende Form':A_CASES[index]+' '+aNumberLabel(number),answers:accepted,...(translation?{answerGroups:aGermanGroupsForForm(c,number,index,type==='translation').map(group=>group.filter(answer=>type!=='translation-choice'||!answer.startsWith('von ')))}:{})}]};
 }
 function aTaskBank(words=aWords()){
  const bank=[];
