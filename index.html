@@ -749,7 +749,7 @@ function aBuildRound(count=15,words=aWords()){
 }
 function aRoundOptions(task){
  if(task.multi&&task.type.startsWith('translation')){const answers=task.fields[0].answers,core=[...new Set(task.fields[0].answerGroups.map(group=>group[0]))],other=shuffle(A_CASES.flatMap((_,i)=>aGermanAnswers(task.c,task.number,i))).filter(value=>!value.startsWith('von ')&&!answers.includes(value)),extra=shuffle(answers.filter(value=>!core.includes(value)));return shuffle([...core,...extra.slice(0,Math.max(0,3-core.length)),...other.slice(0,Math.max(1,4-Math.max(3,core.length)))]);}
- if(task.multi){const answers=task.fields[0].answers,other=shuffle(['sg','pl'].flatMap(n=>A_CASES.map(name=>name+' '+aNumberLabel(n)))).filter(label=>!answers.includes(label));return shuffle([...answers,...other.slice(0,Math.max(1,4-answers.length))]);}
+ if(task.multi){const answers=task.fields[0].answers,other=shuffle(['sg','pl'].flatMap(n=>A_CASES.map(name=>name+' '+aNumberLabel(n)))).filter(label=>!answers.includes(label));if(onIsWord(task.c)&&onNumbers(task.c).includes('pl')&&answers.includes('Genitiv Singular')&&!answers.includes('Nominativ Plural'))other.sort((a,b)=>Number(b==='Nominativ Plural')-Number(a==='Nominativ Plural'));return shuffle([...answers,...other.slice(0,Math.max(1,4-answers.length))]);}
  const correct=task.fields[0].answers[0],all=task.type.startsWith('translation')?A_CASES.flatMap((_,i)=>aGermanAnswers(task.c,task.number,i)):
   aNumbers(task.c).flatMap(n=>A_CASES.flatMap((_,i)=>aLatinAnswers(task.c,n,i)));
  const accepted=new Set(task.fields[0].answers.map(E.normalize)),seen=new Set(),wrong=shuffle(all).filter(value=>{const key=E.normalize(value);if(accepted.has(key)||seen.has(key))return false;seen.add(key);return true});
