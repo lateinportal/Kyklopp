@@ -946,7 +946,7 @@ function pTranslateGloss(gloss,index){
  return pronouns.map(pronoun=>trailingPrep?join(pronoun,lex.present[index],lex.prefix,rest):join(pronoun,lex.present[index],rest,lex.prefix));
 }
 function pGerman(c,index){return [...new Set(pGlosses(c).flatMap(gloss=>pTranslateGloss(gloss,index)))];}
-function pWords(restricted=aPracticeTopicId()===PI_TOPIC_ID){return aScopeCards().filter(c=>(!restricted||pIsIrregularWord(c))&&pParadigm(c)&&Array.from({length:7},(_,i)=>pGerman(c,i).length).every(Boolean));}
+function pWords(restricted=aPracticeTopicId()===PI_TOPIC_ID){return (restricted?CARDS.filter(pIsIrregularWord):aScopeCards()).filter(c=>pParadigm(c)&&Array.from({length:7},(_,i)=>pGerman(c,i).length).every(Boolean));}
 function pForm(c,index){return pParadigm(c)?.[index]||'';}
 function pTask(c,type,index){
  const answers=type==='determine'?[P_LABELS[index]]:type.startsWith('translation')?pGerman(c,index):[pForm(c,index)],choice=['determine','translation-choice'].includes(type);
