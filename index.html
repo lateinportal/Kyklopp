@@ -953,13 +953,28 @@ function pTask(c,type,index){
 function pTaskBank(words=pWords()){
  return words.flatMap(c=>Object.keys(A_TYPES).flatMap(type=>Array.from({length:['determine','translation'].includes(type)?7:6},(_,index)=>pTask(c,type,index))));
 }
+function pChoiceTranslations(c,index){
+ const answers=pGerman(c,index);
+ return answers.filter(value=>(index!==2||value.startsWith('er '))&&!answers.some(other=>other.startsWith(value+' ')&&/^(an|auf|nach|über|vor|für|als|bis|zu|gegen)$/.test(other.slice(value.length+1))));
+}
 function pTaskOptions(task){
  if(task.type==='determine')return shuffle([P_LABELS[task.caseIndex],...shuffle(P_LABELS.filter((_,i)=>i!==task.caseIndex)).slice(0,2)]);
- const index=task.caseIndex,allRight=pGerman(task.c,index),canonical=allRight.filter(value=>(index!==2||value.startsWith('er '))&&!allRight.some(other=>other.startsWith(value+' ')&&/^(an|auf|nach|über|vor|für|als|bis|zu|gegen)$/.test(other.slice(value.length+1)))),correct=shuffle(canonical).slice(0,Math.min(3,canonical.length));
- const others=shuffle(pWords().filter(c=>c.id!==task.c.id));
- const wrong=[...new Set([...others.flatMap(c=>pGerman(c,index).filter(value=>index!==2||value.startsWith('er '))),...['schonen','singen','reisen','laufen','arbeiten'].flatMap(gloss=>pTranslateGloss(gloss,index).filter(value=>index!==2||value.startsWith('er ')))])].filter(value=>!allRight.some(answer=>E.normalize(answer)===E.normalize(value)));
+ const index=task.caseIndex,allRight=pGerman(task.c,index),canonical=pChoiceTranslations(task.c,index),scope=pWords();
+ task.personMix??=Math.random()<.5?'same':'different';
+ const correct=shuffle(canonical).slice(0,task.personMix==='different'?1:Math.min(3,canonical.length)),isWrong=value=>!allRight.some(answer=>E.normalize(answer)===E.normalize(value));
+ let wrong;
+ if(task.personMix==='different'){
+  // One valid translation plus three distinct other person/number combinations.
+  wrong=shuffle([0,1,2,3,4,5].filter(i=>i!==index)).slice(0,3).map(person=>{
+   const candidates=[...new Set([...shuffle(scope).flatMap(c=>pChoiceTranslations(c,person)),...['schonen','singen','reisen','laufen','arbeiten'].flatMap(gloss=>pTranslateGloss(gloss,person).filter(value=>person!==2||value.startsWith('er ')))])].filter(isWrong);
+   return shuffle(candidates)[0];
+  });
+ }else{
+  const others=shuffle(scope.filter(c=>c.id!==task.c.id));
+  wrong=shuffle([...new Set([...others.flatMap(c=>pChoiceTranslations(c,index)),...['schonen','singen','reisen','laufen','arbeiten'].flatMap(gloss=>pTranslateGloss(gloss,index).filter(value=>index!==2||value.startsWith('er ')))])].filter(isWrong)).slice(0,4-correct.length);
+ }
  task.fields[0].answerGroups=correct.map(answer=>[answer]);
- return shuffle([...correct,...shuffle(wrong).slice(0,4-correct.length)]);
+ return shuffle([...correct,...wrong]);
 }
 function pQuestion(task){return task.type==='gap'?'Ergänze die fehlende Form.':task.type==='determine'?'Bestimme die Form.':task.type==='form'?'Bilde die '+P_LABELS[task.caseIndex]+'.':task.type==='translation-choice'?'Wähle die richtige(n) Übersetzung(en) aus.':'Übersetze die Form ins Deutsche.';}
 function pCardTable(task,solved=false){
