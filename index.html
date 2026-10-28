@@ -1001,7 +1001,7 @@ const I_DESCRIPTIONS=['Imperativ Singular','Imperativ Plural','verneinten Impera
 function iParadigm(c){
  const present=pParadigm(c);if(!present)return null;
  const words=present[6].split(' '),at=words.findIndex(word=>/^[a-z]+(?:re|lle|sse)$/.test(word));if(at<0||words[0]==='non')return null;
- const inf=words[at];if(['posse','velle','nolle','malle'].includes(inf))return null;
+ const inf=words[at];if(['esse','posse','velle','nolle','malle'].includes(inf))return null;
  let singular=inf.slice(0,-2);if(/(?:dicere|ducere|facere)$/.test(inf))singular=singular.slice(0,-1);
  const pluralWords=present[4].split(' ');if(!pluralWords[at]?.endsWith('tis'))return null;pluralWords[at]=pluralWords[at].slice(0,-3)+'te';
  const singularWords=[...words];singularWords[at]=singular;
