@@ -1147,7 +1147,7 @@ function sBuildRound(count=15,sentences=sSentences()){
  return queue;
 }
 function sOptions(task){const correct=task.fields[0].answers,level=sScopeLevel(),other=S_ROLES.filter(value=>!correct.includes(value)&&S_ROLE_LEVELS[value]<=level);return shuffle([...correct,...shuffle(other).slice(0,4-correct.length)]);}
-function sQuestion(task){if(task.target?.implicitSubject)return task.target.endings.length>1?'Welche Satzgliedfunktion steckt in den markierten Personalendungen?':'Welche Satzgliedfunktion steckt in der markierten Personalendung?';if(task.choice&&task.fields[0].answers.length>1)return 'Welche Satzgliedfunktionen stecken im markierten Ausdruck? Wähle alle passenden Antworten aus.';return task.choice?'Welche Funktion hat der markierte Ausdruck im Satz?':'Vervollständige die Übersetzung.';}
+function sQuestion(task){if(task.target?.implicitSubject)return task.target.endings.length>1?'Welche Satzgliedfunktion steckt in den markierten Personalendungen?':'Welche Satzgliedfunktion steckt in der markierten Personalendung?';if(task.choice&&task.fields[0].answers.length>1)return 'Welche Satzgliedfunktionen stecken im markierten Ausdruck?';return task.choice?'Welche Funktion hat der markierte Ausdruck im Satz?':'Vervollständige die Übersetzung.';}
 function sSpan(text,part,html){const index=text.indexOf(part);return esc(text.slice(0,index))+html+esc(text.slice(index+part.length));}
 function sCard(task,solved=false){
  const sentence=task.sentence,target=task.target,latin=target.implicitSubject?sSubjectPrompt(sentence,target):sSpan(sentence.latin,target.latin,'<strong>'+esc(target.latin)+'</strong>');
