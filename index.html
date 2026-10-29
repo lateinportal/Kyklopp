@@ -317,9 +317,10 @@ button.stat{text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-wid
 .s-card-toggle:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .s-annotation{position:relative;padding-top:32px}
 .s-analysis-latin{font-family:Georgia,serif;font-size:clamp(20px,2.3vw,27px);line-height:2.6;text-wrap:pretty;color:var(--ink)}
-.s-part{display:inline-block;max-width:100%;text-decoration-line:underline;text-decoration-color:var(--s-role-color);text-decoration-thickness:3px;text-underline-offset:7px}
-.s-part-accusative{background:linear-gradient(transparent 75%,#fff0a6 75%,#fff0a6 90%,transparent 90%)}
-.s-part-dative{background:linear-gradient(transparent 75%,#ffe1c3 75%,#ffe1c3 90%,transparent 90%)}
+.s-part{display:inline-block;max-width:100%}
+.s-role-ink{text-decoration-line:underline;text-decoration-color:var(--s-role-color);text-decoration-thickness:3px;text-underline-offset:7px}
+.s-part-accusative .s-role-ink{background:linear-gradient(transparent 75%,#fff0a6 75%,#fff0a6 90%,transparent 90%)}
+.s-part-dative .s-role-ink{background:linear-gradient(transparent 75%,#ffe1c3 75%,#ffe1c3 90%,transparent 90%)}
 .s-genitive-word{font-style:italic}
 .s-genitive-arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .word-body .s-full-translation{font-size:17px;line-height:1.6;color:var(--ink);margin:15px 0 20px}
@@ -1155,15 +1156,16 @@ function sArt(task){return window.VOCAB_ART?.[task.sentence.artId]||{src:'vokabe
 const S_ROLE_STYLE={Subjekt:{key:'subject',color:'#d33d49',question:'Wer oder was?'},'Prädikat':{key:'predicate',color:'#2074c4',question:'Was wird ausgesagt?'},Akkusativobjekt:{key:'accusative',color:'#e4b400',question:'Wen oder was?'},Dativobjekt:{key:'dative',color:'#d8781d',question:'Wem?'},Adverbial:{key:'adverbial',color:'#252525'},Genitivattribut:{key:'genitive',question:'Wessen?'}};
 function sAnalysisLabel(target){return target.adverbialKind||target.role;}
 function sAnalysisQuestion(target){return target.question||S_ROLE_STYLE[target.role].question||'';}
+function sRoleInk(text){const leading=text.match(/^\s*/)[0],trailing=text.match(/\s*$/)[0],core=text.trim();return core?esc(leading)+'<span class="s-role-ink">'+esc(core)+'</span>'+esc(trailing):esc(text);}
 function sAnalysisPhrase(sentence,target){
  const text=target.latin,base=sentence.latin.indexOf(text),tokens=[];
  sentence.targets.forEach((attribute,index)=>{if(attribute.role!=='Genitivattribut'||!text.includes(attribute.latin)||!text.includes(attribute.head))return;const id=sentence.id+'-'+index;
   tokens.push({start:text.indexOf(attribute.latin),text:attribute.latin,attr:'data-s-gen="'+id+'" data-s-color="'+S_ROLE_STYLE[attribute.headRole].color+'"',className:'s-genitive-word'});
-  tokens.push({start:text.indexOf(attribute.head),text:attribute.head,attr:'data-s-head="'+id+'"',className:'s-head-word'});
+  tokens.push({start:text.indexOf(attribute.head),text:attribute.head,attr:'data-s-head="'+id+'"',className:'s-head-word s-role-ink'});
  });
  tokens.sort((a,b)=>a.start-b.start);let html='',cursor=0;
- for(const token of tokens){html+=esc(text.slice(cursor,token.start))+'<span class="'+token.className+'" '+token.attr+'>'+esc(token.text)+'</span>';cursor=token.start+token.text.length;}
- html+=esc(text.slice(cursor));const style=S_ROLE_STYLE[target.role];return {start:base,end:base+text.length,html:'<span class="s-part s-part-'+style.key+'" style="--s-role-color:'+style.color+'">'+html+'</span>'};
+ for(const token of tokens){html+=sRoleInk(text.slice(cursor,token.start))+'<span class="'+token.className+'" '+token.attr+'>'+esc(token.text)+'</span>';cursor=token.start+token.text.length;}
+ html+=sRoleInk(text.slice(cursor));const style=S_ROLE_STYLE[target.role];return {start:base,end:base+text.length,html:'<span class="s-part s-part-'+style.key+'" style="--s-role-color:'+style.color+'">'+html+'</span>'};
 }
 function sAnnotatedSentence(sentence){
  const spans=sentence.targets.filter(t=>t.role!=='Genitivattribut').map(t=>sAnalysisPhrase(sentence,t)).sort((a,b)=>a.start-b.start);let html='',cursor=0;
@@ -1180,8 +1182,8 @@ function sDrawGenitiveArrows(){
  const root=document.querySelector('#s-annotation'),svg=document.querySelector('#s-genitive-arrows');if(!root?.getBoundingClientRect||!svg)return;
  const bounds=root.getBoundingClientRect();if(!bounds.width||!bounds.height)return;const paths=[];
  root.querySelectorAll('[data-s-gen]').forEach((attribute,index)=>{const head=root.querySelector('[data-s-head="'+attribute.dataset.sGen+'"]');if(!head)return;
-  const from=attribute.getBoundingClientRect(),to=head.getBoundingClientRect(),x1=from.left+from.width/2-bounds.left,x2=to.left+to.width/2-bounds.left,y1=from.top-bounds.top-5,y2=to.top-bounds.top-5,top=Math.max(3,Math.min(y1,y2)-23),color=attribute.dataset.sColor,id='s-arrow-'+index;
-  paths.push('<defs><marker id="'+id+'" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L7 3.5 L0 7" fill="none" stroke="'+color+'" stroke-width="1.7"/></marker></defs><path d="M '+x1+' '+y1+' C '+x1+' '+top+', '+x2+' '+top+', '+x2+' '+y2+'" fill="none" stroke="'+color+'" stroke-width="1.8" marker-end="url(#'+id+')"/>');
+  const from=attribute.getBoundingClientRect(),to=head.getBoundingClientRect(),x1=from.left+from.width/2-bounds.left,x2=to.left+to.width/2-bounds.left,y1=from.top-bounds.top-5,y2=to.top-bounds.top-5,top=Math.max(3,Math.min(y1,y2)-Math.min(26,Math.abs(x2-x1)*.35)),color=attribute.dataset.sColor,id='s-arrow-'+index;
+  paths.push('<defs><marker id="'+id+'" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="'+color+'"/></marker></defs><path d="M '+x1+' '+y1+' Q '+((x1+x2)/2)+' '+top+' '+x2+' '+y2+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" marker-end="url(#'+id+')"/>');
  });svg.setAttribute('viewBox','0 0 '+bounds.width+' '+bounds.height);svg.innerHTML=paths.join('');
 }
 function sMountSentenceFlip(task){
