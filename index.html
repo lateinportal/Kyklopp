@@ -320,7 +320,8 @@ button.stat{text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-wid
 .s-part{display:inline-block;max-width:100%}
 .s-role-ink{text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:#1d6cb5;text-decoration-thickness:1.5px;text-underline-offset:6px}
 /* One shared decoration keeps stem and framed ending on the same continuous lines. */
-.s-part-predicate .s-role-words{text-decoration-line:underline;text-decoration-style:double;text-decoration-color:#1d6cb5;text-decoration-thickness:1.5px;text-underline-offset:6px;text-decoration-skip-ink:none}
+.s-part-predicate .s-role-words{position:relative;justify-self:center;width:fit-content;max-width:100%;text-decoration:none;padding-bottom:3px}
+.s-part-predicate .s-role-words::after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:4px double #1d6cb5;pointer-events:none}
 .s-part-predicate .s-role-ink{text-decoration:none}
 .s-part-accusative .s-role-ink{text-decoration-style:wavy}
 .s-part-dative .s-role-ink{position:relative;text-decoration:none}
@@ -339,7 +340,9 @@ button.stat{text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-wid
 @media(max-width:600px){.s-analysis-latin{font-size:21px}.word-body .s-full-translation{font-size:16px}.s-analysis-key li{grid-template-columns:minmax(100px,.95fr) minmax(0,1.3fr);gap:8px}}
 
 /* A personal ending carries the implicit subject while the verb stays a predicate. */
-.s-personal-ending{border:2px solid #1d6cb5;border-radius:4px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.s-personal-ending{position:relative;padding:0;border:0}
+.s-personal-ending::before{content:"";position:absolute;inset:-2px -1px 2px;border:1.5px solid #1d6cb5;border-radius:3px;pointer-events:none}
+.s-inline-label-implicit{white-space:normal;max-width:120px;justify-self:center}
 
 /* Edge badges are limited to sentence-function questions. */
 .a-task-sentence-function .a-question-card{overflow:visible}
@@ -1152,7 +1155,7 @@ function sTask(sentence,target,index,type){
  const choice=type==='sentence-function',implicit=sentence.targets.find(t=>t.implicitSubject),answers=choice?(target.role==='Prädikat'&&implicit?['Prädikat','Subjekt']:[target.role]):target.answers;
  return {key:[sentence.id,index,type].join(':'),sentencePractice:true,sentence,target,c:CARDS.find(c=>c.id===sentence.anchorId),type,choice,multi:choice,singleSelect:choice&&answers.length===1,fields:[{label:choice?'Funktion':'Fehlende Übersetzung',answers,...(choice?{answerGroups:answers.map(answer=>[answer])}:{})}]};
 }
-function sTaskBank(sentences=sSentences()){return sentences.flatMap(sentence=>sentence.targets.flatMap((target,index)=>[sTask(sentence,target,index,'sentence-function'),...(target.german?[sTask(sentence,target,index,'sentence-translation')]:[])]));}
+function sTaskBank(sentences=sSentences()){return sentences.flatMap(sentence=>sentence.targets.flatMap((target,index)=>target.implicitSubject?[]:[sTask(sentence,target,index,'sentence-function'),...(target.german?[sTask(sentence,target,index,'sentence-translation')]:[])]));}
 function sBuildRound(count=15,sentences=sSentences()){
  const bank=sTaskBank(sentences);if(!bank.length)return [];const queue=[],used=new Set(),recent=state.grammarProgress?.topics?.[S_TOPIC_ID]?.recentTasks||[],paired=Math.floor(count/2),seenRoles=new Set();
  for(let i=0;i<count;i++){
@@ -1165,10 +1168,10 @@ function sBuildRound(count=15,sentences=sSentences()){
  return queue;
 }
 function sOptions(task){const correct=task.fields[0].answers,level=sScopeLevel(),other=S_ROLES.filter(value=>!correct.includes(value)&&S_ROLE_LEVELS[value]<=level);return shuffle([...correct,...shuffle(other).slice(0,4-correct.length)]);}
-function sQuestion(task){if(task.target?.implicitSubject)return task.target.endings.length>1?'Welche Satzgliedfunktion steckt in den markierten Personalendungen?':'Welche Satzgliedfunktion steckt in der markierten Personalendung?';if(task.choice&&task.fields[0].answers.length>1)return 'Welche Satzgliedfunktionen stecken im markierten Ausdruck?';return task.choice?'Welche Funktion hat der markierte Ausdruck im Satz?':'Vervollständige die Übersetzung.';}
+function sQuestion(task){if(task.choice&&task.fields[0].answers.length>1)return 'Welche Satzgliedfunktionen stecken im markierten Ausdruck?';return task.choice?'Welche Funktion hat der markierte Ausdruck im Satz?':'Vervollständige die Übersetzung.';}
 function sSpan(text,part,html){const index=text.indexOf(part);return esc(text.slice(0,index))+html+esc(text.slice(index+part.length));}
 function sCard(task,solved=false){
- const sentence=task.sentence,target=task.target,latin=target.implicitSubject?sSubjectPrompt(sentence,target):sSpan(sentence.latin,target.latin,'<strong>'+esc(target.latin)+'</strong>');
+ const sentence=task.sentence,target=task.target,latin=sSpan(sentence.latin,target.latin,'<strong>'+esc(target.latin)+'</strong>');
  let html='<h1 class="s-sentence-latin">'+latin+'</h1>';
  if(task.choice&&solved)return sReversibleCard(task,html);
  if(!task.choice){const replacement=solved?'<strong class="s-gap-answer">'+esc(target.answers[0])+'</strong>':'<span class="a-missing" aria-label="Fehlende Übersetzung">?</span>';html+='<p class="s-sentence-german">'+sSpan(sentence.german,target.german,replacement)+'</p>';}
@@ -1178,13 +1181,13 @@ function sArt(task){return window.VOCAB_ART?.[task.sentence.artId]||{src:'vokabe
 
 // Analysis is available only after checking or revealing a sentence-function task.
 const S_ROLE_STYLE={Subjekt:{key:'subject',color:'#1d6cb5',question:'Wer oder was?'},'Prädikat':{key:'predicate',color:'#1d6cb5',question:'Was wird ausgesagt?'},Akkusativobjekt:{key:'accusative',color:'#1d6cb5',question:'Wen oder was?'},Dativobjekt:{key:'dative',color:'#1d6cb5',question:'Wem?'},Adverbial:{key:'adverbial',color:'#1d6cb5'},Genitivattribut:{key:'genitive',color:'#1d6cb5',question:'Wessen?'}};
-function sAnalysisLabel(target){return target.implicitSubject?'Subjekt (in der Personalendung)':target.adverbialKind||target.role;}
+function sAnalysisLabel(target,sentence=null){if(target.role==='Prädikat'&&sentence?.targets.some(t=>t.implicitSubject))return 'Prädikat mit verstecktem Subjekt';return target.implicitSubject?'Subjekt (in der Personalendung)':target.adverbialKind||target.role;}
 function sAnalysisQuestion(target){if(target.implicitSubject)return 'Wer oder was? · '+target.person+' – '+target.pronoun;return target.question||S_ROLE_STYLE[target.role].question||'';}
 function sSubjectEndings(sentence,target){return target.endings.map(({word,ending})=>{const start=sentence.latin.indexOf(word)+word.length-ending.length;return {start,end:start+ending.length,word,ending};}).sort((a,b)=>a.start-b.start);}
-function sSubjectPrompt(sentence,target){let html='',cursor=0;for(const span of sSubjectEndings(sentence,target)){html+=esc(sentence.latin.slice(cursor,span.start))+'<strong>'+esc(span.ending)+'</strong>';cursor=span.end;}return html+esc(sentence.latin.slice(cursor));}
 function sRoleInk(text){const leading=text.match(/^\s*/)[0],trailing=text.match(/\s*$/)[0],core=text.trim();return core?esc(leading)+'<span class="s-role-ink">'+esc(core)+'</span>'+esc(trailing):esc(text);}
 const S_SHORT_LABELS={Subjekt:'Subjekt','Prädikat':'Prädikat',Akkusativobjekt:'Akk.-Obj.',Dativobjekt:'Dat.-Obj.',Adverbial:'Adv.',Genitivattribut:'Gen.-Attr.'};
-function sRoleUnit(html,label){return '<span class="s-role-unit"><span class="s-role-words">'+html+'</span><small class="s-inline-label">'+esc(label)+'</small></span>';}
+function sInlineLabel(sentence,target){return target.role==='Prädikat'&&sentence.targets.some(t=>t.implicitSubject)?'Prädikat mit verstecktem Subjekt':S_SHORT_LABELS[target.role];}
+function sRoleUnit(html,label){return '<span class="s-role-unit"><span class="s-role-words">'+html+'</span><small class="s-inline-label'+(label==='Prädikat mit verstecktem Subjekt'?' s-inline-label-implicit':'')+'">'+esc(label)+'</small></span>';}
 function sAnalysisPhrase(sentence,target){
  const text=target.latin,base=sentence.latin.indexOf(text),tokens=[];
  sentence.targets.forEach((attribute,index)=>{if(attribute.role!=='Genitivattribut'||!text.includes(attribute.latin)||!text.includes(attribute.head))return;const id=sentence.id+'-'+index;
@@ -1195,7 +1198,7 @@ function sAnalysisPhrase(sentence,target){
  tokens.sort((a,b)=>a.start-b.start);let html='',cursor=0;
  const hasAttribute=tokens.some(token=>token.className==='s-genitive-word');
  for(const token of tokens){const word='<span class="'+token.className+'" '+token.attr+'>'+esc(token.text)+'</span>';html+=sRoleInk(text.slice(cursor,token.start))+(hasAttribute?sRoleUnit(word,token.className==='s-genitive-word'?S_SHORT_LABELS.Genitivattribut:S_SHORT_LABELS[target.role]):word);cursor=token.start+token.text.length;}
- html+=sRoleInk(text.slice(cursor));if(!hasAttribute)html=sRoleUnit(html,S_SHORT_LABELS[target.role]);const style=S_ROLE_STYLE[target.role];return {start:base,end:base+text.length,html:'<span class="s-part s-part-'+style.key+'" style="--s-role-color:'+style.color+'">'+html+'</span>'};
+ html+=sRoleInk(text.slice(cursor));if(!hasAttribute)html=sRoleUnit(html,sInlineLabel(sentence,target));const style=S_ROLE_STYLE[target.role];return {start:base,end:base+text.length,html:'<span class="s-part s-part-'+style.key+'" style="--s-role-color:'+style.color+'">'+html+'</span>'};
 }
 function sAnnotatedSentence(sentence){
  const spans=sentence.targets.filter(t=>t.role!=='Genitivattribut'&&!t.implicitSubject).map(t=>sAnalysisPhrase(sentence,t)).sort((a,b)=>a.start-b.start);let html='',cursor=0;
@@ -1204,7 +1207,7 @@ function sAnnotatedSentence(sentence){
 function sAnalysisKey(sentence){return '<ul class="s-analysis-key">'+sentence.targets.map(target=>{
  const detail=target.implicitSubject?target.endings.map(item=>item.word+': −'+item.ending).join(' / ')+' → '+target.pronoun:target.latin;
  const style=S_ROLE_STYLE[target.role],color=target.headRole?S_ROLE_STYLE[target.headRole].color:style.color,relation=target.role==='Genitivattribut'?' → '+esc(target.head):'';
- return '<li class="s-key-'+style.key+'"'+(color?' style="--s-role-color:'+color+'"':'')+'><span class="s-key-name">'+esc(sAnalysisLabel(target))+'</span><span class="s-key-detail"><strong>'+esc(detail)+relation+'</strong><small>'+esc(sAnalysisQuestion(target))+'</small></span></li>';
+ return '<li class="s-key-'+style.key+'"'+(color?' style="--s-role-color:'+color+'"':'')+'><span class="s-key-name">'+esc(sAnalysisLabel(target,sentence))+'</span><span class="s-key-detail"><strong>'+esc(detail)+relation+'</strong><small>'+esc(sAnalysisQuestion(target))+'</small></span></li>';
  }).join('')+'</ul>';}
 function sReversibleCard(task,front){return '<div class="word-turn s-sentence-turn"><div class="s-card-face s-card-front" id="s-card-front" aria-hidden="false">'+front+'</div><div class="s-card-face card-back" id="s-card-back" aria-hidden="true"><div class="s-annotation" id="s-annotation"><div class="s-analysis-latin">'+sAnnotatedSentence(task.sentence)+'</div><svg class="s-genitive-arrows" id="s-genitive-arrows" aria-hidden="true" focusable="false"></svg></div><p class="s-full-translation">'+esc(task.sentence.german)+'</p><details class="s-analysis-details" id="s-analysis-details"><summary>Satzglieder im Detail</summary>'+sAnalysisKey(task.sentence)+'</details></div></div><button type="button" class="card-toggle s-card-toggle" id="s-card-toggle" aria-label="Satzanalyse anzeigen" aria-controls="s-card-front s-card-back" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 1 0-2.4 6M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';}
 let sFlipObserver=null;
