@@ -319,7 +319,9 @@ button.stat{text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-wid
 .s-analysis-latin{font-family:Georgia,serif;font-size:clamp(20px,2.3vw,27px);line-height:1.55;text-wrap:pretty;color:var(--ink)}
 .s-part{display:inline-block;max-width:100%}
 .s-role-ink{text-decoration-line:underline;text-decoration-style:solid;text-decoration-color:#374151;text-decoration-thickness:1.5px;text-underline-offset:6px}
-.s-part-predicate .s-role-ink{text-decoration-style:double}
+/* One shared decoration keeps stem and framed ending on the same continuous lines. */
+.s-part-predicate .s-role-words{text-decoration-line:underline;text-decoration-style:double;text-decoration-color:#374151;text-decoration-thickness:1.5px;text-underline-offset:6px;text-decoration-skip-ink:none}
+.s-part-predicate .s-role-ink{text-decoration:none}
 .s-part-accusative .s-role-ink,.s-part-dative .s-role-ink{text-decoration-style:wavy}
 .s-part-adverbial .s-role-ink{text-decoration:none}
 .s-role-unit{display:inline-grid;grid-template-rows:auto auto;vertical-align:top;max-width:100%;min-width:0;padding-bottom:12px}
