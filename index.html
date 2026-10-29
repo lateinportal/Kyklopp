@@ -322,7 +322,9 @@ button.stat{text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-wid
 /* One shared decoration keeps stem and framed ending on the same continuous lines. */
 .s-part-predicate .s-role-words{text-decoration-line:underline;text-decoration-style:double;text-decoration-color:#1d6cb5;text-decoration-thickness:1.5px;text-underline-offset:6px;text-decoration-skip-ink:none}
 .s-part-predicate .s-role-ink{text-decoration:none}
-.s-part-accusative .s-role-ink,.s-part-dative .s-role-ink{text-decoration-style:wavy}
+.s-part-accusative .s-role-ink{text-decoration-style:wavy}
+.s-part-dative .s-role-ink{position:relative;text-decoration:none}
+.s-part-dative .s-role-ink::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath d='M-6 1L0 5L6 1L12 5L18 1' fill='none' stroke='%231d6cb5' stroke-width='1.5' stroke-linejoin='miter'/%3E%3C/svg%3E") left center / 12px 6px repeat-x}
 .s-part-adverbial .s-role-ink{text-decoration:none}
 .s-role-unit{display:inline-grid;grid-template-rows:auto auto;vertical-align:top;max-width:100%;min-width:0;padding-bottom:12px}
 .s-role-words{min-width:0}
