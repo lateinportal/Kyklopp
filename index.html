@@ -1214,13 +1214,14 @@ function vParadigm(c,kind=vKind()){
 function vForm(c,index,kind=vKind()){return vParadigm(c,kind)?.[index]?.[0]||'';}
 // Corrections are local to past-tense translations and never alter the existing present exercises.
 const V_DE_FIXES={gefallen:['gefiel','gefallen','haben'],gehören:['gehörte','gehört','haben'],schlafen:['schlief','geschlafen','haben'],essen:['aß','gegessen','haben'],schaffen:['schuf','geschaffen','haben'],heißen:['hieß','geheißen','haben'],lügen:['log','gelogen','haben'],messen:['maß','gemessen','haben'],vergessen:['vergaß','vergessen','haben'],stehlen:['stahl','gestohlen','haben'],stoßen:['stieß','gestoßen','haben'],steigen:['stieg','gestiegen','sein'],springen:['sprang','gesprungen','sein'],reiten:['ritt','geritten','sein'],schwimmen:['schwamm','geschwommen','sein'],schneiden:['schnitt','geschnitten','haben'],leihen:['lieh','geliehen','haben'],streiten:['stritt','gestritten','haben'],graben:['grub','gegraben','haben'],schwinden:['schwand','geschwunden','sein'],gelingen:['gelang','gelungen','sein'],trügen:['trog','getrogen','haben'],bekommen:['bekam','bekommen','haben']};
+const V_DE_PRESENT_FIXES={gefallen:'gefalle gefällst gefällt gefallen gefallt gefallen',schlafen:'schlafe schläfst schläft schlafen schlaft schlafen',essen:'esse isst isst essen esst essen',heißen:'heiße heißt heißt heißen heißt heißen',messen:'messe misst misst messen messt messen',vergessen:'vergesse vergisst vergisst vergessen vergesst vergessen',stehlen:'stehle stiehlst stiehlt stehlen stehlt stehlen',stoßen:'stoße stößt stößt stoßen stoßt stoßen',graben:'grabe gräbst gräbt graben grabt graben'};
 function vLexeme(inf){
  let lex=deLexeme(inf);if(!lex)return null;
  if(inf==='zurückverlangen')return {...vLexeme('verlangen'),inf,prefix:'zurück',part:'zurückverlangt'};
- if(V_DE_FIXES[inf]){const [past,part,aux]=V_DE_FIXES[inf];return {...lex,past,part,aux,prefix:''};}
+ if(V_DE_FIXES[inf]){const [past,part,aux]=V_DE_FIXES[inf];return {...lex,past,part,aux,prefix:'',present:V_DE_PRESENT_FIXES[inf]?.split(' ')||lex.present};}
  const prefixes=['wieder','zurück','zusammen','auseinander','heraus','hinein','herbei','heran','hin','vor','nach','auf','aus','ein','ab','an','weg','zu','mit','fort','fest','über','unter','ent','ver','be','er','zer'];
  const prefix=prefixes.find(pre=>inf.startsWith(pre)&&V_DE_FIXES[inf.slice(pre.length)]);
- if(prefix){const base=vLexeme(inf.slice(prefix.length)),separable=!['ent','ver','be','er','zer','über','unter'].includes(prefix);lex={...lex,past:separable?base.past:prefix+base.past,part:prefix+(separable?base.part:base.part.replace(/^ge/,'')),aux:base.aux,prefix:separable?prefix:''};}
+ if(prefix){const base=vLexeme(inf.slice(prefix.length)),separable=!['ent','ver','be','er','zer','über','unter'].includes(prefix);lex={...lex,present:separable?base.present:base.present.map(form=>prefix+form),past:separable?base.past:prefix+base.past,part:prefix+(separable?base.part:base.part.replace(/^ge/,'')),aux:base.aux,prefix:separable?prefix:''};}
  if(['betreten','erfahren','durchqueren','überbringen','vollbringen','verlassen','überschreiten','begehen'].includes(inf))lex={...lex,aux:'haben'};
  if(['entstehen','untergehen','zurückkehren','begegnen','folgen','nachfolgen','vorrücken','aufstehen','aufwachen','erwachen','hineingehen','herbeikommen','zusammenkommen'].includes(inf))lex={...lex,aux:'sein'};
  return lex;
@@ -1249,6 +1250,10 @@ function vTaskBank(words=vWords()){
  const kind=vKind();return words.flatMap(c=>Object.keys(A_TYPES).flatMap(type=>Array.from({length:kind==='perfect'&&['determine','translation'].includes(type)?7:6},(_,index)=>vTask(c,type,index,kind))));
 }
 function vChoiceTranslations(c,index,kind){return [...new Set(vGlosses(c).map(gloss=>vTranslateGloss(gloss,index,kind)[0]).filter(Boolean))];}
+function vPresentGloss(gloss,index){
+ if(index>5)return '';const parsed=vGlossParts(gloss);if(!parsed)return '';const {lex}=parsed,rest=parsed.rest.replace(/\bsich\b/g,['mich','dich','sich','uns','euch','sich'][index]).replace(/\bsein(e[nmr]?)?\b/g,(_,suffix='')=>['mein','dein','sein','unser','euer','ihr'][index]+suffix),join=(...parts)=>parts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+ return /^(an|auf|nach|über|vor|für|als|bis|zu|gegen)$/.test(rest)?join(P_PRONOUNS[index],lex.present[index],lex.prefix,rest):join(P_PRONOUNS[index],lex.present[index],rest,lex.prefix);
+}
 function vTaskOptions(task){
  const kind=task.pastKind,labels=vLabels(kind),index=task.caseIndex;if(task.type==='determine')return shuffle([labels[index],...shuffle(labels.filter((_,i)=>i!==index)).slice(0,2)]);
  const allRight=vGerman(task.c,index,kind),canonical=vChoiceTranslations(task.c,index,kind),scope=vWords(kind),isWrong=value=>!allRight.some(answer=>E.normalize(answer)===E.normalize(value));task.personMix??=Math.random()<.5?'same':'different';
@@ -1256,6 +1261,11 @@ function vTaskOptions(task){
  if(task.personMix==='different')wrong=shuffle([0,1,2,3,4,5].filter(person=>person!==index)).slice(0,3).map(person=>shuffle([...new Set(shuffle(scope).flatMap(c=>vChoiceTranslations(c,person,kind)))].filter(isWrong))[0]);
  else wrong=shuffle([...new Set(shuffle(scope.filter(c=>c.id!==task.c.id)).flatMap(c=>vChoiceTranslations(c,index,kind)))].filter(isWrong)).slice(0,4-correct.length);
  if(wrong.some(value=>!value)||wrong.length<4-correct.length){const fallback=['schonen','singen','reisen','laufen','arbeiten'];wrong=shuffle([...new Set([...wrong.filter(Boolean),...fallback.flatMap(gloss=>vTranslateGloss(gloss,index,kind).filter(value=>index!==2||value.startsWith('er ')))])].filter(isWrong)).slice(0,4-correct.length);}
+ task.tenseMix??=Math.random()<.5?'present':'past-only';
+ if(task.tenseMix==='present'){
+  const paired=vGlosses(task.c).filter(gloss=>correct.includes(vTranslateGloss(gloss,index,kind)[0])),candidates=shuffle([...new Set(paired.map(gloss=>vPresentGloss(gloss,index)).filter(value=>value&&isWrong(value)))]);
+  task.presentContrastCount??=1+Math.floor(Math.random()*2);const present=candidates.slice(0,Math.min(task.presentContrastCount,wrong.length));wrong=[...present,...wrong.filter(value=>!present.includes(value)).slice(0,wrong.length-present.length)];
+ }
  task.fields[0].answerGroups=correct.map(answer=>[answer]);return shuffle([...correct,...wrong]);
 }
 function vQuestion(task){return task.type==='gap'?'Ergänze die fehlende Form.':task.type==='determine'?'Bestimme die Form.':task.type==='form'?'Bilde die '+vLabels(task.pastKind)[task.caseIndex]+'.':task.type==='translation-choice'?'Wähle die richtige(n) Übersetzung(en) aus.':'Übersetze die Form ins Deutsche.';}
