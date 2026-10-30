@@ -712,7 +712,7 @@ function grammarOverview(bandId){
   return '<details class="grammar-group" id="grammar-group-'+group.id+'" data-grammar-group="'+group.id+'" '+(group.id===open?'open':'')+'><summary>'+grammarGroupArt(group)+'<span class="grammar-group-name">'+esc(group.title)+'</span><span class="grammar-group-status">'+(group.topics.length+(group.topics.length===1?' Thema':' Themen'))+'</span><span class="grammar-chevron" aria-hidden="true"></span></summary><div class="grammar-topics">'+group.topics.map(topic=>{
    const p=grammarStatus(topic);return '<button class="grammar-topic" type="button" data-grammar-topic="'+topic.id+'"><span class="grammar-topic-body"><strong>'+esc(topic.title)+'</strong>'+(p.available?grammarPracticeProgress(topic):'<span class="grammar-topic-status '+(p.complete?'is-complete':'')+'">'+grammarStatusLabel(topic)+'</span>'+grammarMeter(p.done,p.total,topic.title))+'</span><span class="grammar-topic-arrow" aria-hidden="true">→</span></button>';
   }).join('')+'</div></details>';
- }).join('')+'</div><p class="note grammar-preview-note">Bereite Themen kannst du direkt üben. Die übrigen Übungen sind noch in Vorbereitung.</p></div>';
+ }).join('')+'</div></div>';
  document.querySelector('#grammar-back').onclick=()=>{freeGoal=null;view='free';freeOverview()};
  document.querySelector('#grammar-band').onchange=event=>{const next=grammarBand(event.target.value);setGrammarView(next);grammarOverview(next.id)};
  document.querySelectorAll('[data-grammar-group]').forEach(details=>details.ontoggle=()=>{
