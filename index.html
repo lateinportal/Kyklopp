@@ -1368,7 +1368,12 @@ function sAnalysisPhrase(sentence,target){
 }
 function sAnalysisClause(sentence,target){
  const start=sentence.latin.indexOf(target.latin),end=start+target.latin.length,children=sentence.targets.filter(t=>t.parentClause===target.latin).map(t=>sPunctuatedSpan(sentence,sAnalysisPhrase(sentence,t),end)).sort((a,b)=>a.start-b.start);let html='',cursor=start;
- const link=text=>text.trim()?'<span class="s-clause-link"'+sTranslationAttrs(sentence,target,false)+'>'+esc(text)+'</span>':esc(text);
+ const link=text=>{
+  const core=text.trim();if(!core)return esc(text);
+  // Spaces inside an inline-block collapse at its edges; keep them between blocks.
+  const leading=text.match(/^\s*/)[0],trailing=text.match(/\s*$/)[0];
+  return esc(leading)+'<span class="s-clause-link"'+sTranslationAttrs(sentence,target,false)+'>'+esc(core)+'</span>'+esc(trailing);
+ };
  for(const child of children){html+=link(sentence.latin.slice(cursor,child.start))+child.html;cursor=child.end;}
  html+=link(sentence.latin.slice(cursor,end));return {start,end,html:'<span class="s-clause"><span class="s-clause-content">'+html+'</span><span class="s-clause-bracket" aria-hidden="true"'+sTranslationAttrs(sentence,target,false)+'></span><small class="s-inline-label s-clause-label"'+sTranslationAttrs(sentence,target)+'>'+esc(sInlineLabel(sentence,target))+'</small></span>'};
 }
