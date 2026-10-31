@@ -1367,13 +1367,22 @@ function sAnalysisPhrase(sentence,target){
  html+=sRoleInk(text.slice(cursor));if(!hasAttribute)html=sRoleUnit(html,sInlineLabel(sentence,target),sTranslationAttrs(sentence,target));const style=S_ROLE_STYLE[target.role];return {start:base,end:base+text.length,html:'<span class="s-part s-part-'+style.key+'" style="--s-role-color:'+style.color+'">'+html+'</span>'};
 }
 function sAnalysisClause(sentence,target){
- const start=sentence.latin.indexOf(target.latin),end=start+target.latin.length,children=sentence.targets.filter(t=>t.parentClause===target.latin).map(t=>sAnalysisPhrase(sentence,t)).sort((a,b)=>a.start-b.start);let html='',cursor=start;
+ const start=sentence.latin.indexOf(target.latin),end=start+target.latin.length,children=sentence.targets.filter(t=>t.parentClause===target.latin).map(t=>sPunctuatedSpan(sentence,sAnalysisPhrase(sentence,t),end)).sort((a,b)=>a.start-b.start);let html='',cursor=start;
  const link=text=>text.trim()?'<span class="s-clause-link"'+sTranslationAttrs(sentence,target,false)+'>'+esc(text)+'</span>':esc(text);
  for(const child of children){html+=link(sentence.latin.slice(cursor,child.start))+child.html;cursor=child.end;}
  html+=link(sentence.latin.slice(cursor,end));return {start,end,html:'<span class="s-clause"><span class="s-clause-content">'+html+'</span><span class="s-clause-bracket" aria-hidden="true"'+sTranslationAttrs(sentence,target,false)+'></span><small class="s-inline-label s-clause-label"'+sTranslationAttrs(sentence,target)+'>'+esc(sInlineLabel(sentence,target))+'</small></span>'};
 }
+// Keep punctuation in the final word row, above its analysis label.
+// Bare punctuation beside top-aligned analysis blocks otherwise sits too high.
+function sPunctuatedSpan(sentence,span,limit=sentence.latin.length){
+ const punctuation=sentence.latin.slice(span.end,limit).match(/^[,.;:!?]+/)?.[0];
+ if(!punctuation)return span;
+ const at=[...span.html.matchAll(/<\/span><small class="s-inline-label(?: s-inline-label-implicit)?"/g)].at(-1)?.index??-1;
+ if(at<0)return span;
+ return {...span,end:span.end+punctuation.length,html:span.html.slice(0,at)+'<span class="s-sentence-punctuation">'+esc(punctuation)+'</span>'+span.html.slice(at)};
+}
 function sAnnotatedSentence(sentence){
- const spans=sentence.targets.filter(t=>t.role!=='Genitivattribut'&&!t.implicitSubject&&!t.parentClause).map(t=>sAnalysisPhrase(sentence,t)).sort((a,b)=>a.start-b.start);let html='',cursor=0;
+ const spans=sentence.targets.filter(t=>t.role!=='Genitivattribut'&&!t.implicitSubject&&!t.parentClause).map(t=>sPunctuatedSpan(sentence,sAnalysisPhrase(sentence,t))).sort((a,b)=>a.start-b.start);let html='',cursor=0;
  for(const span of spans){html+=esc(sentence.latin.slice(cursor,span.start))+span.html;cursor=span.end;}return html+esc(sentence.latin.slice(cursor));
 }
 function sAnalysisKey(sentence){return '<ul class="s-analysis-key">'+sentence.targets.map(target=>{
