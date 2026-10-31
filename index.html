@@ -704,9 +704,10 @@ const jDetermineOptionsCache=new Map();
 const J_PRONOMINAL=new Set(['c234','c291','c314','c327','c442','c873','c971']);
 function jSpec(c){return J_DATA.adjectives[c.id];}
 function jNumbers(c){return /ī$|i$/.test(c.latin)&&/ae[, ]/.test(E.normalize(c.grammar))||c.id==='c1071'?['pl']:['sg','pl'];}
-function jWords(){return aScopeCards().filter(c=>c.pos==='Adjektiv'&&jSpec(c)&&/^[\p{L}]+$/u.test(c.latin));}
+function jScopeCards(){const learned=new Set(eligible().map(c=>c.id));return aScopeCards().filter(c=>learned.has(c.id));}
+function jWords(){return jScopeCards().filter(c=>c.pos==='Adjektiv'&&jSpec(c)&&/^[\p{L}]+$/u.test(c.latin));}
 function jStem(c){const feminine=c.grammar.match(/^[\p{L}]+/u)?.[0]||'';return feminine.slice(0,E.normalize(feminine).endsWith('ae')?-2:-1);}
-function jHasLearnedAlter(){return aScopeCards().some(c=>c.id==='c971');}
+function jHasLearnedAlter(){return jScopeCards().some(c=>c.id==='c971');}
 function jForms(c,number,index,gender){
  if(!jNumbers(c).includes(number))return [];
  const stem=jStem(c);
@@ -729,7 +730,7 @@ function jReadingGroups(c,shown){
 }
 function jNounEntries(c){return A_GERMAN[c.id]||O_GERMAN[c.id]||ON_GERMAN[c.id]||[];}
 function jPairs(words=jWords()){
- const scoped=new Map(aScopeCards().map(c=>[c.id,c])),allowed=new Set(scoped.keys()),pairs=[];
+ const scoped=new Map(jScopeCards().map(c=>[c.id,c])),allowed=new Set(scoped.keys()),pairs=[];
  for(const c of words){if(!allowed.has(c.id))continue;const spec=jSpec(c);if(!spec||!spec.meanings.length)continue;
   for(const [domain,ids] of Object.entries(J_DATA.nounDomains)){if(spec.domain!=='all'&&spec.domain!==domain)continue;
    for(const id of ids){if(!allowed.has(id)||spec.nounIds&&!spec.nounIds.includes(id))continue;const noun=scoped.get(id),gender=noun.gender||(/fem/.test(noun.cls)?'f':/neutr/.test(noun.cls)?'n':'m');
