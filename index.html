@@ -706,10 +706,11 @@ function jSpec(c){return J_DATA.adjectives[c.id];}
 function jNumbers(c){return /ī$|i$/.test(c.latin)&&/ae[, ]/.test(E.normalize(c.grammar))||c.id==='c1071'?['pl']:['sg','pl'];}
 function jWords(){return aScopeCards().filter(c=>c.pos==='Adjektiv'&&jSpec(c)&&/^[\p{L}]+$/u.test(c.latin));}
 function jStem(c){const feminine=c.grammar.match(/^[\p{L}]+/u)?.[0]||'';return feminine.slice(0,E.normalize(feminine).endsWith('ae')?-2:-1);}
+function jHasLearnedAlter(){return aScopeCards().some(c=>c.id==='c971');}
 function jForms(c,number,index,gender){
  if(!jNumbers(c).includes(number))return [];
  const stem=jStem(c);
- if(number==='sg'&&J_PRONOMINAL.has(c.id)&&index===1)return c.id==='c327'?['alterīus','alius']:[stem+'īus'];
+ if(number==='sg'&&J_PRONOMINAL.has(c.id)&&index===1)return c.id==='c327'?(jHasLearnedAlter()?['alterīus']:[]):[stem+'īus'];
  if(number==='sg'&&J_PRONOMINAL.has(c.id)&&index===2)return [stem+'ī'];
  if(number==='sg'&&index===0&&gender==='m')return [c.latin];
  if(c.id==='c327'&&number==='sg'&&gender==='n'&&[0,3].includes(index))return ['aliud'];
@@ -729,7 +730,7 @@ function jReadingGroups(c,shown){
 function jNounEntries(c){return A_GERMAN[c.id]||O_GERMAN[c.id]||ON_GERMAN[c.id]||[];}
 function jPairs(words=jWords()){
  const scoped=new Map(aScopeCards().map(c=>[c.id,c])),allowed=new Set(scoped.keys()),pairs=[];
- for(const c of words){const spec=jSpec(c);if(!spec.meanings.length)continue;
+ for(const c of words){if(!allowed.has(c.id))continue;const spec=jSpec(c);if(!spec||!spec.meanings.length)continue;
   for(const [domain,ids] of Object.entries(J_DATA.nounDomains)){if(spec.domain!=='all'&&spec.domain!==domain)continue;
    for(const id of ids){if(!allowed.has(id)||spec.nounIds&&!spec.nounIds.includes(id))continue;const noun=scoped.get(id),gender=noun.gender||(/fem/.test(noun.cls)?'f':/neutr/.test(noun.cls)?'n':'m');
     if(jPairNumbers(c,noun).length&&jNounEntries(noun).length)pairs.push({c,noun,gender});
@@ -741,7 +742,7 @@ function jPairs(words=jWords()){
 function jPairNumbers(c,noun){return jNumbers(c).filter(n=>aNumbers(noun).includes(n)&&(jSpec(c).kind!=='quant'||n==='pl')&&jNounEntries(noun).some(entry=>n==='sg'||entry.pl));}
 function jPairIndices(c,noun,number,gender){
  return A_CASES.map((_,i)=>i).filter(index=>{
-  if(!aLatinAnswers(noun,number,index).length)return false;
+  if(!aLatinAnswers(noun,number,index).length||!jForms(c,number,index,gender).length)return false;
   // Do not ask for a plural-only German quantifier translation of a Latin phrase
   // which can also be singular; multae puellae would otherwise hide valid readings.
   if(jSpec(c).kind==='quant'&&number==='pl'&&jNumbers(c).includes('sg')&&aNumbers(noun).includes('sg')){
@@ -779,6 +780,7 @@ function jGermanAt(c,noun,number,index,includeThrough=false,canonicalOnly=false)
 }
 function jPhrase(c,noun,number,index,gender){
  const adjective=jForms(c,number,index,gender)[0],substantive=aLatinAnswers(noun,number,index)[0];
+ if(!adjective||!substantive)return '';
  return jPlain((jSpec(c).position==='before'?[adjective,substantive]:[substantive,adjective]).join(' '));
 }
 function jPhraseGroups(c,noun,number,index,gender,through=false,canonical=false){
@@ -787,19 +789,22 @@ function jPhraseGroups(c,noun,number,index,gender,through=false,canonical=false)
  return groups;
 }
 function jTask(c,type,number,index,gender,noun=null){
+ if(!jForms(c,number,index,gender).length)throw new Error('Adjective form is outside the available learning scope');
  const translation=type.startsWith('translation'),shown=translation?jPhrase(c,noun,number,index,gender):jPlain(jForms(c,number,index,gender)[0]),groups=translation?jPhraseGroups(c,noun,number,index,gender,type==='translation'):[],readings=type==='determine'?jReadingGroups(c,shown):[],answers=translation?[...new Set(groups.flatMap(group=>group.answers))]:type==='determine'?readings.map(jReadingLabel):jForms(c,number,index,gender),choice=type==='determine'||type==='translation-choice';
  return {key:[c.id,'adjective',type,noun?.id||'',type==='determine'?shown:[number,index,gender].join(':')].join(':'),adjectivePractice:true,c,noun,type,number,caseIndex:index,gender,shown,choice,multi:choice,fields:[{label:translation?'Übersetzung(en)':'Gesuchte Form',answers,...(choice||translation?{answerGroups:translation?groups.map(group=>group.answers):answers.map(answer=>[answer])}:{})}]};
 }
+function jScopeWords(words){const allowed=new Set(jWords().map(c=>c.id));return words.filter(c=>allowed.has(c.id));}
+function jTableAvailable(c,number){return A_CASES.every((_,i)=>J_GENDERS.every(g=>jForms(c,number,i,g).length));}
 function jTaskBank(words=jWords()){
- const bank=[];
- for(const c of words)for(const number of jNumbers(c))for(let i=0;i<5;i++)for(const gender of J_GENDERS)for(const type of ['gap','determine','form'])bank.push(jTask(c,type,number,i,gender));
+ words=jScopeWords(words);const bank=[];
+ for(const c of words)for(const number of jNumbers(c))for(let i=0;i<5;i++)for(const gender of J_GENDERS){if(!jForms(c,number,i,gender).length)continue;for(const type of ['gap','determine','form'])if(type!=='gap'||jTableAvailable(c,number))bank.push(jTask(c,type,number,i,gender));}
  for(const pair of jPairs(words))for(const number of jPairNumbers(pair.c,pair.noun))for(const i of jPairIndices(pair.c,pair.noun,number,pair.gender))for(const type of ['translation-choice','translation'])bank.push(jTask(pair.c,type,number,i,pair.gender,pair.noun));
  return [...new Map(bank.map(task=>[task.key,task])).values()];
 }
 function jBuildRound(count=15,words=jWords()){
- if(!words.length)return [];const pairs=jPairs(words),queue=[],used=new Set(),seenWords=new Set(),recent=state.grammarProgress?.topics?.[J_TOPIC_ID]?.recentTasks||[],types=pairs.length?Object.keys(A_TYPES):['gap','determine','form'];
+ words=jScopeWords(words);if(!words.length)return [];const pairs=jPairs(words),queue=[],used=new Set(),seenWords=new Set(),recent=state.grammarProgress?.topics?.[J_TOPIC_ID]?.recentTasks||[],types=pairs.length?Object.keys(A_TYPES):['gap','determine','form'];
  for(let i=0;i<count;i++){const type=types[Math.min(types.length-1,Math.floor(i*types.length/count))],translation=type.startsWith('translation');let pool=translation?pairs:words.map(c=>({c}));const varied=pool.filter(item=>!seenWords.has(item.c.id));if(varied.length)pool=varied;let next;
-  for(let attempt=0;attempt<40;attempt++){const pair=shuffle(pool)[0],number=shuffle(translation?jPairNumbers(pair.c,pair.noun):jNumbers(pair.c))[0],gender=translation?pair.gender:shuffle(J_GENDERS)[0],index=translation?shuffle(jPairIndices(pair.c,pair.noun,number,gender))[0]:Math.floor(Math.random()*5),task=jTask(pair.c,type,number,index,gender,pair.noun);if(!used.has(task.key)){next=task;if(!recent.includes(task.key))break;}}
+  for(let attempt=0;attempt<40;attempt++){const pair=shuffle(pool)[0],number=shuffle(translation?jPairNumbers(pair.c,pair.noun):jNumbers(pair.c).filter(n=>type!=='gap'||jTableAvailable(pair.c,n)))[0],gender=translation?pair.gender:shuffle(J_GENDERS)[0],index=shuffle(translation?jPairIndices(pair.c,pair.noun,number,gender):A_CASES.map((_,i)=>i).filter(i=>jForms(pair.c,number,i,gender).length))[0],task=jTask(pair.c,type,number,index,gender,pair.noun);if(!used.has(task.key)){next=task;if(!recent.includes(task.key))break;}}
   if(!next)continue;queue.push(next);used.add(next.key);seenWords.add(next.c.id);if(seenWords.size===words.length)seenWords.clear();
  }
  return queue;
@@ -807,7 +812,14 @@ function jBuildRound(count=15,words=jWords()){
 function jOptions(task){
  if(task.options)return task.options;const field=task.fields[0],right=new Set(field.answers.map(E.normalize));let core,wrong;
  if(task.type==='determine'){
-  core=field.answers;if(!jDetermineOptionsCache.has(task.c.id))jDetermineOptionsCache.set(task.c.id,[...new Set(jNumbers(task.c).flatMap(n=>A_CASES.flatMap((_,i)=>J_GENDERS.flatMap(g=>jReadingGroups(task.c,jForms(task.c,n,i,g)[0]).map(jReadingLabel)))))]);wrong=jDetermineOptionsCache.get(task.c.id).filter(label=>!right.has(E.normalize(label)));
+  core=field.answers;
+  const cacheKey=task.c.id+(task.c.id==='c327'?':'+jHasLearnedAlter():'');
+  if(!jDetermineOptionsCache.has(cacheKey)){
+   const labels=[];
+   for(const n of jNumbers(task.c))for(let i=0;i<5;i++)for(const g of J_GENDERS)for(const form of jForms(task.c,n,i,g))labels.push(...jReadingGroups(task.c,form).map(jReadingLabel));
+   jDetermineOptionsCache.set(cacheKey,[...new Set(labels)]);
+  }
+  wrong=jDetermineOptionsCache.get(cacheKey).filter(label=>!right.has(E.normalize(label)));
  }else{
   core=[...new Set(jPhraseGroups(task.c,task.noun,task.number,task.caseIndex,task.gender,false,true).map(group=>group.answers[0]))];
   const forms=jPairNumbers(task.c,task.noun).flatMap(n=>A_CASES.flatMap((_,i)=>jGermanAt(task.c,task.noun,n,i,false,true)));
@@ -823,7 +835,7 @@ function jQuestion(task){return task.type==='gap'?'Ergänze die fehlende Form.':
 function jHeading(task){if(task.type==='gap')return '';return '<h1>'+esc(task.type==='form'?task.c.latin:task.shown)+'</h1>';}
 function jCard(task,solved=false){
  if(task.type!=='gap')return '';
- return '<div class="a-card-table-wrap"><table class="a-card-table j-adjective-table"><caption>'+aNumberLabel(task.number)+'</caption><thead><tr><th scope="col">Kasus</th><th scope="col"><abbr title="Maskulinum">mask.</abbr></th><th scope="col"><abbr title="Femininum">fem.</abbr></th><th scope="col"><abbr title="Neutrum">neutr.</abbr></th></tr></thead><tbody>'+A_CASES.map((name,i)=>'<tr><th scope="row">'+name+'</th>'+J_GENDERS.map(g=>{const target=i===task.caseIndex&&g===task.gender;return '<td'+(target?' class="j-target-cell"':'')+'>'+(target&&!solved?'<span class="a-missing" aria-label="Gesuchte Form">?</span>':esc(jForms(task.c,task.number,i,g)[0]))+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';
+ return '<div class="a-card-table-wrap"><table class="a-card-table j-adjective-table"><caption>'+aNumberLabel(task.number)+'</caption><thead><tr><th scope="col">Kasus</th><th scope="col"><abbr title="Maskulinum">mask.</abbr></th><th scope="col"><abbr title="Femininum">fem.</abbr></th><th scope="col"><abbr title="Neutrum">neutr.</abbr></th></tr></thead><tbody>'+A_CASES.map((name,i)=>'<tr><th scope="row">'+name+'</th>'+J_GENDERS.map(g=>{const target=i===task.caseIndex&&g===task.gender;return '<td'+(target?' class="j-target-cell"':'')+'>'+(target&&!solved?'<span class="a-missing" aria-label="Gesuchte Form">?</span>':esc(jForms(task.c,task.number,i,g)[0]||'—'))+'</td>';}).join('')+'</tr>').join('')+'</tbody></table></div>';
 }
 function jSolution(task){
  if(!task.type.startsWith('translation'))return '<span class="smallcaps">'+esc(A_CASES[task.caseIndex]+' '+aNumberLabel(task.number)+' · '+J_GENDER_NAMES[task.gender])+'</span><div class="a-solution-list"><strong>'+esc(task.fields[0].answers.join(', '))+'</strong></div>';
