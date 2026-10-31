@@ -865,7 +865,7 @@ function startADeclension(count=15,repeatTasks=null,topicId=aPracticeTopicId()){
  session={mode:'free',goal:'grammar',grammarRound:true,topicId,startedAt:Date.now(),queue,total:queue.length,done:0,index:0,correct:0,wrong:0,results:[],feedback:null,isMistakeRound:!!repeatTasks,level:state.level};
  document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav==='free'));view='quiz';grammarQuiz();window.scrollTo(0,0);
 }
-function aQuestion(task){if(task.possessorPractice)return task.choice?'Wähle die richtige Übersetzung aus.':'Übersetze den ganzen Satz ins Deutsche.';if(task.sentencePractice)return sQuestion(task);if(task.classPractice)return 'Bestimme die Konjugationsklasse.';if(task.present)return pQuestion(task);if(task.type==='determine')return 'Bestimme die Form. Wähle alle passenden Antworten aus.';const detail=A_CASES[task.caseIndex]+' '+aNumberLabel(task.number);return task.type==='table'?'Vervollständige die Deklinationstabelle im '+aNumberLabel(task.number)+'.':task.type==='gap'?'Ergänze die fehlende Form.':task.type.startsWith('translation')?(task.choice?'Wähle die richtige(n) Übersetzung(en) aus.':'Gib alle möglichen Übersetzungen ein, durch Kommas getrennt.'):(task.choice?'Wähle':'Bilde')+' den '+detail+'.'}
+function aQuestion(task){if(task.possessorPractice)return task.choice?'Wähle alle richtigen Übersetzungen aus.':'Übersetze den ganzen Satz ins Deutsche.';if(task.sentencePractice)return sQuestion(task);if(task.classPractice)return 'Bestimme die Konjugationsklasse.';if(task.present)return pQuestion(task);if(task.type==='determine')return 'Bestimme die Form. Wähle alle passenden Antworten aus.';const detail=A_CASES[task.caseIndex]+' '+aNumberLabel(task.number);return task.type==='table'?'Vervollständige die Deklinationstabelle im '+aNumberLabel(task.number)+'.':task.type==='gap'?'Ergänze die fehlende Form.':task.type.startsWith('translation')?(task.choice?'Wähle die richtige(n) Übersetzung(en) aus.':'Gib alle möglichen Übersetzungen ein, durch Kommas getrennt.'):(task.choice?'Wähle':'Bilde')+' den '+detail+'.'}
 function aCardTable(task,solved=false,status=null){
  if(task.possessorPractice)return dCard(task,solved,status);
  if(task.questionPractice)return qCard(task,solved);
@@ -1526,7 +1526,7 @@ function dSentences(){
  }
  return result;
 }
-function dTask(sentence,type){const choice=type===D_TYPES[0],answers=dAnswers(sentence);return {key:sentence.id+':'+type,possessorPractice:true,sentencePractice:true,sentence,c:dCardById(sentence.anchorId),type,choice,multi:choice,singleSelect:choice,fields:[{label:'Übersetzung',answers,...(choice?{answerGroups:[answers]}:{})}]};}
+function dTask(sentence,type){const choice=type===D_TYPES[0],answers=dAnswers(sentence);const task={key:sentence.id+':'+type,possessorPractice:true,sentencePractice:true,sentence,c:dCardById(sentence.anchorId),type,choice,multi:choice,fields:[{label:'Übersetzung',answers,...(choice?{answerGroups:[answers]}:{})}]};if(choice)dOptions(task);return task;}
 function dTaskBank(sentences=dSentences()){return sentences.flatMap(sentence=>D_TYPES.map(type=>dTask(sentence,type)));}
 function dBuildRound(count=15,sentences=dSentences()){
  // Select lightweight descriptors first, then prepare answers for just the chosen tasks.
@@ -1540,12 +1540,18 @@ function dBuildRound(count=15,sentences=dSentences()){
  return queue;
 }
 function dDistractors(sentence){
- const {owner,ownerNumber,thing,thingNumber,adverb}=sentence,person=dOwner(owner,ownerNumber),adv=adverb?' '+adverb.german[0]:'',alternateOwner=owner.pronoun?D_DATA.owners.find(o=>o.pronoun&&o.pronoun.nom!==owner.pronoun.nom):owner,alternateNumber=owner.pronoun?'sg':ownerNumber==='sg'?'pl':'sg',wrong=[dCanonical(alternateOwner,alternateNumber,thing,thingNumber,adverb)[0]],def=aGermanAnswers(dCardById(thing.cardId),thingNumber,3)[0],at=def.indexOf(' '),article=def.slice(0,at),word=def.slice(at+1),negative=thingNumber==='pl'?'keine':{das:'kein',die:'keine',den:'keinen'}[article];
- wrong.push(dCap(person.noms[0]+' '+person.have+adv+' '+negative+' '+word)+'.');
+ const {owner,ownerNumber,thing,thingNumber,adverb}=sentence,person=dOwner(owner,ownerNumber),adv=adverb?' '+adverb.german[0]:'',alternateOwner=owner.pronoun?D_DATA.owners.find(o=>o.pronoun&&o.pronoun.nom!==owner.pronoun.nom):owner,alternateNumber=owner.pronoun?'sg':ownerNumber==='sg'?'pl':'sg',wrong=[dCanonical(alternateOwner,alternateNumber,thing,thingNumber,adverb)[0]],def=aGermanAnswers(dCardById(thing.cardId),thingNumber,3)[0];
+
  if(thing.numbers.length>1)wrong.push(dCanonical(owner,ownerNumber,thing,thingNumber==='sg'?'pl':'sg',adverb)[0]);else wrong.push(dCap(person.noms[0]+' '+person.search+adv+' '+def)+'.');
  const accepted=new Set(dAnswers(sentence).map(E.normalize));return dUnique(wrong).filter(value=>!accepted.has(E.normalize(value)));
 }
-function dOptions(task){return task.options??=shuffle([shuffle(dCanonical(task.sentence.owner,task.sentence.ownerNumber,task.sentence.thing,task.sentence.thingNumber,task.sentence.adverb))[0],...dDistractors(task.sentence)]);}
+function dOptions(task){
+ if(task.options)return task.options;
+ const {owner,ownerNumber,thing,thingNumber,adverb}=task.sentence,correct=dCanonical(owner,ownerNumber,thing,thingNumber,adverb);
+ if(Math.random()<0.5){const person=dOwner(owner,ownerNumber),belongs=thingNumber==='pl'?'gehören':'gehört';correct[2]=dCap(person.dats[0]+' '+belongs+(adverb?' '+adverb.german[0]:'')+' '+dPreferredThing(thing,thingNumber,0))+'.';}
+ const offered=shuffle(correct).slice(0,2);task.fields[0].answerGroups=offered.map(answer=>[answer]);
+ return task.options=shuffle([...offered,...dDistractors(task.sentence)]);
+}
 function dCard(task,solved=false,status=null){
  return '<h1 class="s-sentence-latin">'+esc(task.sentence.latin)+'</h1>'+(solved&&status!=='correct'?'<div class="a-translation-solution">'+dCanonical(task.sentence.owner,task.sentence.ownerNumber,task.sentence.thing,task.sentence.thingNumber,task.sentence.adverb).map(value=>'<p>'+esc(value)+'</p>').join('')+'</div>':'');
 }
