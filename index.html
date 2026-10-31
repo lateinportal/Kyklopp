@@ -752,7 +752,7 @@ function jPairIndices(c,noun,number,gender){
  });
 }
 function jNounWord(entry,number,index){let word=number==='pl'?entry.pl:index===1?(entry.gen||entry.sg):[2,4].includes(index)?(entry.dat||entry.sg):index===3?(entry.acc||entry.sg):entry.sg;if(number==='pl'&&[2,4].includes(index)&&!/[ns]$/i.test(word))word+='n';return word;}
-function jGermanStem(stem,ending){if(stem==='euer'&&ending)return 'eur';if(stem==='teuer'&&ending)return 'teur';return stem;}
+function jGermanStem(stem,ending){if(!ending)return stem;if(stem==='euer')return 'eur';if(stem==='teuer')return 'teur';return stem.endsWith('e')?stem.slice(0,-1):stem;}
 function jGermanAt(c,noun,number,index,includeThrough=false,canonicalOnly=false){
  const spec=jSpec(c),result=[];
  for(const entry of jNounEntries(noun)){if(number==='pl'&&!entry.pl)continue;const gender=entry.gender,articles=number==='pl'?['die','der','den','die','den']:({m:['der','des','dem','den','dem'],f:['die','der','der','die','der'],n:['das','des','dem','das','dem']}[gender]),word=jNounWord(entry,number,index);
