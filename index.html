@@ -577,8 +577,8 @@ function compartmentImageSource(tone){return 'vokabelbilder/statistik/'+profileS
 function compartmentIcon(f){return `<img class="compartment-icon" data-compartment-tone="${f.tone}" src="${compartmentImageSource(f.tone)}" alt="" width="64" height="64">`}
 function showCompartment(stage){
 let f=compartments.find(f=>f.stage===stage);if(!f)return;view='compartment';
-let cards=eligible().filter(c=>pfor(c).stage===stage).sort((a,b)=>a.latin.localeCompare(b.latin,'de'));
-main.innerHTML=header()+`<button class="back" id="compartment-back">← Lernstatistik</button><section class="panel compartment-panel"><h1 class="compartment-title">${compartmentIcon(f)} ${f.name}</h1><p class="note">${cards.length} Wörter · Lernstand bis Lektion ${state.level}, Päckchen ${state.pack==null?'Alle':esc(lessonPacks(state.level)[trainingPack()-1]?.label)}</p>${stage===0?'<p class="note">Diese Wörter haben noch keine Medaille. Mit einer fehlerfreien Lernrunde erreichst du Bronze.</p>':''}${cards.length?'<div class="library-row library-row-header"><span class="sr-only">Latein</span><span class="sr-only">Deutsch</span><span>Nächste Wiederholung</span></div>'+cards.map(c=>`<div class="library-row"><div><strong>${esc(c.latin)}</strong><small>${esc(c.grammar)} · Lektion ${c.lesson}</small></div><div>${esc(c.de)}</div><span class="note">${pfor(c).due>Date.now()?new Date(pfor(c).due).toLocaleDateString('de-DE'):'Bereit zum Lernen'}</span></div>`).join(''):'<p class="empty">In diesem Fach sind noch keine Wörter.</p>'}</section>`;
+let cards=eligible().filter(c=>pfor(c).stage===stage).sort((a,b)=>a.latin.localeCompare(b.latin,'de'));const repetition=repetitionContext();
+main.innerHTML=header()+`<button class="back" id="compartment-back">← Lernstatistik</button><section class="panel compartment-panel"><h1 class="compartment-title">${compartmentIcon(f)} ${f.name}</h1><p class="note">${cards.length} Wörter · Lernstand bis Lektion ${state.level}, Päckchen ${state.pack==null?'Alle':esc(lessonPacks(state.level)[trainingPack()-1]?.label)}</p>${stage===0?'<p class="note">Diese Wörter haben noch keine Medaille. Mit einer fehlerfreien Lernrunde erreichst du Bronze.</p>':''}${cards.length?'<div class="library-row library-row-header"><span class="sr-only">Latein</span><span class="sr-only">Deutsch</span><span>Nächste Wiederholung</span></div>'+cards.map(c=>`<div class="library-row"><div><strong>${esc(c.latin)}</strong><small>${esc(c.grammar)} · Lektion ${c.lesson}</small></div><div>${esc(c.de)}</div><span class="note">${esc(repetitionLabel(c,repetition))}</span></div>`).join(''):'<p class="empty">In diesem Fach sind noch keine Wörter.</p>'}</section>`;
 document.querySelector('#compartment-back').onclick=()=>navigate('settings');window.scrollTo(0,0);
 }
 // German inflections use only glosses attached to the current Roma A card.
@@ -2096,21 +2096,55 @@ function activeExam(){let p=state.exam;return p&&p.date>=examDay()&&p.lessons?.l
 function examBaseCards(p){return CARDS.filter(c=>c.packs.some(x=>p.lessons.includes(x.lesson)&&x.number<=Number(p.packs[x.lesson]||lastPack(x.lesson))))}
 function examCards(p=activeExam()){if(!p)return [];let added=new Set(p.include||[]),removed=new Set(p.exclude||[]),base=new Set(examBaseCards(p).map(c=>c.id));return CARDS.filter(c=>!removed.has(c.id)&&(base.has(c.id)||added.has(c.id)))}
 function examLevel(p){return Math.max(1,...p.lessons,...examCards(p).map(c=>c.lesson))}
+// BEGIN REPETITION SCHEDULE
+// One readiness rule for exam selection and the displayed next repetition.
+function examReviewReady(c,plan,now=Date.now()){
+ const h=plan.history?.[c.id]||{},p=pfor(c),today=examDay(now);
+ if(!p.reviews&&!h.firstSeen)return false;
+ if(h.failedAt&&h.failedAt>=(h.correctAt||0))return examDay(h.failedAt)<today;
+ if(h.lastDay===today&&!h.pending)return false;
+ if(p.due<=now)return true;
+ if(h.pending)return true;
+ const days=Math.max(1,examOrdinal(plan.date)-examOrdinal(today)+1),spacing=days<=3?1:p.stage>=3?3:p.stage>=2?2:1,last=h.correctAt||plan.createdAt;
+ return examOrdinal(today)-examOrdinal(examDay(last))>=spacing;
+}
+function repetitionDayStart(day,offset=0){const d=new Date(day+'T00:00:00');d.setDate(d.getDate()+offset);return d.getTime();}
+function repetitionContext(now=Date.now()){
+ const plan=state.exam?.date>=examDay(now)&&state.exam?.lessons?.length?state.exam:null;
+ return {now,plan,ids:new Set(plan?examCards(plan).map(c=>c.id):[]),excluded:new Set(plan?.exclude||[])};
+}
+function nextRepetitionAt(c,context=repetitionContext()){
+ const {now,plan,ids,excluded}=context,p=pfor(c),raw=Number.isFinite(p.due)?p.due:0;
+ if(!plan)return raw;
+ const afterExam=repetitionDayStart(plan.date,1);
+ // Removed words wait until the active preparation ends. Other learned words
+ // outside its scope still receive their ordinary due reviews in training.
+ if(excluded.has(c.id))return Math.max(raw,afterExam);
+ if(!ids.has(c.id))return raw;
+ const h=plan.history?.[c.id]||{};
+ if(!p.reviews&&!h.firstSeen)return raw;
+ if(examReviewReady(c,plan,now))return now;
+ const lastDay=examDay(h.correctAt||plan.createdAt),spacing=p.stage>=3?3:p.stage>=2?2:1;
+ // Readiness can change only at a stored due time or local calendar boundary.
+ // Near the exam (last three days), the spacing shortens to one day.
+ const candidates=[raw,repetitionDayStart(examDay(now),1),repetitionDayStart(lastDay,spacing),Math.max(repetitionDayStart(lastDay,1),repetitionDayStart(plan.date,-2))];
+ if(h.failedAt)candidates.push(repetitionDayStart(examDay(h.failedAt),1));
+ if(h.lastDay)candidates.push(repetitionDayStart(h.lastDay,1));
+ const next=candidates.filter(at=>Number.isFinite(at)&&at>now&&at<afterExam&&examReviewReady(c,plan,at)).sort((a,b)=>a-b)[0];
+ return next??Math.max(raw,afterExam);
+}
+function repetitionLabel(c,context=repetitionContext()){
+ const at=nextRepetitionAt(c,context);return at>context.now?new Date(at).toLocaleDateString('de-DE'):'Bereit zum Lernen';
+}
+
+// END REPETITION SCHEDULE
 function examStats(p=activeExam()){
  if(!p)return null;
  let cards=examCards(p);settleCompletedTrainingRounds(cards,examLevel(p));let today=examDay(),days=Math.max(1,examOrdinal(p.date)-examOrdinal(today)+1),buffer=Math.min(3,Math.floor((days-1)/3)),learningDays=Math.max(1,days-buffer),history=p.history||{};
  let fresh=cards.filter(c=>!pfor(c).reviews&&!history[c.id]?.firstSeen),startedToday=cards.filter(c=>history[c.id]?.introduced&&history[c.id]?.firstSeen===today).length;
  let quota=Math.ceil((fresh.length+startedToday)/learningDays),newToday=Math.max(0,quota-startedToday);
  let safe=cards.filter(c=>pfor(c).stage>=2&&(!history[c.id]?.failedAt||history[c.id].correctAt>history[c.id].failedAt)).length;
- let reviews=cards.filter(c=>{
-  let h=history[c.id]||{},pr=pfor(c);if(!pr.reviews&&!h.firstSeen)return false;
-  if(h.failedAt&&h.failedAt>=(h.correctAt||0))return examDay(h.failedAt)<today;
-  if(h.lastDay===today&&!h.pending)return false;
-  if(pr.due<=Date.now())return true;
-  if(h.pending)return true;
-  let last=h.correctAt||p.createdAt,spacing=days<=3?1:pr.stage>=3?3:pr.stage>=2?2:1;
-  return examOrdinal(today)-examOrdinal(examDay(last))>=spacing;
- });
+ let reviews=cards.filter(c=>examReviewReady(c,p));
  return {cards,fresh,days,buffer,learningDays,quota,newToday,reviews,safe,startedToday};
 }
 function examTrainingSelection(){
@@ -2343,7 +2377,7 @@ function dailyTrainingCopy(){const p=dailyTrainingPlan();return p.cards.length?`
 
 function trainingSchedule(now=Date.now()){
  const exam=activeExam(),plan=dailyTrainingPlan(),stats=exam?examStats(exam):null;
- const scope=exam?examCards(exam):eligible(),today=examDay(now),start=new Date(today+'T00:00:00');
+ const repetitions=repetitionContext(now),scope=exam?examCards(exam):eligible(),today=examDay(now),start=new Date(today+'T00:00:00');
  const rows=Array.from({length:7},(_,i)=>{let d=new Date(start);d.setDate(d.getDate()+i);return {day:examDay(d),at:d.getTime(),newCount:0,reviews:new Set()}}).filter(r=>!exam||r.day<=exam.date);
  let fresh=scope.filter(c=>!pfor(c).reviews&&!exam?.history?.[c.id]?.firstSeen);
  for(let i=0;i<rows.length;i++){
@@ -2355,13 +2389,7 @@ function trainingSchedule(now=Date.now()){
  const reviewScope=exam?[...new Map([...scope,...eligible().filter(c=>pfor(c).reviews&&!(exam.exclude||[]).includes(c.id))].map(c=>[c.id,c])).values()]:scope;
  for(const c of reviewScope){
   const progress=pfor(c);if(!progress.reviews)continue;
-  let at=progress.due;
-  if(exam){const h=exam.history?.[c.id]||{};
-   if(h.failedAt&&h.failedAt>=(h.correctAt||0)){const next=new Date(h.failedAt);next.setHours(24,0,0,0);at=next.getTime()}
-   else if(h.lastDay===today&&!h.pending){let d=new Date(start);d.setDate(d.getDate()+1);at=d.getTime()}
-   else if(at>now&&!h.pending){const days=stats.days<=3?1:progress.stage>=3?3:progress.stage>=2?2:1;let d=new Date(h.correctAt||exam.createdAt);d.setDate(d.getDate()+days);at=Math.min(at,d.getTime())}
-   else if(h.pending)at=now;
-  }
+  const at=nextRepetitionAt(c,repetitions);
   const day=examDay(Math.max(now,at));const row=rows.find(r=>r.day===day);if(row)row.reviews.add(c.id);
  }
  return rows;
@@ -2449,7 +2477,7 @@ function calendarNewWords(day){
 }
 function calendarPlannedWords(day){
  const today=examDay(),scope=activeExam()?new Map([...eligible(),...examCards(activeExam())].map(c=>[c.id,c])):new Map(eligible().map(c=>[c.id,c]));
- return [...scope.values()].filter(c=>{const p=pfor(c);return p.reviews&&Number.isFinite(p.due)&&examDay(Math.max(Date.now(),p.due))===day&&day>=today});
+ const repetitions=repetitionContext();return [...scope.values()].filter(c=>{const p=pfor(c),at=nextRepetitionAt(c,repetitions);return p.reviews&&Number.isFinite(at)&&examDay(Math.max(repetitions.now,at))===day&&day>=today});
 }
 function activityDayDetails(day,planOnly=false){
  const date=new Date(day+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'long',year:'numeric'}),a=state.activity?.[day],words=Object.values(a?.words||{}),planned=calendarPlannedWords(day),fresh=calendarNewWords(day);
