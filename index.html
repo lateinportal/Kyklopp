@@ -2162,7 +2162,7 @@ function examTrainingSelection(){
  let ids=new Set(s.cards.map(c=>c.id)),removed=new Set(p.exclude||[]);selected.push(...eligible().filter(c=>!ids.has(c.id)&&!removed.has(c.id)&&pfor(c).reviews&&pfor(c).due<=Date.now()));
  return [...new Map(selected.map(c=>[c.id,c])).values()].filter(c=>pendingTrainingTasks(c,examLevel(p)).length).slice(0,40);
 }
-function trainingTaskTypes(c,level){return E.tasks(c,level).filter(t=>!['class','missing'].includes(t.id))}
+function trainingTaskTypes(c,level){const recallOnly=pfor(c).stage>=3;return E.tasks(c,level).filter(t=>!['class','missing'].includes(t.id)&&!(recallOnly&&t.id==='choice'))}
 function settleCompletedTrainingRounds(cards,level){
  let changed=false;
  for(const c of cards){const p=state.progress[c.id];if(!p?.passed?.length||p.due>Date.now())continue;
