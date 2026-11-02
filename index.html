@@ -1963,13 +1963,10 @@ function trainingLevelSummary(){
  const pack=state.pack!=null?'bis Päckchen '+(lessonPacks(state.level).find(p=>p.number===Number(state.pack))?.label||state.pack):'alle Päckchen';
  return '<details class="panel training-exam-disclosure training-level-disclosure" id="training-level-disclosure"><summary>Dein Lernstand</summary><div class="training-level-summary"><div class="training-level-summary-row"><div><p class="training-level-summary-value"><strong>Lektion '+state.level+'</strong><span>· '+esc(pack)+'</span></p></div><button class="btn secondary" id="training-level-edit" type="button" aria-haspopup="dialog">Ändern</button></div></div></details>';
 }
-function trainingExamSummary(plan){
- return '<section class="training-level-summary training-exam-summary" aria-label="Dein Klassenarbeitsplan"><div class="training-level-summary-row"><div><span class="training-level-summary-label">Deine Klassenarbeit am '+examDateLabel(plan)+'</span><p class="training-level-summary-value"><strong>'+esc(examScopeLabel(plan))+'</strong></p></div><button class="btn secondary" id="training-level-edit" type="button">Plan ändern</button></div></section>';
-}
 function trainingOverviewMarkup(){
  const exam=activeExam(),plan=exam?null:dailyTrainingPlan(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
  const tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount,reviews=cards.length-fresh;
- return header()+`<h1>Training</h1><section class="panel training-start-panel"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):esc(trainingCompletionTitle())}</h2>${!tasks?'<p>'+trainingCompletedCopy()+'</p>':''}${exam?trainingExamSummary(exam):''}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:''}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>${!exam?trainingLevelSummary():''}`;
+ return header()+`<h1>Training</h1><section class="panel training-start-panel"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):esc(trainingCompletionTitle())}</h2>${!tasks?'<p>'+trainingCompletedCopy()+'</p>':''}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:''}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>${!exam?trainingLevelSummary():''}`;
 }
 let examDisclosureOpen=false;
 function trainingOverview(){openExamPlan(false,false)}
@@ -1987,7 +1984,7 @@ function examTrainingFrame(content){return trainingOverviewMarkup()+'<details cl
 function bindTrainingExamFrame(){
  scheduleClassExamBoundary();
  const startButton=document.querySelector('#training-preview-start');if(startButton)startButton.onclick=()=>{const p=activeExam(),cards=p?examTrainingSelection():dailyTrainingPlan().cards;return trainingTaskCount(cards,p?examLevel(p):state.level)?start('training'):showTrainingSchedule()};
- document.querySelector('#training-level-edit').onclick=()=>activeExam()?editExamPlanAndScroll():showTrainingLevelEditor();
+ const levelButton=document.querySelector('#training-level-edit');if(levelButton)levelButton.onclick=()=>showTrainingLevelEditor();
  document.querySelector('#training-exam-disclosure').ontoggle=e=>examDisclosureOpen=e.target.open;
 }
 function closeExamDisclosure(){examDisclosureOpen=false;document.querySelector('#training-exam-disclosure').open=false;document.querySelector('#training-exam-disclosure > summary')?.focus()}
