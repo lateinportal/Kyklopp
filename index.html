@@ -737,11 +737,14 @@ const X_NOUNS={"c518":{"kind":"e","meanings":[{"gender":"f","sg":"Hoffnung","pl"
 const CNG_TOPIC_ID='lessons-7-9.adjektive.kng-kongruenz';
 const CNG_TYPES=['kng-choice','form'];
 const CNG_NONE='Keine Form passt.';
-function cngWords(){return jWords().filter(c=>jSpec(c).kind==='adj');}
-function cngNouns(){return jScopeCards().filter(c=>c.pos==='Substantiv'&&/^[\p{L}]+$/u.test(c.latin)&&['m','f','n','m f'].includes(c.gender)&&(/^a-Deklination/.test(c.cls)||oIsWord(c)||onIsWord(c)||state.level>=7&&tIsWord(c)||state.level>=13&&xIsWord(c)));}
+function cngIncludedIds(){return new Set(activeExam()?.include||[]);}
+function cngScopeCards(){const learned=new Set(eligible().map(c=>c.id)),included=cngIncludedIds();return aScopeCards().filter(c=>learned.has(c.id)||included.has(c.id));}
+function cngWords(){return cngScopeCards().filter(c=>c.pos==='Adjektiv'&&jSpec(c)?.kind==='adj'&&/^[\p{L}]+$/u.test(c.latin));}
+function cngNouns(){const included=cngIncludedIds();return cngScopeCards().filter(c=>c.pos==='Substantiv'&&/^[\p{L}]+$/u.test(c.latin)&&['m','f','n','m f'].includes(c.gender)&&(/^a-Deklination/.test(c.cls)||oIsWord(c)||onIsWord(c)||(state.level>=7||included.has(c.id))&&tIsWord(c)||(state.level>=13||included.has(c.id))&&xIsWord(c)));}
+function cngForms(c,number,index,gender){if(c.id==='c327'&&number==='sg'&&index===1&&cngScopeCards().some(word=>word.id==='c971'))return ['alterīus'];return jForms(c,number,index,gender);}
 function cngSlots(){return cngNouns().flatMap(noun=>aNumbers(noun).flatMap(number=>A_CASES.flatMap((_,index)=>aLatinAnswers(noun,number,index).map(form=>({noun,number,index,shown:jPlain(form)})))));}
 function cngReadings(noun,shown){const readings=[];for(const number of aNumbers(noun))for(let index=0;index<5;index++)if(aLatinAnswers(noun,number,index).some(form=>E.normalize(form)===E.normalize(shown)))for(const gender of noun.gender.split(' '))readings.push({number,index,gender});return readings;}
-function cngAnswers(c,noun,shown){return [...new Set(cngReadings(noun,shown).flatMap(r=>jForms(c,r.number,r.index,r.gender)).map(jPlain))];}
+function cngAnswers(c,noun,shown){return [...new Set(cngReadings(noun,shown).flatMap(r=>cngForms(c,r.number,r.index,r.gender)).map(jPlain))];}
 function cngFits(c,form,noun,shown){return cngAnswers(c,noun,shown).some(answer=>E.normalize(answer)===E.normalize(form));}
 function cngTask(slot,type,words=cngWords(),rightCount=1){
  const {noun,shown}=slot,compatible=words.filter(c=>cngAnswers(c,noun,shown).length);if(compatible.length<3)return null;
@@ -749,7 +752,7 @@ function cngTask(slot,type,words=cngWords(),rightCount=1){
  if(!task.choice){task.fields=[{label:'Adjektivform',answers:cngAnswers(c,noun,shown)}];task.key=['kng',type,noun.id,shown,c.id].join(':');return task;}
  const candidates=shuffle(compatible).slice(0,3),options=[],correct=[];task.optionWords=[];
  for(let i=0;i<3;i++){
-  const adjective=candidates[i],right=cngAnswers(adjective,noun,shown),wrong=[...new Set(jNumbers(adjective).flatMap(n=>A_CASES.flatMap((_,k)=>J_GENDERS.flatMap(g=>jForms(adjective,n,k,g)))).map(jPlain))].filter(form=>!cngFits(adjective,form,noun,shown));
+  const adjective=candidates[i],right=cngAnswers(adjective,noun,shown),wrong=[...new Set(jNumbers(adjective).flatMap(n=>A_CASES.flatMap((_,k)=>J_GENDERS.flatMap(g=>cngForms(adjective,n,k,g)))).map(jPlain))].filter(form=>!cngFits(adjective,form,noun,shown));
   const form=shuffle(i<rightCount?right:wrong)[0];if(!form)return null;options.push(form);task.optionWords.push({id:adjective.id,form});if(i<rightCount)correct.push(form);
  }
  // Shuffle the three forms only. The exclusive fourth option never moves.
@@ -771,7 +774,7 @@ function cngBuildRound(count=15,words=cngWords()){
 }
 function cngTaskBank(words=cngWords()){return cngBuildRound(60,words);}
 function cngQuestion(task){return task.choice?'Wähle alle Adjektivformen aus, die in Kasus, Numerus und Genus zum Substantiv passen.':'Ergänze das Adjektiv in der passenden Form.';}
-function cngHeading(task){const number=jNumbers(task.c).includes('sg')?'sg':'pl',lemma=J_GENDERS.map(g=>jPlain(jForms(task.c,number,0,g)[0]||'')).filter(Boolean);return '<h1>'+esc(task.shown)+'</h1>'+(!task.choice?'<p class="cng-adjective-lemma">'+esc([...new Set(lemma)].join(', '))+'</p>':'');}
+function cngHeading(task){const number=jNumbers(task.c).includes('sg')?'sg':'pl',lemma=J_GENDERS.map(g=>jPlain(cngForms(task.c,number,0,g)[0]||'')).filter(Boolean);return '<h1>'+esc(task.shown)+'</h1>'+(!task.choice?'<p class="cng-adjective-lemma">'+esc([...new Set(lemma)].join(', '))+'</p>':'');}
 function cngSolution(task){return '<span class="smallcaps">Passende Adjektivform</span><div class="a-solution-list"><strong>'+esc(task.fields[0].answers.join(', '))+'</strong></div>';}
 function cngToggleChoice(selected,value,exclusive=CNG_NONE){if(value===exclusive)return selected.includes(value)?[]:[value];const rest=selected.filter(item=>item!==exclusive);return rest.includes(value)?rest.filter(item=>item!==value):[...rest,value];}
 
