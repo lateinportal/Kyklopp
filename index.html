@@ -551,21 +551,14 @@ document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>navigate(b.data
 const compartments=[{stage:5,name:'Felsenfest',tone:'crown'},{stage:4,name:'Sehr sicher',tone:'gem'},{stage:3,name:'Sicher',tone:'gold'},{stage:2,name:'Einigermaßen sicher',tone:'silver'},{stage:1,name:'Unsicher',tone:'bronze'},{stage:0,name:'Noch nicht gelernt',tone:'cards'}];
 function lessonTrainingArt(level){const figures=[{"lesson":1,"name":"Römischer Schüler","roman":"I"},{"lesson":2,"name":"Römische Schülerin","roman":"II"},{"lesson":3,"name":"Wagenlenker","roman":"III"},{"lesson":4,"name":"Diana","roman":"IV"},{"lesson":5,"name":"Minerva","roman":"V"},{"lesson":6,"name":"Merkur","roman":"VI"},{"lesson":7,"name":"Römischer Lehrer","roman":"VII"},{"lesson":8,"name":"Einwohnerin von Pompeji","roman":"VIII"},{"lesson":9,"name":"Landwirt aus Kampanien","roman":"IX"},{"lesson":10,"name":"Romulus","roman":"X"},{"lesson":11,"name":"Cloelia","roman":"XI"},{"lesson":12,"name":"Hannibal","roman":"XII"},{"lesson":13,"name":"Sol","roman":"XIII"},{"lesson":14,"name":"Äneas","roman":"XIV"},{"lesson":15,"name":"Herkules","roman":"XV"},{"lesson":16,"name":"Cornelia","roman":"XVI"},{"lesson":17,"name":"Kleopatra","roman":"XVII"},{"lesson":18,"name":"Titus","roman":"XVIII"},{"lesson":19,"name":"Römischer Töpfer","roman":"XIX"},{"lesson":20,"name":"Alexander der Große","roman":"XX"},{"lesson":21,"name":"Karthagischer Händler","roman":"XXI"},{"lesson":22,"name":"Cicero","roman":"XXII"},{"lesson":23,"name":"Olympische Athletin","roman":"XXIII"},{"lesson":24,"name":"Antigone","roman":"XXIV"},{"lesson":25,"name":"Sokrates","roman":"XXV"},{"lesson":26,"name":"Paulus","roman":"XXVI"},{"lesson":27,"name":"Martin","roman":"XXVII"},{"lesson":28,"name":"Tacitus","roman":"XXVIII"},{"lesson":29,"name":"Hadrian","roman":"XXIX"},{"lesson":30,"name":"Justinian","roman":"XXX"}];const figure=figures[Math.min(30,Math.max(1,Number(level)||1))-1];return {src:`vokabelbilder/lernstand/lektion-${figure.lesson}.webp`,alt:`${figure.name} hält eine Wachstafel mit ${figure.roman} – Lektion ${figure.lesson}`}}
 const HOME_GREETINGS=[
- {from:0,to:180,text:'Nachteulen-Modus aktiviert🦉!',personal:false},
- {from:180,to:360,text:'Wach oder wieder wach?'},
- {from:360,to:660,text:'Guten Morgen!'},
- {from:660,to:780,text:'Hallo!'},
- {from:780,to:840,text:'Hunger auf Wörter?'},
- {from:840,to:1080,text:'Hallo!'},
- {from:1080,to:1230,text:'Guten Abend!',alternate:'Abendrunde gefällig?'},
- {from:1230,to:1350,text:'Gute-Nacht-Vokabeln?',personal:false},
- {from:1350,to:1440,text:'Noch wach?'}
+ {from:0,to:360,text:'Willkommen!'},
+ {from:360,to:661,text:'Guten Morgen!'},
+ {from:661,to:1081,text:'Willkommen!'},
+ {from:1081,to:1440,text:'Guten Abend!'}
 ];
 function homeGreeting(now=Date.now()){
- const date=new Date(now),minute=date.getHours()*60+date.getMinutes(),slot=HOME_GREETINGS.find(s=>minute>=s.from&&minute<s.to);
- const day=Math.floor(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())/86400000),greeting=slot.alternate&&day%2===0?slot.alternate:slot.text,name=typeof state.profile?.name==='string'?state.profile.name.trim():'';
- if(!name||slot.personal===false)return greeting;
- return greeting.replace(/[.!?]$/,'')+', '+name+(greeting.endsWith('?')?'?':'!');
+ const date=new Date(now),minute=date.getHours()*60+date.getMinutes(),greeting=HOME_GREETINGS.find(s=>minute>=s.from&&minute<s.to).text,name=typeof state.profile?.name==='string'?state.profile.name.trim():'';
+ return name?greeting.slice(0,-1)+', '+name+'!':greeting;
 }
 let greetingRefreshTimer;
 function queueGreetingRefresh(){if(greetingRefreshTimer)window.clearTimeout?.(greetingRefreshTimer);greetingRefreshTimer=setTimeout(()=>{if(view!=='home')return;const heading=document.querySelector('#home-greeting');if(heading)heading.textContent=homeGreeting();queueGreetingRefresh()},60000)}
