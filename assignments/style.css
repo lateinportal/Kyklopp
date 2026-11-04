@@ -423,6 +423,14 @@ dialog, .student-table, .grant-search-results, .denare-history { scrollbar-gutte
 
 .task-delete-button.btn{color:#b73a42;border-color:#edc6c9;background:#fff}.task-delete-button.btn:hover{background:#fff0f1}.task-delete-confirm.btn{background:#be3e47;border-color:#be3e47;color:#fff}
 
+/* Keep wallet actions visible with one scrolling region. */
+dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:calc(100dvh - 48px);overflow:hidden;scrollbar-gutter:auto}
+.denare-dialog .modal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:10px}
+.denare-dialog .denare-history{max-height:none;overflow:visible;scrollbar-gutter:auto;margin-bottom:0}
+.denare-dialog .denare-history li:last-child{padding-bottom:4px}
+.denare-dialog .dialog-actions{margin-top:20px}
+@media(max-width:600px){dialog.denare-dialog[open]{padding:24px 20px;max-height:calc(100dvh - 32px)}.denare-dialog .denare-history li{flex-wrap:wrap}.denare-dialog .denare-history-cost{white-space:normal}}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }
@@ -453,3 +461,5 @@ body[data-mode="teacher"] > main { max-width: 1440px; margin: auto; padding: 30p
 }
 .hub-saving { cursor: progress; }
 .hub-saving #main { opacity: .85; }
+body[data-mode="student"].hub-overlay #main{width:var(--hub-original-width);margin-left:var(--hub-origin-x);margin-top:var(--hub-origin-y)}
+html.hub-overlay-open{scrollbar-gutter:auto;overflow:hidden}

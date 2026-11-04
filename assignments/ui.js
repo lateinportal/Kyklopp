@@ -92,6 +92,9 @@ async function poll(){
  }catch{ /* The last confirmed state remains visible while disconnected. */ }
  finally{pollTimer=setTimeout(poll,30000);}
 }
+function reportModal(){
+ if(window.parent!==window)window.parent.postMessage({type:'kyklopp-hub-modal',open:document.querySelector('#modal').open},location.origin);
+}
 function reportHeight(){
  if(window.parent!==window)window.parent.postMessage({type:'kyklopp-hub-height',height:Math.ceil(document.querySelector('#main').scrollHeight+45)},location.origin);
 }
@@ -105,7 +108,7 @@ if(window.ResizeObserver)new ResizeObserver(reportHeight).observe(document.query
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3600)}
 function person(id){const p=who(id);return '<div class="person"><img src="../'+esc(p.image)+'" alt=""><div>'+esc(p.name)+'</div></div>';}
 function dateLabel(date){return date?new Date(date+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'}):'Ohne Termin'}
-function modal(title,body,actions){lastFocus=document.activeElement;$('#modal').innerHTML='<h2 id="modal-title" tabindex="-1">'+esc(title)+'</h2>'+body+'<div class="dialog-actions">'+actions+'</div>';$('#modal').onclick=dismissBackdrop;$('#modal').showModal();scheduleGuards();$('#modal-title').focus({preventScroll:true});$$('[data-close]').forEach(b=>b.onclick=closeModal)}
+function modal(title,body,actions){lastFocus=document.activeElement;$('#modal').classList.toggle('denare-dialog',body.includes('class="denare-history"'));$('#modal').innerHTML='<h2 id="modal-title" tabindex="-1">'+esc(title)+'</h2><div class="modal-body">'+body+'</div><div class="dialog-actions">'+actions+'</div>';$('#modal').onclick=dismissBackdrop;$('#modal').showModal();scheduleGuards();reportModal();$('#modal-title').focus({preventScroll:true});$$('[data-close]').forEach(b=>b.onclick=closeModal)}
 function dismissBackdrop(event){
  const dialog=$('#modal');
  if(event.target!==dialog)return;
@@ -736,6 +739,6 @@ function newTask(task=null){
 function confirmRequest(id){const p=state.purchases.find(p=>p.id===id);if(!p||p.status!=='pending')return;modal('Belohnung bestätigen','<p>'+esc(who(p.profile).name)+' möchte „'+esc(rewardBy(p.reward).title)+'“ für <strong>'+formatDenare(p.cost)+' Denare</strong> einlösen.</p><p>Vereinbart gemeinsam, wie die Belohnung übergeben wird.</p>','<button class="btn secondary" data-close>Später</button><button class="btn" id="approve-request">Anfrage bestätigen</button>');$('#approve-request').onclick=async()=>{if(p.status!=='pending')return;p.status='approved';await save();closeModal();render();toast('Bestätigt. Die Belohnung ist im  freigeschaltet.')}}
 
 $('#main').addEventListener('click',event=>{const button=event.target.closest('[data-open-attachment]');if(button)openAttachment(button.dataset.openAttachment);});
-$('#modal').addEventListener('close',()=>{if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true});});
+$('#modal').addEventListener('close',()=>{reportModal();if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true});});
 state.walletSnapshots??={};profiles.forEach(p=>{state.walletSnapshots[p.id]??=walletSnapshot(p.id);});rememberWallet();render();pollTimer=setTimeout(poll,30000);
 })();
