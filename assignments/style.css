@@ -421,6 +421,8 @@ dialog, .student-table, .grant-search-results, .denare-history { scrollbar-gutte
 .deadline.deadline-overdue { border-color: #d75c67; background: #fcebed; color: #a32d3b; }
 .check-title > strong a, .teacher-item h3 a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 
+.task-delete-button.btn{color:#b73a42;border-color:#edc6c9;background:#fff}.task-delete-button.btn:hover{background:#fff0f1}.task-delete-confirm.btn{background:#be3e47;border-color:#be3e47;color:#fff}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }

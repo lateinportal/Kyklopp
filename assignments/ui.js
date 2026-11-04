@@ -40,8 +40,8 @@ let state=JSON.parse(JSON.stringify(context.state));
 try{state.walletSnapshots=JSON.parse(localStorage.getItem(KEY))??{};}catch{state.walletSnapshots={};}
 let role=context.teacher?'teacher':'student',profile=context.userId,studentSection='tasks',rewardsReturnSection='top',teacherSection='students',managedStudent=null,managementTab='tasks',lastFocus=null,toastTimer;
 let walletTimer, walletAnimationVersion=0;
-const who=id=>profiles.find(p=>p.id===id),taskBy=id=>state.tasks.find(t=>t.id===id),rewardBy=id=>rewards.find(r=>r.id===id)??legacyRewards.find(r=>r.id===id),myTasks=id=>state.tasks.filter(t=>t.profile===id);
-const earned=id=>myTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n+(t.awardedPoints??t.points),0)+(state.bonuses??[]).filter(entry=>entry.profile===id).reduce((sum,entry)=>sum+entry.amount,0);
+const who=id=>profiles.find(p=>p.id===id),taskBy=id=>state.tasks.find(t=>t.id===id&&!t.deletedAt),rewardBy=id=>rewards.find(r=>r.id===id)??legacyRewards.find(r=>r.id===id),allMyTasks=id=>state.tasks.filter(t=>t.profile===id),myTasks=id=>allMyTasks(id).filter(t=>!t.deletedAt);
+const earned=id=>allMyTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n+(t.awardedPoints??t.points),0)+(state.bonuses??[]).filter(entry=>entry.profile===id).reduce((sum,entry)=>sum+entry.amount,0);
 const reserved=id=>state.purchases.filter(p=>p.profile===id).reduce((n,p)=>n+p.cost,0),available=id=>earned(id)-reserved(id);
 // This code is inserted into the shared UI build after the authenticated context is loaded.
 let pollTimer;
@@ -186,6 +186,7 @@ function render(){
    event.preventDefault();tabs[next].onclick();
   };
  });
+ $$('[data-delete-task]').forEach(b=>b.onclick=()=>deleteTask(b.dataset.deleteTask));
  $$('[data-edit-task]').forEach(b=>b.onclick=()=>newTask(taskBy(b.dataset.editTask)));
  if(student)animateWallet();scheduleGuards();queueMicrotask(reportHeight);
 }
@@ -288,7 +289,7 @@ function attachmentLinks(task) {
  return files||links?'<div class="task-attachments">'+files+links+'</div>':'';
 }
 async function openAttachment(id) {
- const permitted=state.tasks.some(task=>(role==='teacher'||task.profile===profile)&&(task.attachments??[]).some(file=>file.id===id));
+ const permitted=state.tasks.some(task=>!task.deletedAt&&(role==='teacher'||task.profile===profile)&&(task.attachments??[]).some(file=>file.id===id));
  if(!permitted)return;
  try{
   const url=await api.fileURL(id);
@@ -354,7 +355,7 @@ function showDenareHistory(id=profile){
  const credits=(state.bonuses??[]).filter(item=>item.profile===id).map(item=>({
   title:item.reason,amount:item.amount,createdAt:item.createdAt,status:item.amount<0?'Abzug':'Gutschrift'
  }));
- const tasks=myTasks(id).filter(task=>task.status==='approved').map(task=>({
+ const tasks=allMyTasks(id).filter(task=>task.status==='approved').map(task=>({
   title:task.reference,amount:task.awardedPoints??task.points,createdAt:task.awardedAt,status:'Lernauftrag'
  }));
  const purchases=state.purchases.filter(item=>item.profile===id).map(item=>({
@@ -375,7 +376,7 @@ function showDenareHistory(id=profile){
 
 function walletSnapshot(id){
  const entries={};
- myTasks(id).filter(task=>task.status==='approved').forEach(task=>{
+ allMyTasks(id).filter(task=>task.status==='approved').forEach(task=>{
   entries['task:'+task.id]={amount:task.awardedPoints??task.points,type:'credit',label:'Lernauftrag'};
  });
  (state.bonuses??[]).forEach((entry,index)=>{
@@ -582,6 +583,15 @@ function grantDenare(deduct=false) {
  };
 }
 
+function deleteTask(id){
+ const task=taskBy(id);if(role!=='teacher'||!task)return;
+ modal('Auftrag löschen?', '<p>Der Lernauftrag „'+esc(task.reference)+'“ wird für dich und den Schüler aus allen Auftragslisten entfernt.</p><p>Bereits gutgeschriebene Denare bleiben erhalten.</p>', '<button class="btn secondary" data-close>Abbrechen</button><button class="btn task-delete-confirm" id="confirm-delete-task">Auftrag löschen</button>');
+ $('#confirm-delete-task').onclick=async()=>{
+  if(role!=='teacher'||!taskBy(id))return;
+  task.deletedAt=new Date().toISOString();await save();closeModal();render();toast('Lernauftrag gelöscht.');
+ };
+}
+
 function managementTaskCard(t){
     const hasReview=['approved','revise','missing'].includes(t.status);
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
@@ -589,7 +599,7 @@ function managementTaskCard(t){
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
     return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span><h3>${linkedText(t.reference)}</h3>${t.description?'<p>'+linkedText(t.description)+'</p>':''}<div class="check-facts"><span title="Mögliche Denare">${t.points} Denare</span>${deadlineLabel(t)}</div>${submissionLabel(t)}${attachmentLinks(t)}${t.feedback?.trim()?'<div class="teacher-feedback"><span>Feedback</span><p>'+formattedFeedback(t.feedback)+'</p></div>':''}${t.question?'<div class="teacher-feedback"><span>Rückfrage</span><p>'+linkedText(t.question)+'</p></div>':''}${t.answer?'<div class="teacher-feedback"><span>Antwort</span><p>'+linkedText(t.answer)+'</p></div>':''}</div>
      <div class="review-actions"><button class="btn secondary" data-edit-task="${esc(t.id)}">Aufgabe bearbeiten</button>
-     ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}</div></article>`;
+     ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}<button type="button" class="btn secondary task-delete-button" data-delete-task="${esc(t.id)}">Auftrag löschen</button></div></article>`;
 
 }
 
@@ -623,8 +633,8 @@ function studentManagementPage(p){
 }
 function teacherPage(){
  if(teacherSection==='students'&&who(managedStudent))return studentManagementPage(who(managedStudent));
- const questions=state.tasks.filter(t=>t.studentReview==='question');
- const pending=state.tasks.filter(t=>t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
+ const questions=state.tasks.filter(t=>!t.deletedAt&&t.studentReview==='question');
+ const pending=state.tasks.filter(t=>!t.deletedAt&&t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
  const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></header>';
  if(teacherSection==='students')return heading+
  '<div class="denare-grant-action"><button class="btn secondary" data-deduct-denare>Denare abziehen</button><button class="btn" data-grant-denare>Denare vergeben</button></div>'+
