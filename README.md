@@ -5,7 +5,7 @@ Online-Testversion des Lateintrainers. Anmeldung mit persoenlichem Zugangscode; 
 ## GitHub Pages
 Settings → Pages → Deploy from a branch → main → / (root) → Save.
 
-Nur dieser Ordner wird veroeffentlicht. Verwaltung und Zugangscodes gehoeren nicht in dieses Repository.
+Nur dieser Ordner wird veroeffentlicht. Lokale Verwaltungsskripte, SQL-Dateien und Zugangscodes gehoeren nicht in dieses Repository. Die separate Lehrer-Verwaltung ist unter assignments/lehrer.html erreichbar und erfordert einen Lehrerzugang.
 
 ## Woerterbuchquellen
 Quellen, Lizenz und nachbaubare Formendaten stehen unter [quellen](quellen/DICTIONARY-SOURCES.md).
