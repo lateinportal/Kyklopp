@@ -288,8 +288,11 @@ function bindFeedbackToolbar() {
   field.setSelectionRange(start+marker.length,start+marker.length+selected.length);
  });
 }
+function worksheetIcon(){
+ return '<svg class="worksheet-icon" viewBox="0 0 24 28" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h10l6 6v17a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm10 0v7h6"/><path stroke-width="1.3" d="m6 21 2.5-7 2.5 7m-4-2h3m4-5v7h2.3a1.8 1.8 0 0 0 0-3.6H14m0-3.4h2.1a1.7 1.7 0 0 1 0 3.4"/></svg>';
+}
 function attachmentLinks(task) {
- const files=(task.attachments??[]).map(file=>'<button type="button" class="link" data-open-attachment="'+esc(file.id)+'">'+icon('book')+' '+esc(file.name)+'</button>').join('');
+ const files=(task.attachments??[]).map(file=>'<button type="button" class="link" data-open-attachment="'+esc(file.id)+'">'+worksheetIcon()+' '+esc(file.name)+'</button>').join('');
  const links=(task.links??[]).filter(link=>webAddress(link)).map(link=>'<a class="link" href="'+esc(webAddress(link))+'" target="_blank" rel="noopener noreferrer">'+esc(link)+'</a>').join('');
  return files||links?'<div class="task-attachments">'+files+links+'</div>':'';
 }
@@ -331,8 +334,8 @@ function taskCard(t) {
   ${isFinished(t)?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
    <strong>${linkedText(t.reference)}</strong>
-   ${attachmentLinks(t)}
    ${!isFinished(t)&&t.description?.trim()?'<small class="check-instruction">'+linkedText(t.description.trim())+'</small>':''}
+   ${attachmentLinks(t)}
    <div class="check-facts">
     ${isFinished(t)?'':`<span title="Geplante Dauer">${t.plannedMinutes??'–'} min</span>
     ${deadlineLabel(t)}`}

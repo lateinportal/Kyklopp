@@ -442,6 +442,8 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .denare-page>.denare-history li:last-child{padding-bottom:0}
 @media(max-width:600px){.denare-page-balance strong{font-size:25px}.denare-page h2{font-size:18px}.denare-page>.denare-history li{flex-wrap:wrap}}
 
+.task-attachments svg.worksheet-icon{width:20px;height:24px;flex-shrink:0}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }
