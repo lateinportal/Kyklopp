@@ -253,12 +253,20 @@ function webAddress(value) {
   return ['http:','https:'].includes(url.protocol)&&url.hostname?url.href:null;
  }catch{return null;}
 }
+function siteFavicon(href){
+ const host=new URL(href).hostname;
+ const source='https://www.google.com/s2/favicons?domain='+encodeURIComponent(host)+'&sz=32';
+ return '<span class="site-favicon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m10 14 4-4M8 16l-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 2 1-1a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(2 0)"/></svg><img data-site-favicon src="'+esc(source)+'" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt=""></span>';
+}
+document.addEventListener?.('load',event=>{
+ const image=event.target;if(image?.matches?.('img[data-site-favicon]'))image.parentElement.classList.add('has-favicon');
+},true);
 function linkedText(value,format=false) {
  const links=[];
  const withMarkdown=String(value??'').replace(/\u0000/g,'').replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s<>"']*?(?:\([^\s<>"']*\)[^\s<>"']*?)?)\)/gi,(match,label,address)=>{
   const href=webAddress(address);
   if(!href)return match;
-  links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+esc(label)+'</a>');
+  links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(label)+'</a>');
   return '\u0000'+(links.length-1)+'\u0000';
  });
  const text=withMarkdown.replace(/(?:https?:\/\/|www\.)[^\s<>"'*]+/gi,match=>{
@@ -266,7 +274,7 @@ function linkedText(value,format=false) {
   while(address.endsWith(')')&&(address.match(/\)/g)??[]).length>(address.match(/\(/g)??[]).length)address=address.slice(0,-1);
   const href=webAddress(address);
   if(!href)return match;
-  links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+esc(address)+'</a>');
+  links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(address)+'</a>');
   return '\u0000'+(links.length-1)+'\u0000'+match.slice(address.length);
  });
  let html=esc(text);
@@ -293,7 +301,7 @@ function worksheetIcon(){
 }
 function attachmentLinks(task) {
  const files=(task.attachments??[]).map(file=>'<button type="button" class="link" data-open-attachment="'+esc(file.id)+'">'+worksheetIcon()+' '+esc(file.name)+'</button>').join('');
- const links=(task.links??[]).filter(link=>webAddress(link)).map(link=>'<a class="link" href="'+esc(webAddress(link))+'" target="_blank" rel="noopener noreferrer">'+esc(link)+'</a>').join('');
+ const links=(task.links??[]).filter(link=>webAddress(link)).map(link=>'<a class="link" href="'+esc(webAddress(link))+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(webAddress(link))+esc(link)+'</a>').join('');
  return files||links?'<div class="task-attachments">'+files+links+'</div>':'';
 }
 async function openAttachment(id) {

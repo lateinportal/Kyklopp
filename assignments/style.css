@@ -444,6 +444,12 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 
 .task-attachments svg.worksheet-icon{width:20px;height:24px;flex-shrink:0}
 
+.site-favicon{display:inline-block;position:relative;width:16px;height:16px;margin-right:6px;vertical-align:-2px;flex:0 0 16px}
+.site-favicon>svg{display:block;width:16px;height:16px}
+.site-favicon>img{position:absolute;inset:0;width:16px;height:16px;object-fit:contain;opacity:0}
+.site-favicon.has-favicon>img{opacity:1}
+.site-favicon.has-favicon>svg{visibility:hidden}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }
