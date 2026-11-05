@@ -51,6 +51,8 @@
   const style=getComputedStyle(probe),root=frame.contentDocument.documentElement;
   for(const [property,value] of Object.entries({'size':style.fontSize,'family':style.fontFamily,'weight':style.fontWeight,'height':style.lineHeight,'spacing':style.letterSpacing}))root.style.setProperty('--hub-heading-'+property,value);
   probe.remove();
+  const back=document.createElement('button');back.className='back';back.style.cssText='position:absolute;visibility:hidden;pointer-events:none';main.appendChild(back);
+  const backStyle=getComputedStyle(back);root.style.setProperty('--hub-back-size',backStyle.fontSize);root.style.setProperty('--hub-back-color',backStyle.color);back.remove();
  }
  function open(main){
   modal(false);frame=null;
