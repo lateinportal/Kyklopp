@@ -105,6 +105,12 @@ window.addEventListener('click',event=>{
 },true);
 if(window.ResizeObserver)new ResizeObserver(reportHeight).observe(document.querySelector('#main'));
 
+window.KykloppOpenGrammarLink=()=>{
+ if(role!=='student'||window.parent===window){toast('Beim Schüler öffnet dieser Link direkt die Grammatikübersicht.');return;}
+ if(api.working||api.uncertain){toast('Bitte warte, bis die Änderung gespeichert oder abgeglichen ist.');return;}
+ window.parent.postMessage({type:'kyklopp-hub-grammar'},location.origin);
+};
+
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3600)}
 function person(id){const p=who(id);return '<div class="person"><img src="../'+esc(p.image)+'" alt=""><div>'+esc(p.name)+'</div></div>';}
 function dateLabel(date){return date?new Date(date+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'}):'Ohne Termin'}
@@ -168,6 +174,7 @@ function render(){
  $$('[data-review]').forEach(b=>b.onclick=()=>reviewTask(b.dataset.review));$$('[data-reward]').forEach(b=>b.onclick=()=>buyReward(b.dataset.reward));$$('[data-request]').forEach(b=>b.onclick=()=>confirmRequest(b.dataset.request));$$('[data-new-task]').forEach(b=>b.onclick=()=>newTask());
  $$('[data-teacher-denare-back]').forEach(button=>button.onclick=()=>{if(role!=='teacher'||!teacherDenareReturn)return;({teacherSection,managedStudent,managementTab}=teacherDenareReturn);render();window.scrollTo(0,0);});
  $$('[data-student-back]').forEach(button=>button.onclick=()=>{if(role!=='student')return;studentSection=button.dataset.studentBack;render();window.scrollTo(0,0);});
+ $$('[data-open-grammar]').forEach(button=>button.onclick=()=>{if(window.KykloppOpenGrammarLink)window.KykloppOpenGrammarLink();else toast('Dieser Link öffnet im Kyklopp des Schülers die Grammatikübersicht.');});
  $$('[data-denare-history]').forEach(button=>button.onclick=()=>showDenareHistory(button.dataset.denareHistory||profile));
  $$('[data-grant-denare]').forEach(button=>button.onclick=()=>grantDenare());
  $$('[data-deduct-denare]').forEach(button=>button.onclick=()=>grantDenare(true));
@@ -263,7 +270,10 @@ document.addEventListener?.('load',event=>{
 },true);
 function linkedText(value,format=false) {
  const links=[];
- const withMarkdown=String(value??'').replace(/\u0000/g,'').replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s<>"']*?(?:\([^\s<>"']*\)[^\s<>"']*?)?)\)/gi,(match,label,address)=>{
+ const withMarkdown=String(value??'').replace(/\u0000/g,'').replace(/\[([^\]\n]+)\]\(#grammatik\)/gi,(match,label)=>{
+  links.push('<button type="button" class="internal-training-link" data-open-grammar>'+esc(label)+'</button>');
+  return '\u0000'+(links.length-1)+'\u0000';
+ }).replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s<>"']*?(?:\([^\s<>"']*\)[^\s<>"']*?)?)\)/gi,(match,label,address)=>{
   const href=webAddress(address);
   if(!href)return match;
   links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(label)+'</a>');
@@ -714,7 +724,7 @@ function newTask(task=null){
  modal(task?'Aufgabe bearbeiten':'Eine Aufgabe zuweisen',
  '<form id="assign-form">'+recipientPickerMarkup('assign-recipient')+
  '<label>Aufgabentitel<input name="reference" placeholder="Arbeitsheft, S. 24 · Aufgabe 3" value="'+esc(task?.reference??'')+'" required maxlength="1000"></label>'+
- '<label>Arbeitsauftrag (optional)<textarea name="description" rows="4" maxlength="4000" placeholder="[Beispiel Text](https://beispiel.de)">'+esc(description)+'</textarea></label>'+
+ '<label>Arbeitsauftrag (optional)<textarea id="assignment-description" name="description" rows="4" maxlength="4000" placeholder="[Beispiel Text](https://beispiel.de)">'+esc(description)+'</textarea></label><button class="link assignment-grammar-link" type="button" id="insert-grammar-link">Grammatikübersicht verlinken</button>'+
  '<label class="attachment-picker">PDFs und Bilder<input id="task-files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" multiple></label><div id="attachment-draft"></div>'+
  '<div class="assignment-metrics"><label>Dauer (min)<input name="plannedMinutes" type="number" min="1" max="999" value="'+(task?.plannedMinutes??'')+'" required></label>'+
  '<label>Denare<input name="points" type="number" min="'+Math.max(1,awarded)+'" max="100" value="'+(task?.points??'')+'" required></label>'+
@@ -722,6 +732,13 @@ function newTask(task=null){
  '<p id="assign-error" class="error" role="alert"></p></form>',
  '<button class="btn secondary" data-close>Abbrechen</button><button class="btn" type="submit" form="assign-form">'+(task?'Speichern':'Aufgabe zuweisen')+'</button>');
  const form=$('#assign-form');
+ $('#insert-grammar-link').onclick=()=>{
+  const field=$('#assignment-description'),value=field.value,start=field.selectionStart??value.length,end=field.selectionEnd??start;
+  const link=(start&&!/\s/.test(value[start-1])?' ':'')+'[Grammatikübersicht](#grammatik)'+(end<value.length&&!/\s/.test(value[end])?' ':'');
+  if(value.length-(end-start)+link.length>4000){toast('Für den Link ist im Arbeitsauftrag nicht mehr genug Platz.');return;}
+  field.setRangeText(link,start,end,'end');
+ };
+
  bindRecipientPicker('assign-recipient',task?[task.profile]:who(managedStudent)?[managedStudent]:[],Boolean(task));
  form.onsubmit=async event=>{
   event.preventDefault();
