@@ -38,7 +38,7 @@ const formatDenare = value => value.toLocaleString('de-DE');
 const legacyRewards=[{id:'tutoring45',title:'Kostenlose Nachhilfestunde (45 Min.)',cost:25000,type:'coupon',image:'reward-tutoring-pencil.webp'},{id:'split-flight',title:'Flugticket nach Split (Kroatien) · 100 €',cost:200000,type:'coupon',image:'reward-split-flight.webp'},{id:'switch',title:'Nintendo-Switch-Konsole',cost:500000,type:'coupon',image:'reward-switch-hands.webp'},{id:'vfb',title:'VfB-Ticket',cost:80000,type:'coupon',image:'reward-vfb.webp'},{id:'tutoring90',title:'Kostenlose Nachhilfestunde (90 Min.)',cost:50000,type:'coupon',image:'reward-tutoring-pencil.webp'},{id:'avatar',title:'Kloppo mit Basecap',description:'Ein neuer Look für dein .',cost:60,type:'digital',image:'jonas.webp'},{id:'background',title:'Abendblauer Hintergrund',description:'Ein Hintergrund für deine persönliche Übersicht.',cost:40,type:'digital',icon:'landscape'},{id:'coupon',title:'Dein Wunschgutschein',description:'Ein kleiner Wunsch, den du mit deiner Lehrkraft vereinbarst.',cost:100,type:'coupon',icon:'ticket'}];
 let state=JSON.parse(JSON.stringify(context.state));
 try{state.walletSnapshots=JSON.parse(localStorage.getItem(KEY))??{};}catch{state.walletSnapshots={};}
-let role=context.teacher?'teacher':'student',profile=context.userId,studentSection='tasks',rewardsReturnSection='top',denareReturnSection='top',teacherSection='students',managedStudent=null,managementTab='tasks',lastFocus=null,toastTimer;
+let role=context.teacher?'teacher':'student',profile=context.userId,studentSection='tasks',rewardsReturnSection='top',denareReturnSection='top',teacherDenareOwner=null,teacherDenareReturn=null,teacherSection='students',managedStudent=null,managementTab='tasks',lastFocus=null,toastTimer;
 let walletTimer, walletAnimationVersion=0;
 const who=id=>profiles.find(p=>p.id===id),taskBy=id=>state.tasks.find(t=>t.id===id&&!t.deletedAt),rewardBy=id=>rewards.find(r=>r.id===id)??legacyRewards.find(r=>r.id===id),allMyTasks=id=>state.tasks.filter(t=>t.profile===id),myTasks=id=>allMyTasks(id).filter(t=>!t.deletedAt);
 const earned=id=>allMyTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n+(t.awardedPoints??t.points),0)+(state.bonuses??[]).filter(entry=>entry.profile===id).reduce((sum,entry)=>sum+entry.amount,0);
@@ -101,7 +101,7 @@ function reportHeight(){
 window.addEventListener('beforeunload',()=>clearTimeout(pollTimer));
 window.addEventListener('online',()=>{clearTimeout(pollTimer);poll();});
 window.addEventListener('click',event=>{
- if(window.parent!==window&&event.target.closest('[data-target],[data-student-back],[data-denare-history]'))window.parent.postMessage({type:'kyklopp-hub-top'},location.origin);
+ if(window.parent!==window&&event.target.closest('[data-target],[data-student-back],[data-teacher-denare-back],[data-denare-history]'))window.parent.postMessage({type:'kyklopp-hub-top'},location.origin);
 },true);
 if(window.ResizeObserver)new ResizeObserver(reportHeight).observe(document.querySelector('#main'));
 
@@ -166,6 +166,7 @@ function render(){
  $$('[data-task-question]').forEach(b=>b.onclick=()=>studentFeedback(b.dataset.taskQuestion,true));
  $$('[data-answer-question]').forEach(b=>b.onclick=()=>answerTaskQuestion(b.dataset.answerQuestion));
  $$('[data-review]').forEach(b=>b.onclick=()=>reviewTask(b.dataset.review));$$('[data-reward]').forEach(b=>b.onclick=()=>buyReward(b.dataset.reward));$$('[data-request]').forEach(b=>b.onclick=()=>confirmRequest(b.dataset.request));$$('[data-new-task]').forEach(b=>b.onclick=()=>newTask());
+ $$('[data-teacher-denare-back]').forEach(button=>button.onclick=()=>{if(role!=='teacher'||!teacherDenareReturn)return;({teacherSection,managedStudent,managementTab}=teacherDenareReturn);render();window.scrollTo(0,0);});
  $$('[data-student-back]').forEach(button=>button.onclick=()=>{if(role!=='student')return;studentSection=button.dataset.studentBack;render();window.scrollTo(0,0);});
  $$('[data-denare-history]').forEach(button=>button.onclick=()=>showDenareHistory(button.dataset.denareHistory||profile));
  $$('[data-grant-denare]').forEach(button=>button.onclick=()=>grantDenare());
@@ -387,10 +388,11 @@ function showDenareHistory(id=profile){
   if(studentSection!=='denare')denareReturnSection=studentSection;
   studentSection='denare';render();window.scrollTo(0,0);return;
  }
- modal('Denare · '+who(id).name,'<p>Verfügbar <strong>'+formatDenare(available(id))+' Denare</strong></p><h3>Gutschriften und Einlösungen</h3>'+denareHistory(id),'<button class="btn" data-close>Schließen</button>');
+ if(teacherSection!=='denare')teacherDenareReturn={teacherSection,managedStudent,managementTab};
+ teacherDenareOwner=id;teacherSection='denare';render();window.scrollTo(0,0);
 }
-function denarePage(){
- return studentBack(denareReturnSection)+'<header class="page-head"><div><h1>Denare</h1></div></header><section class="quiet-panel denare-page"><div class="denare-page-balance"><img src="assets/denar-caesar-v2.png" alt=""><div><span>Verfügbar</span><strong>'+formatDenare(available(profile))+' Denare</strong></div></div><h2>Gutschriften und Einlösungen</h2>'+denareHistory(profile)+'</section>';
+function denarePage(id=profile,back=studentBack(denareReturnSection)){
+ return back+'<header class="page-head"><div><h1>Denare</h1>'+(role==='teacher'?'<p class="quiet-subtitle">'+esc(who(id).name)+'</p>':'')+'</div></header><section class="quiet-panel denare-page"><div class="denare-page-balance"><img src="assets/denar-caesar-v2.png" alt=""><div><span>Verfügbar</span><strong>'+formatDenare(available(id))+' Denare</strong></div></div><h2>Gutschriften und Einlösungen</h2>'+denareHistory(id)+'</section>';
 }
 
 function walletSnapshot(id){
@@ -652,6 +654,7 @@ function studentManagementPage(p){
  '<section id="management-content" role="tabpanel" aria-labelledby="management-tab-'+managementTab+'">'+content+'</section>';
 }
 function teacherPage(){
+ if(teacherSection==='denare'&&who(teacherDenareOwner)){const name=teacherDenareReturn?.managedStudent?who(teacherDenareReturn.managedStudent)?.name:'Schüler';return denarePage(teacherDenareOwner,'<button type="button" class="hub-back" data-teacher-denare-back>← '+esc(name||'Schüler')+'</button>');}
  if(teacherSection==='students'&&who(managedStudent))return studentManagementPage(who(managedStudent));
  const questions=state.tasks.filter(t=>!t.deletedAt&&t.studentReview==='question');
  const pending=state.tasks.filter(t=>!t.deletedAt&&t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
