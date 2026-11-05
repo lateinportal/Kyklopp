@@ -11,7 +11,10 @@
   return 'Die Änderung konnte nicht bestätigt werden. Bitte prüfe die Verbindung und versuche es erneut.';
  }
  async function request(path,options={}){return transport.request(path,options);}
- function accept(snapshot){context=snapshot;return snapshot;}
+ function accept(snapshot){context=snapshot;
+  if(window.parent!==window){try{window.parent.KykloppLearningAssignments?.remember(snapshot);}catch{}}
+  return snapshot;
+ }
  async function reconcile(){
   if(!pending)return;
   try{
@@ -31,7 +34,8 @@
   if(!transport&&window.parent!==window){try{transport=window.parent.KykloppHubTransport;}catch{}}
   if(!transport)throw new Error('Bitte öffne die Lernaufträge über deinen angemeldeten Kyklopp-Zugang.');
   try{
-   await load();
+   const host=window.parent!==window?window.parent.KykloppLearningAssignments:null;
+   if(host?.initialSnapshot)context=await host.initialSnapshot();else await load();
    const teacherPage=document.body.dataset.mode==='teacher';
    if(teacherPage!==context.teacher)throw new Error(teacherPage?'Dieser Zugang ist kein Lehrerzugang.':'Bitte nutze für den Lehrerzugang die separate Verwaltung.');
    try{pending=JSON.parse(localStorage.getItem(storageKey()));}catch{}

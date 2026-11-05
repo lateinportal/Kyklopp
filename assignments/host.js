@@ -15,11 +15,48 @@
   }
  }
 
+ let cacheAccount=null,cached=null,cachedAt=0,loading=null,assetsPrepared=false;
+ function currentAccount(){
+  const transport=window.KykloppHubTransport;
+  return transport&&'userId' in transport?transport.userId:cacheAccount;
+ }
+ function clear(){cacheAccount=null;cached=null;cachedAt=0;loading=null;}
+ function remember(snapshot){
+  if(snapshot?.userId===currentAccount()&&!snapshot.teacher){cached=structuredClone(snapshot);cachedAt=Date.now();}
+ }
+ async function initialSnapshot(){
+  const id=currentAccount(),transport=window.KykloppHubTransport;
+  if(id!==cacheAccount){clear();cacheAccount=id;}
+  if(id&&cached&&Date.now()-cachedAt<15000)return structuredClone(cached);
+  if(loading)return structuredClone(await loading);
+  const job=transport.request('/rest/v1/rpc/kyklopp_hub_snapshot',{method:'POST',body:'{}'}).then(snapshot=>{
+   if(id!==currentAccount())throw new Error('Der Zugang wurde inzwischen gewechselt. Bitte erneut öffnen.');
+   remember(snapshot);return snapshot;
+  });
+  loading=job;
+  try{return structuredClone(await job);}finally{if(loading===job)loading=null;}
+ }
+ function prepare(){
+  if(!assetsPrepared){
+   assetsPrepared=true;
+   for(const file of ['student.html','style.css','api.js','ui.js']){
+    const link=document.createElement('link');link.rel='prefetch';link.href='assignments/'+file;document.head.appendChild(link);
+   }
+  }
+  initialSnapshot().catch(()=>{});
+ }
+ function syncHeading(main){
+  if(!frame?.contentDocument?.documentElement)return;
+  const probe=document.createElement('h1');probe.textContent='Lernaufträge';probe.style.cssText='position:absolute;visibility:hidden;pointer-events:none';main.appendChild(probe);
+  const style=getComputedStyle(probe),root=frame.contentDocument.documentElement;
+  for(const [property,value] of Object.entries({'size':style.fontSize,'family':style.fontFamily,'weight':style.fontWeight,'height':style.lineHeight,'spacing':style.letterSpacing}))root.style.setProperty('--hub-heading-'+property,value);
+  probe.remove();
+ }
  function open(main){
   modal(false);frame=null;
   if(!window.KykloppHubTransport){main.innerHTML='<section class="panel"><h1>Lernaufträge</h1><p>Melde dich in der Online-Version mit deinem persönlichen Zugangscode an, um deine Lernaufträge zu öffnen.</p></section>';return;}
   main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html"></iframe>';
-  frame=main.querySelector('iframe');
+  frame=main.querySelector('iframe');frame.addEventListener('load',()=>syncHeading(main));
  }
  window.addEventListener('message',event=>{
   if(!frame?.isConnected||event.source!==frame.contentWindow||event.origin!==location.origin)return;
@@ -31,7 +68,8 @@
   if(!frame?.isConnected)return false;
   try{return Boolean(frame.contentWindow.KykloppHubAPI?.working||frame.contentWindow.KykloppHubAPI?.uncertain);}catch{return false;}
  }
- window.KykloppLearningAssignments={open,busy};
+ window.addEventListener('resize',()=>{if(frame?.isConnected&&!placeholder)syncHeading(frame.parentElement);});
+ window.KykloppLearningAssignments={open,busy,prepare,initialSnapshot,remember,clear};
 })();
 
 

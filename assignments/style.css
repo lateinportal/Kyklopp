@@ -463,3 +463,6 @@ body[data-mode="teacher"] > main { max-width: 1440px; margin: auto; padding: 30p
 .hub-saving #main { opacity: .85; }
 body[data-mode="student"].hub-overlay #main{width:var(--hub-original-width);margin-left:var(--hub-origin-x);margin-top:var(--hub-origin-y)}
 html.hub-overlay-open{scrollbar-gutter:auto;overflow:hidden}
+
+body[data-mode="student"] .page-head h1{font-family:var(--hub-heading-family,'Libre Caslon Display',Georgia,serif);font-size:var(--hub-heading-size,52px);font-weight:var(--hub-heading-weight,400);line-height:var(--hub-heading-height,1.08);letter-spacing:var(--hub-heading-spacing,-1px);margin:0 0 15px}
+@media(max-width:650px){body[data-mode="student"] .page-head h1{font-size:var(--hub-heading-size,41px)}}
