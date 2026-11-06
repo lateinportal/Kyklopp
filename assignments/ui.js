@@ -702,7 +702,7 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
  modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p><p>Dauer: ${t.plannedMinutes??'–'} min</p>${submissionLabel(t)}<div class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label><label>Sterne<select id="review-grade"><option value="">Bewertung auswählen</option>${grades.map(([grade,stars])=>'<option value="'+grade+'" '+(t.grade===grade?'selected':'')+'>'+grade+' · '+stars.toLocaleString('de-DE')+' / 3 Sterne</option>').join('')}</select></label></div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+(editing?'':'<button class="btn secondary" id="missing-task">Abgabe fehlt</button><button class="btn secondary" id="revise-task">Zur Überarbeitung</button>')+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='revise'&&!feedback){toast('Schreibe kurz dazu, was noch verbessert werden soll.');return}if(status==='approved'){
  const field=$('#award-points'),points=Number(field.value),grade=$('#review-grade').value;
- if(field.value.trim()===''||!Number.isInteger(points)||points<minAward||points>t.points){$('#review-error').textContent='Wähle eine ganze Zahl zwischen '+minAward+' und '+t.points+'.';return;}
+ if(field.value.trim()===''||!Number.isSafeInteger(points)||points<minAward||points>t.points){$('#review-error').textContent='Wähle eine ganze Zahl zwischen '+minAward+' und '+t.points+'.';return;}
  if(!grades.some(([value])=>value===grade)){$('#review-error').textContent='Wähle eine Sternbewertung.';return;}
  if(!editing)t.studentReview='feedback';
  t.awardedPoints=points;
@@ -727,7 +727,7 @@ function newTask(task=null){
  '<label>Arbeitsauftrag (optional)<textarea id="assignment-description" name="description" rows="4" maxlength="4000" placeholder="[Beispiel Text](https://beispiel.de)">'+esc(description)+'</textarea></label><button class="link assignment-grammar-link" type="button" id="insert-grammar-link">Grammatikübersicht verlinken</button>'+
  '<label class="attachment-picker">PDFs und Bilder<input id="task-files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" multiple></label><div id="attachment-draft"></div>'+
  '<div class="assignment-metrics"><label>Dauer (min)<input name="plannedMinutes" type="number" min="1" max="999" value="'+(task?.plannedMinutes??'')+'" required></label>'+
- '<label>Denare<input name="points" type="number" min="'+Math.max(1,awarded)+'" max="100" value="'+(task?.points??'')+'" required></label>'+
+ '<label>Denare<input name="points" type="number" min="'+Math.max(1,awarded)+'" value="'+(task?.points??'')+'" required></label>'+
  '<label>Bis wann?<input name="due" type="date" value="'+esc(task?.due??'')+'" required></label></div>'+
  '<p id="assign-error" class="error" role="alert"></p></form>',
  '<button class="btn secondary" data-close>Abbrechen</button><button class="btn" type="submit" form="assign-form">'+(task?'Speichern':'Aufgabe zuweisen')+'</button>');
@@ -749,7 +749,7 @@ function newTask(task=null){
   const points=Number(data.points),plannedMinutes=Number(data.plannedMinutes),reference=(data.reference??'').trim(),due=data.due??'';
   const owners=task?[task.profile]:profiles.filter(p=>data['recipient-'+p.id]).map(p=>p.id);
   const validDate=/^\d{4}-\d{2}-\d{2}$/.test(due)&&Number.isFinite(Date.parse(due+'T12:00:00Z'))&&new Date(due+'T12:00:00Z').toISOString().slice(0,10)===due;
-  if(!owners.length||!Number.isInteger(plannedMinutes)||plannedMinutes<1||plannedMinutes>999||!Number.isInteger(points)||points<Math.max(1,awarded)||points>100||!reference||!validDate){
+  if(!owners.length||!Number.isInteger(plannedMinutes)||plannedMinutes<1||plannedMinutes>999||!Number.isSafeInteger(points)||points<Math.max(1,awarded)||!reference||!validDate){
    $('#assign-error').textContent='Wähle mindestens einen Schüler und fülle Titel, Dauer, Denare und Abgabedatum aus.';return;
   }
   const changes={reference,description:(data.description??'').trim(),links:[],due,plannedMinutes,points,attachments:[...attachments]};
