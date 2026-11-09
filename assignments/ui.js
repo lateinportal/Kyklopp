@@ -2,7 +2,7 @@
 const api=window.KykloppHubAPI;
 let context;
 try{context=await api.connect();}catch(error){
- const root=document.querySelector('#main');root.innerHTML='<section class="hub-error"><h1>Lernaufträge</h1><p></p><button class="btn" id="hub-reload">Erneut versuchen</button></section>';
+ const root=document.querySelector('#main');root.innerHTML='<section class="hub-error"><h1>Aufträge</h1><p></p><button class="btn" id="hub-reload">Erneut versuchen</button></section>';
  root.querySelector('p').textContent=error.message;root.querySelector('button').onclick=()=>location.reload();return;
 }
 
@@ -38,7 +38,7 @@ const formatDenare = value => value.toLocaleString('de-DE');
 const legacyRewards=[{id:'tutoring45',title:'Kostenlose Nachhilfestunde (45 Min.)',cost:25000,type:'coupon',image:'reward-tutoring-pencil.webp'},{id:'split-flight',title:'Flugticket nach Split (Kroatien) · 100 €',cost:200000,type:'coupon',image:'reward-split-flight.webp'},{id:'switch',title:'Nintendo-Switch-Konsole',cost:500000,type:'coupon',image:'reward-switch-hands.webp'},{id:'vfb',title:'VfB-Ticket',cost:80000,type:'coupon',image:'reward-vfb.webp'},{id:'tutoring90',title:'Kostenlose Nachhilfestunde (90 Min.)',cost:50000,type:'coupon',image:'reward-tutoring-pencil.webp'},{id:'avatar',title:'Kloppo mit Basecap',description:'Ein neuer Look für dein .',cost:60,type:'digital',image:'jonas.webp'},{id:'background',title:'Abendblauer Hintergrund',description:'Ein Hintergrund für deine persönliche Übersicht.',cost:40,type:'digital',icon:'landscape'},{id:'coupon',title:'Dein Wunschgutschein',description:'Ein kleiner Wunsch, den du mit deiner Lehrkraft vereinbarst.',cost:100,type:'coupon',icon:'ticket'}];
 let state=JSON.parse(JSON.stringify(context.state));
 try{state.walletSnapshots=JSON.parse(localStorage.getItem(KEY))??{};}catch{state.walletSnapshots={};}
-let role=context.teacher?'teacher':'student',profile=context.userId,studentSection='tasks',rewardsReturnSection='top',denareReturnSection='top',teacherDenareOwner=null,teacherDenareReturn=null,teacherSection='students',managedStudent=null,managementTab='tasks',lastFocus=null,toastTimer;
+let role=context.teacher?'teacher':'student',profile=context.userId,studentSection='tasks',studentTaskTab='tasks',rewardsReturnSection='top',denareReturnSection='top',teacherDenareOwner=null,teacherDenareReturn=null,teacherSection='students',managedStudent=null,managementTab='tasks',lastFocus=null,toastTimer;
 let walletTimer, walletAnimationVersion=0;
 const who=id=>profiles.find(p=>p.id===id),taskBy=id=>state.tasks.find(t=>t.id===id&&!t.deletedAt),rewardBy=id=>rewards.find(r=>r.id===id)??legacyRewards.find(r=>r.id===id),allMyTasks=id=>state.tasks.filter(t=>t.profile===id),myTasks=id=>allMyTasks(id).filter(t=>!t.deletedAt);
 const earned=id=>allMyTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n+(t.awardedPoints??t.points),0)+(state.bonuses??[]).filter(entry=>entry.profile===id).reduce((sum,entry)=>sum+entry.amount,0);
@@ -175,6 +175,10 @@ function render(){
  $$('[data-teacher-denare-back]').forEach(button=>button.onclick=()=>{if(role!=='teacher'||!teacherDenareReturn)return;({teacherSection,managedStudent,managementTab}=teacherDenareReturn);render();window.scrollTo(0,0);});
  $$('[data-student-back]').forEach(button=>button.onclick=()=>{if(role!=='student')return;studentSection=button.dataset.studentBack;render();window.scrollTo(0,0);});
  $$('[data-open-grammar]').forEach(button=>button.onclick=()=>{if(window.KykloppOpenGrammarLink)window.KykloppOpenGrammarLink();else toast('Dieser Link öffnet im Kyklopp des Schülers die Grammatikübersicht.');});
+ $$('[data-student-task-tab]').forEach(button=>{
+  button.onclick=()=>{if(role!=='student')return;studentTaskTab=button.dataset.studentTaskTab;render();};
+  button.onkeydown=event=>{const tabs=$$('[data-student-task-tab]'),index=tabs.indexOf(button),next={ArrowRight:(index+1)%tabs.length,ArrowLeft:(index+tabs.length-1)%tabs.length,Home:0,End:tabs.length-1}[event.key];if(next===undefined)return;event.preventDefault();tabs[next].onclick();$('[data-student-task-tab="'+tabs[next].dataset.studentTaskTab+'"]').focus({preventScroll:true});};
+ });
  $$('[data-denare-history]').forEach(button=>button.onclick=()=>showDenareHistory(button.dataset.denareHistory||profile));
  $$('[data-grant-denare]').forEach(button=>button.onclick=()=>grantDenare());
  $$('[data-deduct-denare]').forEach(button=>button.onclick=()=>grantDenare(true));
@@ -400,7 +404,7 @@ function denareHistory(id){
 
 
 function studentBack(section){
- const title={top:'Übersicht',tasks:'Lernaufträge',rewards:'Belohnungen',denare:'Denare'}[section]||'Lernaufträge';
+ const title={top:'Übersicht',tasks:'Aufträge',rewards:'Belohnungen',denare:'Denare'}[section]||'Lernaufträge';
  return '<button type="button" class="hub-back" data-student-back="'+esc(section)+'">← '+title+'</button>';
 }
 function showDenareHistory(id=profile){
@@ -471,9 +475,9 @@ function animateWallet(){
 }
 
 function wallet(showRewards=false){
- const balance='<button type="button" class="quiet-wallet" data-denare-history aria-label="Denare und bisherige Einlösungen ansehen"><img class="denar-icon" src="assets/denar-caesar-v2.png" alt=""><span class="balance" id="wallet-balance">'+formatDenare(available(profile))+'</span><span>Denare</span></button>';
+ const balance='<button type="button" class="quiet-wallet" data-denare-history aria-label="Denare und bisherige Einlösungen ansehen"><img class="denar-icon" src="assets/denar-caesar-v2.png" alt=""><span class="balance" id="wallet-balance">'+formatDenare(available(profile))+'</span><span class="wallet-currency">Denare</span></button>';
  const gift='<button type="button" class="quiet-wallet reward-link" data-target="rewards" aria-label="Belohnungen ansehen" title="Belohnungen ansehen"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v9H4zM3 8h18v4H3zM12 8v13M12 8H8.5A2.5 2.5 0 1 1 11 5.5L12 8Zm0 0h3.5A2.5 2.5 0 1 0 13 5.5L12 8Z"/></svg></button>';
- return '<div class="wallet-actions"><div class="wallet-with-change">'+balance+'<span class="wallet-change" id="wallet-change" role="status" aria-live="polite"></span></div>'+(showRewards?gift:'')+'</div>';
+ return '<div class="wallet-actions'+(formatDenare(available(profile)).length>9?' wallet-wide':'')+'"><div class="wallet-with-change">'+balance+'<span class="wallet-change" id="wallet-change" role="status" aria-live="polite"></span></div>'+(showRewards?gift:'')+'</div>';
 }
 const completedPageSize = 5;
 function completedTasks(tasks) {
@@ -485,7 +489,11 @@ function studentPage(){
  if(studentSection==='denare')return denarePage();
  if(studentSection==='rewards')return studentBack(rewardsReturnSection)+'<header class="page-head"><div><h1>Belohnungen</h1><p class="quiet-subtitle">Mit deinen verdienten Denaren kannst du dir eine Belohnung aussuchen.</p></div>'+wallet()+'</header><div class="reward-grid">'+rewardCard(rewardChoices.voucher,'voucher')+rewardCard(rewardChoices.park,'park')+rewardCard(specialReward(profile),'special')+'</div><p class="quiet-foot">Sprich die Belohnung zuerst mit deinen Eltern ab. Danach kannst du sie bei deiner Lehrkraft anfragen.</p>';
  const overview=studentSection==='top',shown=overview?todo.slice(0,2):todo;
- return '<header class="page-head"><div><h1>'+(overview?'Hallo, '+esc(p.name)+'!':'Lernaufträge')+'</h1><p class="quiet-subtitle">'+(overview?'Schicke deine Lösungen über Discord und setze dann den Haken. Denare erhältst du nach der Korrektur.':'Schicke deine Lösungen über Discord und setze dann den Haken. Denare erhältst du nach der Korrektur.')+'</p></div>'+wallet(true)+'</header><section class="quiet-panel" id="tasks"><div class="quiet-panel-heading"><h2>'+(overview?'Aufgaben':'Lernaufträge')+'</h2>'+(overview&&active.length?'<button class="link" data-target="tasks">Alle Aufgaben →</button>':'')+'</div>'+(shown.length?shown.map(taskCard).join(''):'<div class="quiet-empty">'+'Heute ist noch nichts offen.'+'</div>')+'</section>'+ (feedbackTasks.length?'<section class="quiet-panel waiting-panel" aria-labelledby="waiting-title"><div class="quiet-panel-heading"><h2 id="waiting-title">Rückmeldung</h2></div>'+feedbackTasks.map(taskCard).join('')+'</section>':'')+(done.length?'<details class="quiet-history"><summary>Erledigt · '+done.length+' Aufgaben</summary><div class="quiet-panel" id="completed-task-rows">'+done.slice(0,completedPageSize).map(taskCard).join('')+'</div>'+(done.length>completedPageSize?'<button class="link completed-more" id="completed-more">Weitere anzeigen</button>':'')+'</details>':'')+'';
+ const tabs='<div class="management-tabs student-task-tabs" role="tablist" aria-label="Aufträge und Rückmeldungen">'+[['tasks','Aufträge'],['feedback','Rückmeldungen']].map(([id,label])=>'<button type="button" role="tab" id="student-task-tab-'+id+'" aria-controls="student-task-panel" aria-selected="'+(studentTaskTab===id)+'" tabindex="'+(studentTaskTab===id?'0':'-1')+'" data-student-task-tab="'+id+'">'+label+'</button>').join('')+'</div>';
+ const pending='<section class="quiet-panel" id="tasks"><div class="quiet-panel-heading"><h2>Aufträge</h2>'+(overview&&todo.length>shown.length?'<button class="link" data-target="tasks">Alle Aufträge →</button>':'')+'</div>'+(shown.length?shown.map(taskCard).join(''):'<div class="quiet-empty">Heute ist noch nichts offen.</div>')+'</section>';
+ const feedback='<section class="quiet-panel waiting-panel" aria-labelledby="waiting-title"><div class="quiet-panel-heading"><h2 id="waiting-title">Rückmeldungen</h2></div>'+(feedbackTasks.length?feedbackTasks.map(taskCard).join(''):'<div class="quiet-empty">Zurzeit gibt es keine offenen Rückmeldungen.</div>')+'</section>'+(done.length?'<details class="quiet-history"><summary>Erledigt · '+done.length+' Aufträge</summary><div class="quiet-panel" id="completed-task-rows">'+done.slice(0,completedPageSize).map(taskCard).join('')+'</div>'+(done.length>completedPageSize?'<button class="link completed-more" id="completed-more">Weitere anzeigen</button>':'')+'</details>':'');
+ return '<header class="page-head assignment-page-head"><h1>'+(overview?'Hallo, '+esc(p.name)+'!':'Aufträge')+'</h1>'+wallet(true)+'<p class="quiet-subtitle">Schicke deine Lösungen über Discord und setze dann den Haken. Denare erhältst du nach der Korrektur.</p></header>'+tabs+'<div id="student-task-panel" role="tabpanel" aria-labelledby="student-task-tab-'+studentTaskTab+'">'+(studentTaskTab==='feedback'?feedback:pending)+'</div>';
+
 }
 function rewardAmount(reward,kind){
  return kind==='voucher'?reward.amount+' €':reward.amount+(reward.amount===1?' Ticket':' Tickets');

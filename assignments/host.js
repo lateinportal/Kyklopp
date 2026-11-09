@@ -56,8 +56,8 @@
  }
  function open(main){
   modal(false);frame=null;
-  if(!window.KykloppHubTransport){main.innerHTML='<section class="panel"><h1>Lernaufträge</h1><p>Melde dich in der Online-Version mit deinem persönlichen Zugangscode an, um deine Lernaufträge zu öffnen.</p></section>';return;}
-  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=0c497649784e"></iframe>';
+  if(!window.KykloppHubTransport){main.innerHTML='<section class="panel"><h1>Aufträge</h1><p>Melde dich in der Online-Version mit deinem persönlichen Zugangscode an, um deine Lernaufträge zu öffnen.</p></section>';return;}
+  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=0166191c2eab"></iframe>';
   frame=main.querySelector('iframe');frame.addEventListener('load',()=>syncHeading(main));
  }
  window.addEventListener('message',event=>{
