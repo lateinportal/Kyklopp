@@ -353,7 +353,6 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  white-space: nowrap;
 }
 .management-tabs button[aria-selected="true"] { border-top-color: var(--blue); background: #fff; color: var(--blue); }
-.management-tabs:not(.student-task-tabs) button:hover { background: #f3f7fb; color: var(--blue); }
 .management-tabs button:focus-visible { outline-offset: -3px; }
 .management-denare { padding: 26px 28px; }
 .management-denare h2 { margin: 0; }
