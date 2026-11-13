@@ -60,16 +60,14 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  gap: 8px;
 }
 .feedback-avatar {
- display: grid;
- place-items: center;
+ display: block;
  width: 26px;
  height: 26px;
+ object-fit: cover;
  border-radius: 50%;
  background: #e2e9f0;
- color: #5f7287;
 }
-.feedback-avatar svg { width: 14px; height: 14px; }
-.feedback-message-teacher .feedback-avatar { background: #deebf9; color: var(--blue); }
+.feedback-avatar-teacher { object-fit: contain; background: #fff2c8; }
 .feedback-message strong { display: block; font-size: 12px; line-height: 1.5; }
 .check-feedback .feedback-message p {
  margin: 4px 0 0;

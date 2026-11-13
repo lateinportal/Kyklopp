@@ -112,7 +112,8 @@ window.KykloppOpenGrammarLink=()=>{
 };
 
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3600)}
-function person(id){const p=who(id);return '<div class="person"><img src="../'+esc(p.image)+'" alt=""><div>'+esc(p.name)+'</div></div>';}
+function profileImage(id){return '../'+(who(id)?.image||'vokabelbilder/favicon/kloppo-gelb-32.png');}
+function person(id){const p=who(id);return '<div class="person"><img src="'+esc(profileImage(id))+'" alt=""><div>'+esc(p.name)+'</div></div>';}
 function dateLabel(date){return date?new Date(date+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'}):'Ohne Termin'}
 function modal(title,body,actions){lastFocus=document.activeElement;$('#modal').classList.toggle('denare-dialog',body.includes('class="denare-history"'));$('#modal').innerHTML='<h2 id="modal-title" tabindex="-1">'+esc(title)+'</h2><div class="modal-body">'+body+'</div><div class="dialog-actions">'+actions+'</div>';$('#modal').onclick=dismissBackdrop;$('#modal').showModal();scheduleGuards();reportModal();$('#modal-title').focus({preventScroll:true});$$('[data-close]').forEach(b=>b.onclick=closeModal)}
 function dismissBackdrop(event){
@@ -400,11 +401,11 @@ function taskCard(t) {
    </div>
    ${t.question||t.answer?`<div class="feedback-thread">
     ${t.question?`<div class="feedback-message">
-     <span class="feedback-avatar" aria-hidden="true">${icon('people')}</span>
+     <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">
      <div><strong>Deine Rückfrage</strong><p>${esc(t.question)}</p></div>
     </div>`:''}
     ${t.answer?`<div class="feedback-message feedback-message-teacher">
-     <span class="feedback-avatar" aria-hidden="true">${icon('people')}</span>
+     <img class="feedback-avatar feedback-avatar-teacher" src="../vokabelbilder/favicon/kloppo-gelb-32.png" alt="">
      <div><strong>Antwort deiner Lehrkraft</strong><p>${esc(t.answer)}</p></div>
     </div>`:''}
    </div>`:''}
