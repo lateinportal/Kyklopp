@@ -603,6 +603,50 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
  outline-offset: -2px;
  border-radius: 4px;
 }
+.feedback-message-actions {
+ display: flex;
+ align-items: center;
+ flex-wrap: wrap;
+ gap: 2px 8px;
+ margin-top: 3px;
+ color: #536980;
+ font-size: .75rem;
+}
+.feedback-message-actions button,
+.feedback-message-actions summary {
+ border: 0;
+ background: transparent;
+ color: inherit;
+ font: inherit;
+ cursor: pointer;
+ padding: 4px 2px;
+}
+.feedback-message-actions summary { list-style: none; }
+.feedback-message-actions summary::-webkit-details-marker { display: none; }
+.feedback-message-actions [data-message-action="edit"],
+.feedback-message-actions [data-message-action="delete"] { text-decoration: underline; }
+.feedback-message-actions [aria-pressed="true"] {
+ background: #e2effa;
+ color: #145991;
+ border-radius: 5px;
+}
+.feedback-message-actions details { position: relative; }
+.feedback-emoji-picker {
+ position: absolute;
+ z-index: 2;
+ inset-inline-start: 0;
+ bottom: 100%;
+ display: grid;
+ grid-template-columns: repeat(3, 32px);
+ background: white;
+ border: 1px solid #d8e3ee;
+ border-radius: 8px;
+ padding: 4px;
+ box-shadow: 0 3px 12px #24384d22;
+}
+.feedback-emoji-picker button { font-size: 1rem; }
+.teacher-item .feedback-message { margin-top: 12px; }
+.teacher-item .feedback-message p { margin: 3px 0; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
