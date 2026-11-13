@@ -339,16 +339,23 @@ function deadlineLabel(task,now=new Date()) {
  return '<span title="Abgabetermin">Frist: '+date+(overdue?' · Überfällig':'')+'</span>';
 }
 function durationLabel(task){
- return task.plannedMinutes==null?'':'<span title="Geplante Dauer">'+task.plannedMinutes+' min</span>';
+ if(task.plannedMinutes==null)return '';
+ return '<span class="task-duration" title="Geplante Dauer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="14" r="7.5"/><path d="M9 2.5h6M12 2.5v4M17.5 8l2-2M12 10v4l2 1.5"/></svg>'+task.plannedMinutes+' min</span>';
 }
 function taskDenareLabel(task){
  const amount=task.status==='approved'?formatDenare(task.awardedPoints??task.points)+'/'+formatDenare(task.points):formatDenare(task.points);
  return '<span class="task-denare" title="Denare" aria-label="'+amount+' Denare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/></svg>'+amount+'</span>';
 }
-function submissionLabel(task) {
+function submissionLabel(task,compact=false) {
  if(!task.submittedAt)return '';
  const date=new Date(task.submittedAt);
  if(Number.isNaN(date.getTime()))return '';
+ if(compact){
+  const submittedDay=date.toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'});
+  const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'2-digit'});
+  const late=/^\d{4}-\d{2}-\d{2}$/.test(task.due??'')&&submittedDay>task.due;
+  return '<span><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?' · Verspätet':'')+'</span>';
+ }
  const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric'});
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
  return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time></span>';
@@ -365,12 +372,10 @@ function taskCard(t) {
    ${!isFinished(t)&&t.description?.trim()?'<small class="check-instruction">'+linkedText(t.description.trim())+'</small>':''}
    ${attachmentLinks(t)}
    <div class="check-facts">
-    ${isFinished(t)?'':`${durationLabel(t)}
-    ${deadlineLabel(t)}`}
+    ${editable?durationLabel(t)+deadlineLabel(t):submissionLabel(t,true)}
     ${t.status==='approved' && t.grade ? `<span class="check-rating"><span class="check-rating-label">Bewertung</span> ${taskStars(t)}</span>` : ''}
     ${taskDenareLabel(t)}
    </div>
-   ${submissionLabel(t)}
   </div>
   <div class="check-meta check-feedback">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
