@@ -2327,7 +2327,7 @@ function examTrainingSelection(){
  let p=activeExam(),s=examStats(p);if(!p)return null;
  let selected=[...s.reviews.sort((a,b)=>(p.history[a.id]?.correctAt||0)-(p.history[b.id]?.correctAt||0)),...s.fresh.slice(0,s.newToday)];
  let ids=new Set(s.cards.map(c=>c.id)),removed=new Set(p.exclude||[]);selected.push(...eligible().filter(c=>!ids.has(c.id)&&!removed.has(c.id)&&pfor(c).reviews&&pfor(c).due<=Date.now()));
- return [...new Map(selected.map(c=>[c.id,c])).values()].filter(c=>pendingTrainingTasks(c,examLevel(p)).length).slice(0,40);
+ return [...new Map(selected.map(c=>[c.id,c])).values()].filter(c=>pendingTrainingTasks(c,examLevel(p)).length);
 }
 function trainingTaskTypes(c,level){const recallOnly=pfor(c).stage>=3;return E.tasks(c,level).filter(t=>!['class','missing'].includes(t.id)&&!(recallOnly&&t.id==='choice'))}
 function settleCompletedTrainingRounds(cards,level){
@@ -2529,8 +2529,8 @@ function dailyTrainingPlan(){
  const used=Object.values(log).filter(day=>day===today).length;
  const quota=state.dailyTraining?.day===today?state.dailyTraining.quota:(fresh.length>150?12:10);
  const remaining=Math.max(0,quota-used),reviews=cards.filter(c=>pfor(c).reviews&&pfor(c).due<=Date.now()&&pendingTrainingTasks(c,state.level).length).sort((a,b)=>pfor(a).due-pfor(b).due);
- const selectedReviews=reviews.slice(0,12),selectedNew=fresh.sort((a,b)=>a.lesson-b.lesson).slice(0,Math.min(remaining,16-selectedReviews.length));
- return {today,quota,used,remaining,fresh,reviews,cards:[...selectedReviews,...selectedNew],newCount:selectedNew.length,reviewCount:selectedReviews.length};
+ const selectedNew=fresh.filter(c=>pendingTrainingTasks(c,state.level).length).sort((a,b)=>a.lesson-b.lesson).slice(0,remaining);
+ return {today,quota,used,remaining,fresh,reviews,cards:[...reviews,...selectedNew],newCount:selectedNew.length,reviewCount:reviews.length};
 }
 function markTrainingIntroduction(c){
  if(activeExam()||pfor(c).reviews)return;
@@ -2551,7 +2551,8 @@ function returnHint(at,now=Date.now()){
 function trainingCompletedCopy(){const hint=trainingReturnHint();return hint.startsWith('Komm ')?esc(hint.replace(/\.$/,''))+' oder gehe ins <strong>Freie Üben</strong> und lerne weiter.':esc(hint)+' Gehe ins <strong>Freie Üben</strong>, wenn du weiterlernen möchtest.'}
 function trainingReturnHint(){
  const p=activeExam(),cards=p?examTrainingSelection():dailyTrainingPlan().cards;
- if(trainingTaskCount(cards,p?examLevel(p):state.level))return 'Eine weitere Portion ist für heute bereit.';
+ const tasks=trainingTaskCount(cards,p?examLevel(p):state.level);
+ if(tasks)return tasks===1?'Eine Aufgabe ist jetzt bereit.':tasks+' Aufgaben sind jetzt bereit.';
  return returnHint(nextTrainingAt());
 }
 function dailyTrainingCopy(){const p=dailyTrainingPlan();return p.cards.length?`Für deine nächste Runde: <strong>${p.newCount} neue Wörter</strong>${p.reviewCount?' und <strong>'+p.reviewCount+' Wiederholungen</strong>':''} · <strong>${trainingTaskCount(p.cards,state.level)} Aufgaben</strong>.<br>Neue Wörter werden automatisch auf die nächsten Tage verteilt.`:`Deine Portion ist geschafft. ${trainingReturnHint()}`}
