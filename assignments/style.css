@@ -471,6 +471,8 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .assignment-page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px}
 .assignment-page-head>h1{min-width:0;margin:0!important}
 .assignment-page-head>.quiet-subtitle{grid-column:1/-1;margin:0}
+.instruction-symbol { white-space: nowrap; }
+.instruction-symbol svg { width: 1em; height: 1em; vertical-align: -0.15em; }
 .assignment-page-head>.wallet-actions{justify-self:end;align-self:center;flex-wrap:nowrap}
 @media(max-width:650px){
  .assignment-page-head{gap:12px 8px}
