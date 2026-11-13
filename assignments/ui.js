@@ -371,7 +371,7 @@ function submissionLabel(task,compact=false) {
   const submittedDay=date.toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'});
   const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'2-digit'});
   const late=/^\d{4}-\d{2}-\d{2}$/.test(task.due??'')&&submittedDay>task.due;
-  return '<span><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?' · Verspätet':'')+'</span>';
+  return '<span><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?'&nbsp;· Verspätet':'')+'</span>';
  }
  const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric'});
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
