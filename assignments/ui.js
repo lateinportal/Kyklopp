@@ -425,7 +425,7 @@ function taskCard(t) {
     </div>`:''}
     ${t.question?`<div class="feedback-message">
      <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">
-     <div><strong>Deine Rückfrage</strong><p>${esc(t.question)}</p></div>
+     <div><strong>${esc(who(t.profile)?.name||'Schüler')}</strong><p>${esc(t.question)}</p></div>
     </div>`:''}
     ${t.answer?`<div class="feedback-message feedback-message-teacher">
      <img class="feedback-avatar feedback-avatar-teacher" src="../vokabelbilder/favicon/kloppo-gelb-32.png" alt="">

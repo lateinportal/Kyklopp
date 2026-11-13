@@ -605,7 +605,7 @@ root.TrainerEngine={normalize,meanings,matches,matchesTranslation,tasks,review,m
  function open(main){
   modal(false);frame=null;
   if(!window.KykloppHubTransport){main.innerHTML='<section class="panel"><h1>Aufträge</h1><p>Melde dich in der Online-Version mit deinem persönlichen Zugangscode an, um deine Lernaufträge zu öffnen.</p></section>';return;}
-  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=6a7bfb34e468"></iframe>';
+  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=9a580616208f"></iframe>';
   frame=main.querySelector('iframe');frame.addEventListener('load',()=>syncHeading(main));
  }
  window.addEventListener('message',event=>{
