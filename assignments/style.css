@@ -453,8 +453,27 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .internal-training-link:hover{color:#155c9e}
 .assignment-grammar-link{display:inline-flex;align-items:center;min-height:32px;margin:-8px 0 0;justify-self:start}
 
-.student-task-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;margin-bottom:20px;border-bottom:0}
-.student-task-tabs button{min-width:0}
+.student-task-tabs {
+ display: inline-grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ gap: 3px;
+ padding: 4px;
+ margin-bottom: 20px;
+ border: 0;
+ border-radius: 12px;
+ background: #dfeaf7;
+ overflow: visible;
+}
+.student-task-tabs button {
+ min-width: 0;
+ padding: 10px 14px;
+ border: 0;
+ border-radius: 9px;
+ background: transparent;
+}
+.student-task-tabs button[aria-selected="true"] {
+ box-shadow: 0 2px 5px #20374e0d;
+}
 #student-task-panel>.quiet-panel{margin-top:0;border-top-left-radius:0;border-top-right-radius:0}
 .task-card-list.quiet-panel,.task-card-list.teacher-list{display:grid;gap:16px;padding:0;background:transparent;border:0;border-radius:0}
 .task-card-list>.task-row,.task-card-list.teacher-list>.teacher-item{margin:0;padding:26px 28px;background:#fff;border:1px solid var(--line);border-radius:17px;min-width:0}
