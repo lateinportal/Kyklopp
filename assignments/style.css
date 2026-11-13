@@ -72,6 +72,7 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 .check-feedback .feedback-message p {
  margin: 4px 0 0;
  padding: 8px 10px;
+ font-size: 12px;
  border: 1px solid var(--line);
  border-radius: 8px;
  background: #fff;
