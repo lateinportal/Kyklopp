@@ -77,13 +77,32 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  background: #fff;
 }
 .check-feedback-summary:empty { display: none; }
+.feedback-discussion-toggle {
+ display: inline-flex;
+ align-items: center;
+ gap: 5px;
+ min-height: 32px;
+ padding: 0 6px;
+ color: var(--muted);
+ font-size: 12px;
+ cursor: pointer;
+ list-style: none;
+}
+.feedback-discussion-toggle::-webkit-details-marker { display: none; }
+.feedback-discussion-toggle svg { width: 16px; height: 16px; }
+.feedback-discussion-toggle:focus-visible { outline: 2px solid var(--blue); border-radius: 4px; }
+.feedback-discussion[open] .feedback-discussion-toggle { color: var(--blue); }
+.check-feedback:has(.feedback-discussion) { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.feedback-discussion[open] { flex: 1 0 100%; min-width: 0; }
 @media (max-width: 900px) {
- .check-feedback:has(.feedback-thread) { display: contents; }
+ .check-feedback:has(.feedback-discussion[open]) { display: contents; }
  .check-feedback-summary { grid-column: 2; }
- .feedback-thread {
+ .feedback-discussion[open] {
   grid-column: 2 / -1;
   order: 1;
-  margin-top: 0;
+ }
+ .feedback-thread {
+  margin-top: 4px;
   overflow-wrap: anywhere;
  }
 }
