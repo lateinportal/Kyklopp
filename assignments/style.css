@@ -14,7 +14,7 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 
  .checklist-row {
  display: grid;
- grid-template-columns: 24px minmax(0, 1.5fr) minmax(0, 1fr) 76px;
+ grid-template-columns: 24px minmax(0, 1.5fr) minmax(0, 1fr) max-content;
  gap: 16px;
  align-items: start;
  padding: 23px 0;
@@ -28,7 +28,7 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 .check-stars { position: relative; display: inline-block; color: #a3afbc; white-space: nowrap; vertical-align: middle; }
 .check-stars > span { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: #9b650b; }
 @media (max-width: 900px) {
- .checklist-row { grid-template-columns: 24px minmax(0, 1fr) 76px; gap: 10px; }
+ .checklist-row { grid-template-columns: 24px minmax(0, 1fr) max-content; gap: 10px; }
  .check-title { grid-column: 2 / -1; }
  .check-feedback { grid-column: 2; }
  .check-finish { grid-column: 3; }
@@ -98,7 +98,19 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 @media (max-width: 900px) {
  .feedback-thread.check-feedback { grid-column: 2 / -1; }
 }
-.check-finish-button { border: 1px solid var(--blue); background: var(--blue); color: #fff; border-radius: 7px; width: 34px; height: 34px; margin-top: 4px; }
+.check-finish-button {
+ border: 1px solid var(--blue);
+ background: var(--blue);
+ color: #fff;
+ border-radius: 7px;
+ min-height: 34px;
+ padding: 6px 10px;
+ margin-top: 4px;
+ font-size: 12px;
+}
+@media (max-width: 480px) {
+ .check-finish-button { max-width: 112px; }
+}
 .check-instruction { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .check-done { display: grid; place-items: center; width: 19px; height: 19px; margin: 3px 0; border-radius: 3px; background: var(--green); color: white; }
 

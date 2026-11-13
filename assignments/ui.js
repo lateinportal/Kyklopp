@@ -416,7 +416,7 @@ function taskCard(t) {
    ${messageCount||canComment?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
   </div>
   <div class="check-meta check-finish">
-   ${canComment?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'" aria-label="Feedback gelesen und Aufgabe vollständig erledigt" title="Feedback gelesen und Aufgabe vollständig erledigt">✓</button>':''}
+   ${canComment?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'">Auftrag abschließen</button>':''}
   </div>
   ${messageCount||canComment?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${t.feedback?.trim()?`<div class="feedback-message feedback-message-teacher">
