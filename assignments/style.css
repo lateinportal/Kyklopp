@@ -432,6 +432,7 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 
 .hub-back{display:inline-flex;align-items:center;border:0;background:none;color:var(--hub-back-color,#718195);padding:8px;font-family:inherit;font-size:var(--hub-back-size,16px);font-weight:400;line-height:normal;margin:0 0 12px;text-align:left;text-decoration:none}
 .hub-back:hover{color:var(--blue)}
+.quiet-panel.denare-page { padding-top: 24px; }
 .denare-page-balance{display:flex;align-items:center;gap:16px;margin-bottom:28px}
 .denare-page-balance img{width:64px;height:64px;object-fit:contain}
 .denare-page-balance span{display:block;color:var(--muted);font-size:14px}
