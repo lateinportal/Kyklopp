@@ -207,11 +207,27 @@ function render(){
  if(student)animateWallet();scheduleGuards();queueMicrotask(reportHeight);
 }
 const grades = [['1',3],['2',2.5],['3',2],['4',1.5],['5',1],['6',0.5]];
+const normalizeGrade = grade => ({'1–2':'2','2–3':'4','3–4':'6'}[grade] ?? grade);
 function taskStars(task) {
- const grade = {'1–2':'2','2–3':'4','3–4':'6'}[task.grade] ?? task.grade;
+ const grade = normalizeGrade(task.grade);
  const stars = grades.find(([value])=>value===grade)?.[1];
  const label = stars===undefined?'Noch keine Sternbewertung':stars.toLocaleString('de-DE')+' Sterne';
  return `<span class="check-stars" role="img" aria-label="${label}"><span aria-hidden="true" style="width:${(stars??0)/3*100}%">★★★</span>★★★</span>`;
+}
+function reviewStarPicker(task) {
+ const grade = normalizeGrade(task.grade);
+ const selected = grades.some(([value])=>value===grade)?grade:'';
+ const choices = [...grades].reverse().map(([value,stars])=>{
+  const label = stars.toLocaleString('de-DE')+(stars===1?' Stern':' Sterne');
+  return `<label title="${label}"><input type="radio" name="review-stars" value="${value}" aria-label="${label}" ${selected===value?'checked':''}></label>`;
+ }).join('');
+ return `<fieldset class="review-rating"><legend>Bewertung</legend>
+  <input id="review-grade" type="hidden" value="${selected}">
+  <div class="review-star-picker">
+   <div id="review-star-display" aria-hidden="true">${taskStars(task)}</div>
+   <div class="review-star-choices">${choices}</div>
+  </div>
+ </fieldset>`;
 }
 const isFinished = task => task.status==='approved' && task.studentReview==='complete';
 function taskSection(task) {
@@ -729,7 +745,14 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  const rated=editing&&t.status==='approved';
  const previousAward=t.awardedPoints??t.points;
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
- modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}<div class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label><label>Sterne<select id="review-grade"><option value="">Bewertung auswählen</option>${grades.map(([grade,stars])=>'<option value="'+grade+'" '+(t.grade===grade?'selected':'')+'>'+grade+' · '+stars.toLocaleString('de-DE')+' / 3 Sterne</option>').join('')}</select></label></div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+(editing?'':'<button class="btn secondary" id="missing-task">Abgabe fehlt</button><button class="btn secondary" id="revise-task">Zur Überarbeitung</button>')+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='revise'&&!feedback){toast('Schreibe kurz dazu, was noch verbessert werden soll.');return}if(status==='approved'){
+ modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}<div class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+(editing?'':'<button class="btn secondary" id="missing-task">Abgabe fehlt</button><button class="btn secondary" id="revise-task">Zur Überarbeitung</button>')+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();
+ $$('#modal [name="review-stars"]').forEach(radio=>{
+  radio.onchange=()=>{
+   $('#review-grade').value=radio.value;
+   $('#review-star-display').innerHTML=taskStars({grade:radio.value});
+  };
+ });
+ const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='revise'&&!feedback){toast('Schreibe kurz dazu, was noch verbessert werden soll.');return}if(status==='approved'){
  const field=$('#award-points'),points=Number(field.value),grade=$('#review-grade').value;
  if(field.value.trim()===''||!Number.isSafeInteger(points)||points<minAward||points>t.points){$('#review-error').textContent='Wähle eine ganze Zahl zwischen '+minAward+' und '+t.points+'.';return;}
  if(!grades.some(([value])=>value===grade)){$('#review-error').textContent='Wähle eine Sternbewertung.';return;}
