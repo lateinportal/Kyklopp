@@ -267,15 +267,6 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 .denare-history-cost.denare-credit { color: var(--green); }
 .denare-history-cost.denare-debit { color: #bb3541; }
 
-.deadline { display: inline-block; }
-.deadline.deadline-soon, .deadline.deadline-overdue {
- border: 1px solid;
- border-radius: 4px;
- padding: 2px 7px;
- line-height: 1.5;
-}
-.deadline.deadline-soon { border-color: #d8a729; background: #fff8e5; color: #79560f; }
-.deadline.deadline-overdue { border-color: #d75c67; background: #fcebed; color: #a32d3b; font-weight: 600; }
 
 .denare-grant-action { gap: 10px; flex-wrap: wrap; }
 .btn.danger { background: #b73a46; border-color: #b73a46; color: #fff; }
@@ -405,19 +396,15 @@ dialog, .student-table, .grant-search-results, .denare-history { scrollbar-gutte
  .assignment-metrics { grid-template-columns: 1fr; }
 }
 
-.check-facts > span, .deadline {
+.check-facts > span {
  display: inline-flex;
  align-items: center;
- border: 1px solid #dce7f2;
- border-radius: 4px;
- padding: 2px 7px;
- background: #f1f6fc;
- color: #627b96;
+ color: #65717e;
  line-height: 1.5;
 }
-.check-facts { gap: 6px 8px; }
-.deadline.deadline-soon { border-color: #d8a729; background: #fff8e5; color: #79560f; }
-.deadline.deadline-overdue { border-color: #d75c67; background: #fcebed; color: #a32d3b; }
+.check-facts { gap: 6px 14px; }
+.task-denare { gap: 4px; }
+.task-denare svg { width: 15px; height: 15px; }
 .check-title > strong a, .teacher-item h3 a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 
 .task-delete-button.btn{color:#b73a42;border-color:#edc6c9;background:#fff}.task-delete-button.btn:hover{background:#fff0f1}.task-delete-confirm.btn{background:#be3e47;border-color:#be3e47;color:#fff}
