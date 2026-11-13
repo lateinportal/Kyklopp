@@ -103,7 +103,8 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 .check-stars { line-height: 1; transform: translateY(-1px); }
 
 .check-finish { display: flex; justify-content: flex-end; gap: 8px; }
-.check-question-button { background: #fff; color: var(--blue); font-weight: 700; }
+.feedback-comment-form { display: grid; gap: 8px; justify-items: end; }
+.feedback-comment-form textarea { width: 100%; min-width: 0; resize: vertical; }
 .completed-more { margin-top: 12px; }
 .reward-card h3 { grid-row: 1 / 3; align-self: center; }
 .reward-art img { width: 100%; height: 100%; object-fit: contain; }
