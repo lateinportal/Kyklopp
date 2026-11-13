@@ -378,8 +378,10 @@ function taskCard(t) {
    </div>
   </div>
   <div class="check-meta check-feedback">
+   <div class="check-feedback-summary">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${t.feedback?'<p>'+formattedFeedback(t.feedback)+'</p>':''}
+   </div>
    ${t.question||t.answer?`<div class="feedback-thread">
     ${t.question?`<div class="feedback-message">
      <span class="feedback-avatar" aria-hidden="true">${icon('people')}</span>
