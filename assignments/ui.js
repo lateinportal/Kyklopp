@@ -434,10 +434,16 @@ function taskCard(t) {
      <img class="feedback-avatar feedback-avatar-teacher" src="../vokabelbilder/favicon/kloppo-gelb-32.png" alt="">
      <div><strong>Antwort deiner Lehrkraft</strong><p>${esc(t.answer)}</p></div>
     </div>`:''}
-    ${canComment?`<form class="feedback-comment-form" data-task-comment="${esc(t.id)}">
-     <textarea name="comment" rows="2" maxlength="800" required aria-label="Kommentar" placeholder="Schreibe einen Kommentar …"></textarea>
-     <button type="submit" class="btn secondary">Senden</button>
-    </form>`:''}
+    ${canComment?`<div class="feedback-message">
+     <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">
+     <div>
+      <strong>${esc(who(t.profile)?.name||'Schüler')}</strong>
+      <form class="feedback-comment-form" data-task-comment="${esc(t.id)}">
+       <textarea name="comment" rows="2" maxlength="800" required aria-label="Kommentar" placeholder="Schreibe einen Kommentar …"></textarea>
+       <button type="submit" class="btn secondary">Senden</button>
+      </form>
+     </div>
+    </div>`:''}
   </div>`:''}
  </article>`;
 }

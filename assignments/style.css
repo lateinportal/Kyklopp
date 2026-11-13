@@ -74,7 +74,8 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 }
 .feedback-avatar-teacher { object-fit: contain; background: #fff2c8; }
 .feedback-message strong { display: block; font-size: 12px; line-height: 1.5; }
-.check-feedback .feedback-message p {
+.check-feedback .feedback-message p,
+.feedback-message .feedback-comment-form textarea {
  margin: 4px 0 0;
  padding: 8px 10px;
  font-size: 12px;
@@ -140,7 +141,10 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 
 .check-finish { display: flex; justify-content: flex-end; gap: 8px; }
 .feedback-comment-form { display: grid; gap: 8px; justify-items: end; }
-.feedback-comment-form textarea { width: 100%; min-width: 0; resize: vertical; }
+.feedback-comment-form textarea { width: 100%; min-width: 0; line-height: inherit; resize: vertical; }
+@media (hover: none) and (pointer: coarse) {
+ .feedback-message .feedback-comment-form textarea { font-size: 16px; }
+}
 .completed-more { margin-top: 12px; }
 .reward-card h3 { grid-row: 1 / 3; align-self: center; }
 .reward-art img { width: 100%; height: 100%; object-fit: contain; }
