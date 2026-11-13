@@ -380,8 +380,16 @@ function taskCard(t) {
   <div class="check-meta check-feedback">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${t.feedback?'<p>'+formattedFeedback(t.feedback)+'</p>':''}
-   ${t.question?'<p><strong>Deine Rückfrage</strong><br>'+esc(t.question)+'</p>':''}
-   ${t.answer?'<p><strong>Antwort deiner Lehrkraft</strong><br>'+esc(t.answer)+'</p>':''}
+   ${t.question||t.answer?`<div class="feedback-thread">
+    ${t.question?`<div class="feedback-message">
+     <span class="feedback-avatar" aria-hidden="true">${icon('people')}</span>
+     <div><strong>Deine Rückfrage</strong><p>${esc(t.question)}</p></div>
+    </div>`:''}
+    ${t.answer?`<div class="feedback-message feedback-message-teacher">
+     <span class="feedback-avatar" aria-hidden="true">${icon('people')}</span>
+     <div><strong>Antwort deiner Lehrkraft</strong><p>${esc(t.answer)}</p></div>
+    </div>`:''}
+   </div>`:''}
   </div>
   <div class="check-meta check-finish">
    ${t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'<button type="button" class="check-finish-button check-question-button" aria-label="Rückfrage stellen" title="Rückfrage stellen" data-task-question="'+esc(t.id)+'">?</button>':''}
