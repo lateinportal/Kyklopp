@@ -103,6 +103,14 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
 @media (max-width: 900px) {
  .feedback-thread.check-feedback { grid-column: 2 / -1; }
 }
+.checklist-row:has(> .feedback-thread) {
+ grid-template-columns: 24px minmax(0, 1fr) max-content;
+}
+.checklist-row:has(> .feedback-thread) > .check-title,
+.checklist-row:has(> .feedback-thread) > .feedback-thread { grid-column: 2 / -1; }
+.checklist-row:has(> .feedback-thread) > .check-feedback:not(.feedback-thread) { grid-column: 2; }
+.checklist-row:has(> .feedback-thread) > .check-finish { grid-column: 3; }
+.checklist-row:has(> .feedback-thread) > .check-finish:empty { display: none; }
 .check-finish-button {
  border: 1px solid var(--blue);
  background: var(--blue);
