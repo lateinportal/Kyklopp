@@ -59,6 +59,11 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  align-items: start;
  gap: 8px;
 }
+.feedback-thread .feedback-review-facts {
+ margin: 0;
+ padding-bottom: 8px;
+ border-bottom: 1px solid var(--line);
+}
 .feedback-avatar {
  display: block;
  width: 26px;

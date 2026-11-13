@@ -394,6 +394,12 @@ function taskCard(t) {
  const canComment=t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question';
  const messageCount=[t.feedback,t.question,t.answer].filter(message=>message?.trim()).length;
  const editable = ['open','revise','missing'].includes(t.status);
+ const reviewFacts=editable?'':[
+  submissionLabel(t,true),
+  t.status==='approved'&&t.grade?`<span class="check-rating">Bewertung ${taskStars(t)}</span>`:'',
+  taskDenareLabel(t)
+ ].join('');
+ const hasDiscussion=Boolean(messageCount||canComment||reviewFacts);
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
@@ -403,22 +409,19 @@ function taskCard(t) {
    <strong>${linkedText(t.reference)}</strong>
    ${t.description?.trim()?'<small class="check-instruction">'+linkedText(t.description.trim())+'</small>':''}
    ${attachmentLinks(t)}
-   <div class="check-facts">
-    ${editable?durationLabel(t)+deadlineLabel(t):submissionLabel(t,true)}
-    ${t.status==='approved' && t.grade ? `<span class="check-rating"><span class="check-rating-label">Bewertung</span> ${taskStars(t)}</span>` : ''}
-    ${taskDenareLabel(t)}
-   </div>
+   ${editable?`<div class="check-facts">${durationLabel(t)+deadlineLabel(t)+taskDenareLabel(t)}</div>`:''}
   </div>
   <div class="check-meta check-feedback">
    <div class="check-feedback-summary">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    </div>
-   ${messageCount||canComment?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
+   ${hasDiscussion?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
   </div>
   <div class="check-meta check-finish">
    ${canComment?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'">Auftrag abschließen</button>':''}
   </div>
-  ${messageCount||canComment?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
+  ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
+    ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
     ${t.feedback?.trim()?`<div class="feedback-message feedback-message-teacher">
      <img class="feedback-avatar feedback-avatar-teacher" src="../vokabelbilder/favicon/kloppo-gelb-32.png" alt="">
      <div><strong>Rückmeldung deiner Lehrkraft</strong><p>${formattedFeedback(t.feedback)}</p></div>
