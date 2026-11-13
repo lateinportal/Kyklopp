@@ -170,6 +170,13 @@ function render(){
   };
  }
  $$('[data-task-complete]').forEach(b=>b.onclick=()=>studentFeedback(b.dataset.taskComplete));
+ $$('[data-feedback-toggle]').forEach(button=>{
+  button.onclick=()=>{
+   const thread=document.getElementById(button.dataset.feedbackToggle);
+   thread.hidden=!thread.hidden;
+   button.setAttribute('aria-expanded',String(!thread.hidden));
+  };
+ });
  $$('[data-task-comment]').forEach(form=>{
   form.onsubmit=submitEvent=>{
    submitEvent.preventDefault();
@@ -259,7 +266,10 @@ async function studentFeedback(id, comment=null) {
  await save();
  render();
  const thread=document.getElementById('feedback-thread-'+id);
- if(thread)thread.open=true;
+ if(thread){
+  thread.hidden=false;
+  document.getElementById('feedback-toggle-'+id)?.setAttribute('aria-expanded','true');
+ }
 }
 
 async function answerTaskQuestion(id) {
@@ -403,9 +413,12 @@ function taskCard(t) {
    <div class="check-feedback-summary">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    </div>
-   ${messageCount||canComment?`<details class="feedback-discussion" id="feedback-thread-${esc(t.id)}">
-    <summary class="feedback-discussion-toggle" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</summary>
-    <div class="feedback-thread">
+   ${messageCount||canComment?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
+  </div>
+  <div class="check-meta check-finish">
+   ${canComment?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'" aria-label="Feedback gelesen und Aufgabe vollständig erledigt" title="Feedback gelesen und Aufgabe vollständig erledigt">✓</button>':''}
+  </div>
+  ${messageCount||canComment?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${t.feedback?.trim()?`<div class="feedback-message feedback-message-teacher">
      <img class="feedback-avatar feedback-avatar-teacher" src="../vokabelbilder/favicon/kloppo-gelb-32.png" alt="">
      <div><strong>Rückmeldung deiner Lehrkraft</strong><p>${formattedFeedback(t.feedback)}</p></div>
@@ -422,12 +435,7 @@ function taskCard(t) {
      <textarea name="comment" rows="2" maxlength="800" required aria-label="Kommentar" placeholder="Schreibe einen Kommentar …"></textarea>
      <button type="submit" class="btn secondary">Senden</button>
     </form>`:''}
-    </div>
-   </details>`:''}
-  </div>
-  <div class="check-meta check-finish">
-   ${t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'" aria-label="Feedback gelesen und Aufgabe vollständig erledigt" title="Feedback gelesen und Aufgabe vollständig erledigt">✓</button>':''}
-  </div>
+  </div>`:''}
  </article>`;
 }
 
