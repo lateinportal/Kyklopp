@@ -750,7 +750,7 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 }
 .feedback-instruction { font-size: 12px; color: var(--muted); }
 .feedback-instruction summary { cursor: pointer; }
-.check-instruction .fact-resource { vertical-align: middle; }
+.check-instruction .fact-resource { vertical-align: middle; margin-block: 3px; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
