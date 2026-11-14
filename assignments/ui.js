@@ -576,7 +576,7 @@ function taskCard(t) {
    <strong>${resources.reference}</strong>
    ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
    ${editable?resources.otherLinks:''}
-   ${finished?`<div class="check-facts">${rating}${denare}${discussionToggle(t,messageCount,true)}</div>`:''}
+   ${finished?`<div class="check-facts completed-facts"><div>${rating}</div><div>${denare}</div>${discussionToggle(t,messageCount,true)}</div>`:''}
    ${editable?`<div class="check-facts">${durationLabel(t)+deadlineLabel(t)+taskDenareLabel(t)+resources.facts}</div>`:''}
   </div>
   ${finished?'':`<div class="check-meta check-feedback">
