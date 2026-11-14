@@ -763,6 +763,7 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 @media (max-width: 480px) {
  .completed-facts { gap: 6px; }
 }
+.discussion-unread .discussion-message-count { display: none; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }

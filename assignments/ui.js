@@ -542,7 +542,7 @@ function discussionToggle(task,messageCount,reviewFacts=false){
  const unread=hasUnreadDiscussion(task);
  const label=messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Rückfrage stellen';
  const bell='<svg class="discussion-bell" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>';
- return `<button type="button" class="feedback-discussion-toggle${unread?' discussion-unread':''}" id="feedback-toggle-${esc(task.id)}" data-discussion-task="${esc(task.id)}" data-read-label="${esc(label)}" data-feedback-toggle="feedback-thread-${esc(task.id)}" aria-controls="feedback-thread-${esc(task.id)}" aria-expanded="false" aria-label="${esc(unread?'Neue Nachricht · '+label:label)}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}${unread?bell:''}</button>`;
+ return `<button type="button" class="feedback-discussion-toggle${unread?' discussion-unread':''}" id="feedback-toggle-${esc(task.id)}" data-discussion-task="${esc(task.id)}" data-read-label="${esc(label)}" data-feedback-toggle="feedback-thread-${esc(task.id)}" aria-controls="feedback-thread-${esc(task.id)}" aria-expanded="false" aria-label="${esc(unread?'Neue Nachricht · Gesprächsverlauf öffnen':label)}">${icon('comment')}${messageCount?'<span class="discussion-message-count">'+messageCount+'</span>':''}${unread?bell:''}</button>`;
 }
 function teacherDiscussion(task){
  const messages=conversationMessages(task);
