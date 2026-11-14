@@ -501,6 +501,7 @@ function taskCard(t) {
   <div class="check-meta check-feedback">
    <div class="check-feedback-summary">
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
+   ${reviewLabels(t)}
    </div>
    ${hasDiscussion?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
   </div>
@@ -793,7 +794,7 @@ function managementTaskCard(t){
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
     const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Erledigt · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
-    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span><h3>${linkedText(t.reference)}</h3>${t.description?'<p>'+linkedText(t.description)+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)}</div>${submissionLabel(t)}${attachmentLinks(t)}${conversationMarkup(t)}</div>
+    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span>${reviewLabels(t)}<h3>${linkedText(t.reference)}</h3>${t.description?'<p>'+linkedText(t.description)+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)}</div>${submissionLabel(t)}${attachmentLinks(t)}${conversationMarkup(t)}</div>
      <div class="review-actions"><button class="btn secondary" data-edit-task="${esc(t.id)}">Aufgabe bearbeiten</button>
      ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}<button type="button" class="btn secondary task-delete-button" data-delete-task="${esc(t.id)}">Auftrag löschen</button></div></article>`;
 
@@ -849,11 +850,56 @@ function teacherPage(){
  const questionList=questions.length?'<div class="teacher-list">'+questions.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3>'+conversationMarkup(t)+'</div><button class="btn secondary" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button></article>').join('')+'</div>':'';
  return heading+questionList+(pending.length?'<div class="teacher-list">'+pending.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3><p>'+t.points+' Denare</p>'+submissionLabel(t)+'</div><button class="btn secondary" data-review="'+t.id+'">Rückmeldung geben</button></article>').join('')+'</div>':'<div class="quiet-panel quiet-empty">Zurzeit wartet keine Abgabe auf Rückmeldung.</div>');
 }
+function reviewLabels(task){
+ return (task.reviewLabels??[]).map(label=>'<span class="check-status review-custom-label">'+esc(label)+'</span>').join('');
+}
+function reviewLabelPicker(task,editing){
+ const statuses=[['approved','Ohne Statuslabel'],['revise','Bitte überarbeiten'],['missing','Abgabe fehlt']];
+ const options=editing?'':statuses.map(([value,label])=>'<label><input type="radio" name="review-status" value="'+value+'" '+(value==='approved'?'checked':'')+'>'+label+'</label>').join('');
+ return '<fieldset class="review-label-picker"><legend>Labels</legend>'+options+'<div id="review-custom-labels"></div><div class="review-label-add"><input id="review-new-label" maxlength="40" aria-label="Eigenes Label" placeholder="Eigenes Label"><button type="button" class="btn secondary" id="review-add-label">Hinzufügen</button></div></fieldset>';
+}
+function bindReviewLabels(task,editing){
+ const chosen=new Set(task.reviewLabels??[]);
+ const labels=new Set(state.tasks.flatMap(entry=>entry.reviewLabels??[]));
+ const renderLabels=()=>{
+  $('#review-custom-labels').innerHTML=[...labels].map(label=>'<label><input type="checkbox" data-review-label="'+esc(label)+'" '+(chosen.has(label)?'checked':'')+'>'+esc(label)+'</label>').join('');
+  $$('[data-review-label]').forEach(input=>input.onchange=()=>{
+   if(input.checked)chosen.add(input.dataset.reviewLabel);
+   else chosen.delete(input.dataset.reviewLabel);
+  });
+ };
+ const field=$('#review-new-label');
+ field.oninput=()=>field.setCustomValidity('');
+ const add=()=>{
+  field.setCustomValidity('');
+  const label=field.value.trim();
+  if(!label)return;
+  const reserved=['bitte überarbeiten','abgabe fehlt','feedback','korrigiert','rückfrage offen','wartet auf rückmeldung'];
+  if(reserved.includes(label.toLowerCase().replace(/[.!]+$/,''))){
+   field.setCustomValidity('Dieser Name ist für ein Statuslabel reserviert.');
+   field.reportValidity();
+   return;
+  }
+  labels.add(label);
+  chosen.add(label);
+  field.value='';
+  renderLabels();
+ };
+ $('#review-add-label').onclick=add;
+ field.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();add();}};
+ if(!editing)$$('[name="review-status"]').forEach(input=>input.onchange=()=>{
+  $('#review-rating-fields').hidden=input.value!=='approved';
+  $('#review-error').textContent='';
+ });
+ renderLabels();
+ return chosen;
+}
 function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const editing=['approved','revise','missing'].includes(t.status);if(!editing&&t.status!=='submitted')return;
  const rated=editing&&t.status==='approved';
  const previousAward=t.awardedPoints??t.points;
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
- modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}<div class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+(editing?'':'<button class="btn secondary" id="missing-task">Abgabe fehlt</button><button class="btn secondary" id="revise-task">Zur Überarbeitung</button>')+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();
+ modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}${reviewLabelPicker(t,editing)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();
+ const chosenLabels=bindReviewLabels(t,editing);
  $$('#modal [name="review-stars"]').forEach(radio=>{
   radio.onchange=()=>{
    $('#review-grade').value=radio.value;
@@ -868,13 +914,12 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  t.awardedPoints=points;
  t.awardedAt??=Date.now();
  t.grade=grades.some(([value])=>value===grade)?grade:'';
- }t.feedback=feedback;t.status=status;await save();closeModal();render();toast(editing?'Rückmeldung gespeichert.':status==='approved'?who(t.profile).name+' erhält '+t.awardedPoints+' Denare.':'Die Rückmeldung wartet jetzt im Schülerprofil.')};$('#approve-task').onclick=()=>finish(editing?t.status:'approved');if(editing)return;$('#revise-task').onclick=()=>finish('revise');$('#missing-task').onclick=async()=>{
- if(t.status!=='submitted')return;
- t.feedback=$('#feedback').value.trim();
- t.status='missing';
- await save();closeModal();render();
- toast('Der Hinweis zur fehlenden Abgabe steht jetzt beim Schüler.');
-}}
+ }if(chosenLabels.size>20){$('#review-error').textContent='Wähle höchstens 20 Labels pro Auftrag.';return;}
+ if(chosenLabels.size||t.reviewLabels)t.reviewLabels=[...chosenLabels];
+ t.feedback=feedback;t.status=status;await save();closeModal();render();toast(editing?'Rückmeldung gespeichert.':status==='approved'?who(t.profile).name+' erhält '+t.awardedPoints+' Denare.':'Die Rückmeldung wartet jetzt im Schülerprofil.')};
+ $('#approve-task').onclick=()=>finish(editing?t.status:($('[name="review-status"]:checked')?.value||'approved'));
+}
+
 
 function newTask(task=null){
  if(role!=='teacher')return;

@@ -647,6 +647,35 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .feedback-emoji-picker button { font-size: 1rem; }
 .teacher-item .feedback-message { margin-top: 12px; }
 .teacher-item .feedback-message p { margin: 3px 0; }
+.review-label-picker {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ margin: 16px 0;
+ padding: 12px;
+ border: 1px solid #d8e3ee;
+ border-radius: 10px;
+}
+.review-label-picker label {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ padding: 5px 8px;
+ background: #eef4fa;
+ border-radius: 8px;
+}
+#review-custom-labels,
+.review-label-add {
+ display: flex;
+ flex: 1 0 100%;
+ flex-wrap: wrap;
+ gap: 8px;
+}
+#review-custom-labels:empty { display: none; }
+#review-new-label { flex: 1 1 150px; min-width: 0; }
+#review-rating-fields[hidden] { display: none; }
+.review-custom-label { display: inline-block; background: #e8f1fb; color: #264a6d; overflow-wrap: anywhere; }
+.teacher-item .review-custom-label { margin-inline-start: 6px; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
