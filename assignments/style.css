@@ -645,8 +645,11 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
  box-shadow: 0 3px 12px #24384d22;
 }
 .feedback-emoji-picker button { font-size: 1rem; }
-.teacher-item .feedback-message { margin-top: 12px; }
-.teacher-item .feedback-message p { margin: 3px 0; }
+.teacher-discussion-toggle,
+.teacher-discussion { grid-column: 1 / -1; min-width: 0; }
+.teacher-discussion-toggle { margin-top: -8px; }
+.teacher-discussion-toggle:has([aria-expanded="true"]) { margin-bottom: -10px; }
+.teacher-item .teacher-discussion .feedback-message p { color: var(--ink); }
 .review-label-picker {
  display: flex;
  flex-wrap: wrap;

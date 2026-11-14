@@ -287,11 +287,11 @@ function conversationMessages(task){
  ].map(message=>({...message,text:feedbackText(task,message.key,message.original)}))
   .filter(message=>message.text?.trim());
 }
-function conversationMarkup(task,messages=conversationMessages(task)){
+function conversationMarkup(task,messages=conversationMessages(task),withActions=true){
  return messages.map(({key,original,author,label,text})=>`<div class="feedback-message">
   <img class="feedback-avatar" src="${author==='teacher'?'../vokabelbilder/favicon/kloppo-gelb-32.png':esc(profileImage(task.profile))}" alt="">
-  <div><strong>${esc(label)}</strong><p>${key==='feedback'?formattedFeedback(text):esc(text)}</p>
-  ${feedbackActions(task,key,original,author)}</div>
+  <div><strong>${esc(role==='teacher'&&author==='teacher'?(key==='feedback'?'Deine Rückmeldung':'Deine Antwort'):label)}</strong><p>${key==='feedback'?formattedFeedback(text):esc(text)}</p>
+  ${withActions?feedbackActions(task,key,original,author):''}</div>
  </div>`).join('');
 }
 async function saveMessageAction(id,key,field,value){
@@ -308,6 +308,9 @@ async function saveMessageAction(id,key,field,value){
  await save();
  if($('#modal').open)closeModal();
  render();
+ openDiscussion(id);
+}
+function openDiscussion(id){
  const thread=document.getElementById('feedback-thread-'+id);
  if(thread){
   thread.hidden=false;
@@ -359,17 +362,13 @@ async function studentFeedback(id, comment=null) {
  task.studentReview='question';
  await save();
  render();
- const thread=document.getElementById('feedback-thread-'+id);
- if(thread){
-  thread.hidden=false;
-  document.getElementById('feedback-toggle-'+id)?.setAttribute('aria-expanded','true');
- }
+ openDiscussion(id);
 }
 
 async function answerTaskQuestion(id) {
  const task=taskBy(id);
  if(role!=='teacher'||task?.studentReview!=='question')return;
- const history=conversationMessages(task).map(message=>'<p><strong>'+esc(message.label)+'</strong><br>'+esc(message.text)+'</p>').join('');
+ const history='<div class="feedback-thread check-feedback">'+conversationMarkup(task,conversationMessages(task),false)+'</div>';
  modal('Rückfrage beantworten',history+'<label class="feedback-label">Antwort<textarea id="task-question-answer" rows="3" maxlength="800"></textarea></label>','<button class="btn secondary" data-close>Abbrechen</button><button class="btn" id="save-task-answer">Antwort speichern</button>');
  $('#save-task-answer').onclick=async()=>{
   const answer=$('#task-question-answer').value.trim();
@@ -379,6 +378,7 @@ async function answerTaskQuestion(id) {
   await save();
   closeModal();
   render();
+  if(document.getElementById('feedback-toggle-'+id))openDiscussion(id);
  };
 }
 
@@ -485,6 +485,15 @@ function submissionLabel(task,compact=false) {
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
  return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time></span>';
 }
+function discussionToggle(task,messageCount,reviewFacts=false){
+ return `<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(task.id)}" data-feedback-toggle="feedback-thread-${esc(task.id)}" aria-controls="feedback-thread-${esc(task.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`;
+}
+function teacherDiscussion(task){
+ const messages=conversationMessages(task);
+ if(!messages.length)return '';
+ return '<div class="teacher-discussion-toggle">'+discussionToggle(task,messages.length)+'</div>'+
+  '<div class="feedback-thread check-feedback teacher-discussion" id="feedback-thread-'+esc(task.id)+'" hidden>'+conversationMarkup(task,messages)+'</div>';
+}
 function taskCard(t) {
  const canComment=t.status==='approved'&&!isFinished(t);
  const canComplete=canComment&&t.studentReview!=='question';
@@ -513,7 +522,7 @@ function taskCard(t) {
    ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${reviewLabels(t)}
    </div>
-   ${hasDiscussion?`<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(t.id)}" data-feedback-toggle="feedback-thread-${esc(t.id)}" aria-controls="feedback-thread-${esc(t.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`:''}
+   ${hasDiscussion?discussionToggle(t,messageCount,reviewFacts):''}
   </div>
   <div class="check-meta check-finish">
    ${canComplete?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'">Auftrag abschließen</button>':''}
@@ -808,9 +817,9 @@ function managementTaskCard(t){
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
     const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Erledigt · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
-    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span>${reviewLabels(t)}<h3>${linkedText(t.reference)}</h3>${t.description?'<p>'+linkedText(t.description)+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)}</div>${submissionLabel(t)}${attachmentLinks(t)}${conversationMarkup(t)}</div>
+    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span>${reviewLabels(t)}<h3>${linkedText(t.reference)}</h3>${t.description?'<p>'+linkedText(t.description)+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)}</div>${submissionLabel(t)}${attachmentLinks(t)}</div>
      <div class="review-actions"><button class="btn secondary" data-edit-task="${esc(t.id)}">Aufgabe bearbeiten</button>
-     ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}<button type="button" class="btn secondary task-delete-button" data-delete-task="${esc(t.id)}">Auftrag löschen</button></div></article>`;
+     ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}<button type="button" class="btn secondary task-delete-button" data-delete-task="${esc(t.id)}">Auftrag löschen</button></div>${teacherDiscussion(t)}</article>`;
 
 }
 
@@ -861,7 +870,7 @@ function teacherPage(){
  }).join('')+
  '</tbody></table></div>';
  if(teacherSection==='requests')return heading+(requests.length?requests.map(p=>'<article class="teacher-item"><div>'+person(p.profile)+'<h3>'+rewardBy(p.reward).title+'</h3><p>'+formatDenare(p.cost)+' Denare reserviert</p></div><button class="btn secondary" data-request="'+p.id+'">Ansehen</button></article>').join(''):'<div class="quiet-panel quiet-empty">Zurzeit gibt es keine Belohnungsanfragen.</div>');
- const questionList=questions.length?'<div class="teacher-list">'+questions.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3>'+conversationMarkup(t)+'</div><button class="btn secondary" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button></article>').join('')+'</div>':'';
+ const questionList=questions.length?'<div class="teacher-list">'+questions.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3></div><button class="btn secondary" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>'+teacherDiscussion(t)+'</article>').join('')+'</div>':'';
  return heading+questionList+(pending.length?'<div class="teacher-list">'+pending.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3><p>'+t.points+' Denare</p>'+submissionLabel(t)+'</div><button class="btn secondary" data-review="'+t.id+'">Rückmeldung geben</button></article>').join('')+'</div>':'<div class="quiet-panel quiet-empty">Zurzeit wartet keine Abgabe auf Rückmeldung.</div>');
 }
 function reviewLabels(task){
