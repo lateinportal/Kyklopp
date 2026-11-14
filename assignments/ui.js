@@ -395,7 +395,7 @@ function linkedText(value,format=false,collectVideo=null) {
  }).replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s<>"']*?(?:\([^\s<>"']*\)[^\s<>"']*?)?)\)/gi,(match,label,address)=>{
   const href=webAddress(address);
   if(!href)return match;
-  if(collectVideo&&(isLearningVideo(href)||/\b(?:lernvideo|video)\b/i.test(label))){collectVideo(href,label);links.push(esc(label));return '\u0000'+(links.length-1)+'\u0000';}
+  if(collectVideo&&(isLearningVideo(href)||/\b(?:lernvideo|video)\b/i.test(label))){links.push(collectVideo(href,label)||esc(label));return '\u0000'+(links.length-1)+'\u0000';}
   links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(label)+'</a>');
   return '\u0000'+(links.length-1)+'\u0000';
  });
@@ -404,7 +404,12 @@ function linkedText(value,format=false,collectVideo=null) {
   while(address.endsWith(')')&&(address.match(/\)/g)??[]).length>(address.match(/\(/g)??[]).length)address=address.slice(0,-1);
   const href=webAddress(address);
   if(!href)return match;
-  if(collectVideo&&isLearningVideo(href)){collectVideo(href,address);return match.slice(address.length);}
+  if(collectVideo&&isLearningVideo(href)){
+   const video=collectVideo(href,address);
+   if(!video)return match.slice(address.length);
+   links.push(video);
+   return '\u0000'+(links.length-1)+'\u0000'+match.slice(address.length);
+  }
   links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(address)+'</a>');
   return '\u0000'+(links.length-1)+'\u0000'+match.slice(address.length);
  });
@@ -438,7 +443,15 @@ function isLearningVideo(href){
 }
 function assignmentResources(task,compact=true){
  const videos=new Map();
- const addVideo=(href,label)=>{if(!videos.has(href))videos.set(href,label);};
+ const videoLink=(href,label,index)=>
+  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc('Lernvideo '+index+' · '+label)+'" title="'+esc(label)+'">'+siteFavicon(href)+'<span>'+index+'</span></a>';
+ const addVideo=(href,label)=>{
+  if(!videos.has(href))videos.set(href,{label,index:videos.size+1,inline:false});
+  const video=videos.get(href);
+  if(compact)return '';
+  video.inline=true;
+  return videoLink(href,label,video.index);
+ };
  const reference=linkedText(task.reference,false,addVideo)||esc(task.reference);
  const description=linkedText(task.description,false,addVideo);
  const otherLinks=[];
@@ -451,8 +464,8 @@ function assignmentResources(task,compact=true){
  const numberedLink=(label,content)=>' aria-label="'+esc(label)+'" title="'+esc(label)+'">'+content;
  const worksheets=(task.attachments??[]).map((file,index)=>
   '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'"'+numberedLink('Arbeitsblatt '+(index+1)+' · '+file.name,worksheetIcon()+'<span>'+(compact?index+1:esc(file.name))+'</span>')+'</button>');
- const videoLinks=[...videos].map(([href,label],index)=>
-  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer"'+numberedLink('Lernvideo '+(index+1)+' · '+label,siteFavicon(href)+'<span>'+(index+1)+'</span>')+'</a>');
+ const videoLinks=[...videos].filter(([,video])=>!video.inline)
+  .map(([href,{label,index}])=>videoLink(href,label,index));
  return {reference,description,facts:worksheets.concat(videoLinks).join(''),otherLinks:otherLinks.length?'<div class="task-attachments">'+otherLinks.join('')+'</div>':''};
 }
 async function openAttachment(id) {
@@ -562,7 +575,8 @@ function taskCard(t) {
   t.status==='approved'&&t.grade?`<span class="check-rating">Bewertung ${taskStars(t)}</span>`:'',
   taskDenareLabel(t),resources.facts
  ].join('');
- const hasDiscussion=Boolean(messageCount||canComment||reviewFacts);
+ const instruction=resources.description.replaceAll('<br>','').trim();
+ const hasDiscussion=Boolean(messageCount||canComment||reviewFacts||instruction);
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
@@ -570,7 +584,7 @@ function taskCard(t) {
   ${isFinished(t)?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
    <strong>${resources.reference}</strong>
-   ${resources.description.replaceAll('<br>','').trim()?'<small class="check-instruction">'+resources.description+'</small>':''}
+   ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
    ${resources.otherLinks}
    ${editable?`<div class="check-facts">${durationLabel(t)+deadlineLabel(t)+taskDenareLabel(t)+resources.facts}</div>`:''}
   </div>
@@ -586,6 +600,7 @@ function taskCard(t) {
   </div>
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
+    ${!editable&&instruction?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div></details>':''}
     ${conversationMarkup(t,messages)}
     ${canComment?`<div class="feedback-message">
      <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">

@@ -748,6 +748,9 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
  .check-result-corrected,
  .check-feedback-summary:has(> .check-result-corrected:only-child) { display: none; }
 }
+.feedback-instruction { font-size: 12px; color: var(--muted); }
+.feedback-instruction summary { cursor: pointer; }
+.check-instruction .fact-resource { vertical-align: middle; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
