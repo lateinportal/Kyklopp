@@ -435,23 +435,9 @@ function bindFeedbackToolbar() {
 function worksheetIcon(){
  return '<svg class="worksheet-icon" viewBox="0 0 24 28" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h10l6 6v17a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm10 0v7h6"/><path stroke-width="1.3" d="m6 21 2.5-7 2.5 7m-4-2h3m4-5v7h2.3a1.8 1.8 0 0 0 0-3.6H14m0-3.4h2.1a1.7 1.7 0 0 1 0 3.4"/></svg>';
 }
-function isLearningVideo(href){
- const url=new URL(href);
- return /(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be|vimeo\.com|loom\.com)$/.test(url.hostname)||
-  /\.(mp4|webm|mov|m4v)$/i.test(url.pathname)||
-  /\/(videos?|lernvideo)(\/|$)/i.test(url.pathname);
-}
 function assignmentResources(task,compact=true){
- const videos=new Map();
- const resourceLink=(href,label,text,accessible=label)=>
-  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(accessible)+'" title="'+esc(label)+'">'+siteFavicon(href)+(text?'<span>'+esc(text)+'</span>':'')+'</a>';
- const inlineLink=(href,label)=>{
-  if(compact&&(isLearningVideo(href)||/\b(?:lernvideo|video)\b/i.test(label))){
-   if(!videos.has(href))videos.set(href,label);
-   return '';
-  }
-  return resourceLink(href,label,label);
- };
+ const inlineLink=(href,label)=>
+  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+'<span>'+esc(label)+'</span></a>';
  const reference=linkedText(task.reference,false,inlineLink)||esc(task.reference);
  const description=linkedText(task.description,false,inlineLink);
  const otherLinks=[];
@@ -467,9 +453,7 @@ function assignmentResources(task,compact=true){
   const text=compact?(files.length>1?String(index+1):''):file.name;
   return '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'" aria-label="'+esc(label)+'" title="'+esc(label)+'">'+worksheetIcon()+(text?'<span>'+esc(text)+'</span>':'')+'</button>';
  });
- const videoLinks=[...videos].map(([href,label],index)=>
-  resourceLink(href,label,videos.size>1?String(index+1):'','Lernvideo '+(index+1)+' · '+label));
- return {reference,description,facts:worksheets.concat(videoLinks).join(''),otherLinks:otherLinks.length?'<div class="task-attachments">'+otherLinks.join('')+'</div>':''};
+ return {reference,description,facts:worksheets.join(''),otherLinks:otherLinks.length?'<div class="task-attachments">'+otherLinks.join('')+'</div>':''};
 }
 async function openAttachment(id) {
  const permitted=state.tasks.some(task=>!task.deletedAt&&(role==='teacher'||task.profile===profile)&&(task.attachments??[]).some(file=>file.id===id));
@@ -588,7 +572,7 @@ function taskCard(t) {
   <div class="check-title">
    <strong>${resources.reference}</strong>
    ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
-   ${resources.otherLinks}
+   ${editable?resources.otherLinks:''}
    ${editable?`<div class="check-facts">${durationLabel(t)+deadlineLabel(t)+taskDenareLabel(t)+resources.facts}</div>`:''}
   </div>
   <div class="check-meta check-feedback">
@@ -603,7 +587,7 @@ function taskCard(t) {
   </div>
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
-    ${!editable&&instruction?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div></details>':''}
+    ${!editable&&(instruction||resources.otherLinks)?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div>'+resources.otherLinks+'</details>':''}
     ${conversationMarkup(t,messages)}
     ${canComment?`<div class="feedback-message">
      <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">
