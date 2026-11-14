@@ -579,7 +579,7 @@ function taskCard(t) {
   taskDenareLabel(t),resources.facts
  ].join('');
  const instruction=resources.description;
- const hasDiscussion=Boolean(messageCount||canComment||reviewFacts||instruction.replaceAll('<br>','').trim());
+ const hasDiscussion=Boolean(messageCount||canComment||reviewFacts);
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
