@@ -721,6 +721,28 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .fact-resource .site-favicon { margin: 0; }
 .fact-resource { max-width: 100%; }
 .fact-resource span { overflow-wrap: anywhere; }
+.discussion-count {
+ display: inline-grid;
+ place-items: center;
+ min-width: 18px;
+ min-height: 18px;
+ padding: 0 4px;
+ margin-inline-start: 6px;
+ border: 1px solid #efabb2;
+ border-radius: 999px;
+ background: #ffeaec;
+ color: #a22534;
+ font-size: 11px;
+ font-weight: 700;
+ line-height: 1;
+}
+.feedback-discussion-toggle.discussion-unread {
+ border: 1px solid #efabb2;
+ border-radius: 7px;
+ background: #fff0f1;
+ color: #a22534;
+}
+.feedback-discussion-toggle .discussion-bell { width: 13px; height: 13px; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }

@@ -128,7 +128,7 @@ function render(){
  walletAnimationVersion++;
  const student=role==='student';
  const navigation=student?[]:[['people','Schüler','students'],['book','Abgaben','reviews'],['gift','Einlösungen','requests']];
- $('#navigation').innerHTML=navigation.map(([i,text,target],idx)=>'<button class="'+(target===(student?studentSection:teacherSection)?'active':'')+'" data-target="'+target+'">'+icon(i)+'<span>'+text+'</span></button>').join('');$('#main').innerHTML=student?studentPage():teacherPage();
+ $('#navigation').innerHTML=navigation.map(([i,text,target],idx)=>'<button class="'+(target===(student?studentSection:teacherSection)?'active':'')+'" data-target="'+target+'">'+icon(i)+'<span>'+text+'</span>'+(!student&&target==='reviews'?unreadBadge(unreadTasks(state.tasks.filter(t=>!t.deletedAt)),target):'')+'</button>').join('');$('#main').innerHTML=student?studentPage():teacherPage();
  $$('[data-target]').forEach(b=>b.onclick=()=>{if(role==='student'){if(b.dataset.target==='rewards'&&studentSection!=='rewards')rewardsReturnSection=studentSection;studentSection=b.dataset.target;}else {teacherSection=b.dataset.target;managedStudent=null;}render();window.scrollTo(0,0)});
  $('#main').onchange = async ({target}) => {
   if(role==='teacher'&&target.dataset.specialReward&&who(target.dataset.specialReward)){
@@ -176,6 +176,7 @@ function render(){
    const thread=document.getElementById(button.dataset.feedbackToggle);
    thread.hidden=!thread.hidden;
    button.setAttribute('aria-expanded',String(!thread.hidden));
+   if(!thread.hidden){const task=taskBy(button.dataset.discussionTask);if(task)clearDiscussionNotice(task,button);}
   };
  });
  $$('[data-task-comment]').forEach(form=>{
@@ -507,8 +508,47 @@ function submissionLabel(task,compact=false) {
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
  return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time></span>';
 }
+let discussionReads;
+try{discussionReads=JSON.parse(localStorage.getItem(KEY+'-discussion-reads'))||{};}catch{discussionReads={};}
+function discussionReadKey(task){return JSON.stringify([role,task.profile,task.id]);}
+function incomingMessages(task){
+ const incoming=conversationMessages(task).filter(message=>message.author!==role);
+ if(role==='student'&&['approved','revise','missing'].includes(task.status)){
+  incoming.unshift({key:'review-status',text:JSON.stringify([task.status,task.submittedAt,task.grade,task.awardedPoints])});
+ }
+ return incoming;
+}
+function hasUnreadDiscussion(task){
+ const seen=discussionReads[discussionReadKey(task)]??{};
+ return incomingMessages(task).some(({key,text})=>seen[key]!==text);
+}
+function unreadBadge(count,scope){
+ return count?'<span class="discussion-count" data-unread-scope="'+scope+'" aria-label="'+count+' mit neuen Nachrichten">'+count+'</span>':'';
+}
+function unreadTasks(tasks){return tasks.filter(hasUnreadDiscussion).length;}
+function clearDiscussionNotice(task,button){
+ if(!hasUnreadDiscussion(task))return;
+ discussionReads[discussionReadKey(task)]=Object.fromEntries(incomingMessages(task).map(({key,text})=>[key,text]));
+ try{localStorage.setItem(KEY+'-discussion-reads',JSON.stringify(discussionReads));}catch{}
+ button.classList.remove('discussion-unread');
+ button.querySelector?.('.discussion-bell')?.remove();
+ button.setAttribute('aria-label',button.dataset.readLabel);
+ const tasks=role==='student'?myTasks(profile):myTasks(task.profile);
+ const groups=role==='student'?{
+  tasks:tasks.filter(t=>taskSection(t)==='tasks'),feedback:tasks.filter(t=>taskSection(t)!=='tasks')
+ }:{tasks:tasks.filter(t=>taskSection(t)==='tasks'),submissions:tasks.filter(t=>taskSection(t)==='submissions'),
+  done:tasks.filter(t=>taskSection(t)==='done'),reviews:state.tasks.filter(t=>!t.deletedAt)};
+ $$('[data-unread-scope]').forEach(badge=>{
+  const count=unreadTasks(groups[badge.dataset.unreadScope]??[]);
+  if(!count)badge.remove?.();
+  else{badge.textContent=count;badge.setAttribute('aria-label',count+' mit neuen Nachrichten');}
+ });
+}
 function discussionToggle(task,messageCount,reviewFacts=false){
- return `<button type="button" class="feedback-discussion-toggle" id="feedback-toggle-${esc(task.id)}" data-feedback-toggle="feedback-thread-${esc(task.id)}" aria-controls="feedback-thread-${esc(task.id)}" aria-expanded="false" aria-label="${messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben'}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}</button>`;
+ const unread=hasUnreadDiscussion(task);
+ const label=messageCount?'Gesprächsverlauf ('+messageCount+')':reviewFacts?'Rückmeldung anzeigen':'Kommentar schreiben';
+ const bell='<svg class="discussion-bell" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/></svg>';
+ return `<button type="button" class="feedback-discussion-toggle${unread?' discussion-unread':''}" id="feedback-toggle-${esc(task.id)}" data-discussion-task="${esc(task.id)}" data-read-label="${esc(label)}" data-feedback-toggle="feedback-thread-${esc(task.id)}" aria-controls="feedback-thread-${esc(task.id)}" aria-expanded="false" aria-label="${esc(unread?'Neue Nachricht · '+label:label)}">${icon('comment')}${messageCount?'<span>'+messageCount+'</span>':''}${unread?bell:''}</button>`;
 }
 function teacherDiscussion(task){
  const messages=conversationMessages(task);
@@ -677,7 +717,8 @@ function studentPage(){
  if(studentSection==='denare')return denarePage();
  if(studentSection==='rewards')return studentBack(rewardsReturnSection)+'<header class="page-head"><div><h1>Belohnungen</h1><p class="quiet-subtitle">Mit deinen verdienten Denaren kannst du dir eine Belohnung aussuchen.</p></div>'+wallet()+'</header><div class="reward-grid">'+rewardCard(rewardChoices.voucher,'voucher')+rewardCard(rewardChoices.park,'park')+rewardCard(specialReward(profile),'special')+'</div><p class="quiet-foot">Sprich die Belohnung zuerst mit deinen Eltern ab. Danach kannst du sie bei deiner Lehrkraft anfragen.</p>';
  const overview=studentSection==='top',shown=overview?todo.slice(0,2):todo;
- const tabs='<div class="management-tabs student-task-tabs" role="tablist" aria-label="Aufträge und Rückmeldungen">'+[['tasks','Aufträge'],['feedback','Rückmeldungen']].map(([id,label])=>'<button type="button" role="tab" id="student-task-tab-'+id+'" aria-controls="student-task-panel" aria-selected="'+(studentTaskTab===id)+'" tabindex="'+(studentTaskTab===id?'0':'-1')+'" data-student-task-tab="'+id+'">'+label+'</button>').join('')+'</div>';
+ const counts={tasks:unreadTasks(todo),feedback:unreadTasks([...feedbackTasks,...done])};
+ const tabs='<div class="management-tabs student-task-tabs" role="tablist" aria-label="Aufträge und Rückmeldungen">'+[['tasks','Aufträge'],['feedback','Rückmeldungen']].map(([id,label])=>'<button type="button" role="tab" id="student-task-tab-'+id+'" aria-controls="student-task-panel" aria-selected="'+(studentTaskTab===id)+'" tabindex="'+(studentTaskTab===id?'0':'-1')+'" data-student-task-tab="'+id+'">'+label+unreadBadge(counts[id],id)+'</button>').join('')+'</div>';
  const pending='<section class="quiet-panel task-card-list" id="tasks" aria-label="Aufträge">'+(overview&&todo.length>shown.length?'<div class="quiet-panel-heading"><button class="link" data-target="tasks">Alle Aufträge →</button></div>':'')+(shown.length?shown.map(taskCard).join(''):'<div class="quiet-empty">Heute ist noch nichts offen.</div>')+'</section>';
  const feedback='<section class="quiet-panel waiting-panel task-card-list" aria-label="Rückmeldungen">'+(feedbackTasks.length?feedbackTasks.map(taskCard).join(''):'<div class="quiet-empty">Zurzeit gibt es keine offenen Rückmeldungen.</div>')+'</section>'+(done.length?'<details class="quiet-history"><summary>Erledigt · '+done.length+' Aufträge</summary><div class="quiet-panel task-card-list" id="completed-task-rows">'+done.slice(0,completedPageSize).map(taskCard).join('')+'</div>'+(done.length>completedPageSize?'<button class="link completed-more" id="completed-more">Weitere anzeigen</button>':'')+'</details>':'');
  return '<header class="page-head assignment-page-head"><h1>'+(overview?'Hallo, '+esc(p.name)+'!':'Aufträge')+'</h1>'+wallet(true)+'<p class="quiet-subtitle">Bearbeite die Aufgaben vor, während und nach der Nachhilfestunde. Reiche deine Lösungen über Discord ein, erhalte „Denare“ <span class="instruction-symbol">('+icon('denar')+')</span> und schalte dir Belohnungen <span class="instruction-symbol">('+icon('gift')+')</span> frei!</p></header>'+tabs+'<div id="student-task-panel" role="tabpanel" aria-labelledby="student-task-tab-'+studentTaskTab+'">'+(studentTaskTab==='feedback'?feedback:pending)+'</div>';
@@ -872,13 +913,13 @@ function studentManagementPage(p){
   content='<div class="teacher-list">'+picker+(list.length?list.map(managementRewardCard).join(''):'<div class="quiet-empty">'+(pending?'Keine offenen Belohnungsanfragen.':'Noch keine bestätigten Einlösungen.')+'</div>')+'</div>';
  }
  return '<button type="button" class="hub-back" data-target="students">← Schüler</button><header class="page-head management-head"><div><h1>'+esc(p.name)+'</h1><p class="quiet-subtitle">Profil-ID · '+esc(p.id)+'</p></div><button class="btn secondary" data-new-task>Aufgabe zuweisen '+icon('plus')+'</button></header>'+
- '<div class="management-tabs" role="tablist" aria-label="Schülerverwaltung">'+tabs.map(([id,label])=>'<button type="button" role="tab" id="management-tab-'+id+'" aria-controls="management-content" aria-selected="'+(managementTab===id)+'" tabindex="'+(managementTab===id?'0':'-1')+'" data-management-tab="'+id+'">'+label+(counts[id]?'<span class="submission-count tab-count" aria-label="'+counts[id]+' offen">'+counts[id]+'</span>':'')+'</button>').join('')+'</div>'+
+ '<div class="management-tabs" role="tablist" aria-label="Schülerverwaltung">'+tabs.map(([id,label])=>'<button type="button" role="tab" id="management-tab-'+id+'" aria-controls="management-content" aria-selected="'+(managementTab===id)+'" tabindex="'+(managementTab===id?'0':'-1')+'" data-management-tab="'+id+'">'+label+(counts[id]?'<span class="submission-count tab-count" aria-label="'+counts[id]+' offen">'+counts[id]+'</span>':'')+unreadBadge(unreadTasks(tasks.filter(task=>taskSection(task)===id)),id)+'</button>').join('')+'</div>'+
  '<section id="management-content" role="tabpanel" aria-labelledby="management-tab-'+managementTab+'">'+content+'</section>';
 }
 function teacherPage(){
  if(teacherSection==='denare'&&who(teacherDenareOwner)){const name=teacherDenareReturn?.managedStudent?who(teacherDenareReturn.managedStudent)?.name:'Schüler';return denarePage(teacherDenareOwner,'<button type="button" class="hub-back" data-teacher-denare-back>← '+esc(name||'Schüler')+'</button>');}
  if(teacherSection==='students'&&who(managedStudent))return studentManagementPage(who(managedStudent));
- const questions=state.tasks.filter(t=>!t.deletedAt&&t.studentReview==='question');
+ const questions=state.tasks.filter(t=>!t.deletedAt&&(t.studentReview==='question'||(t.status!=='submitted'&&hasUnreadDiscussion(t))));
  const pending=state.tasks.filter(t=>!t.deletedAt&&t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
  const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></header>';
  if(teacherSection==='students')return heading+
@@ -894,8 +935,8 @@ function teacherPage(){
  }).join('')+
  '</tbody></table></div>';
  if(teacherSection==='requests')return heading+(requests.length?requests.map(p=>'<article class="teacher-item"><div>'+person(p.profile)+'<h3>'+rewardBy(p.reward).title+'</h3><p>'+formatDenare(p.cost)+' Denare reserviert</p></div><button class="btn secondary" data-request="'+p.id+'">Ansehen</button></article>').join(''):'<div class="quiet-panel quiet-empty">Zurzeit gibt es keine Belohnungsanfragen.</div>');
- const questionList=questions.length?'<div class="teacher-list">'+questions.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3></div><button class="btn secondary" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>'+teacherDiscussion(t)+'</article>').join('')+'</div>':'';
- return heading+questionList+(pending.length?'<div class="teacher-list">'+pending.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3><p>'+t.points+' Denare</p>'+submissionLabel(t)+'</div><button class="btn secondary" data-review="'+t.id+'">Rückmeldung geben</button></article>').join('')+'</div>':'<div class="quiet-panel quiet-empty">Zurzeit wartet keine Abgabe auf Rückmeldung.</div>');
+ const questionList=questions.length?'<div class="teacher-list">'+questions.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3></div>'+(t.studentReview==='question'?'<button class="btn secondary" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':'')+teacherDiscussion(t)+'</article>').join('')+'</div>':'';
+ return heading+questionList+(pending.length?'<div class="teacher-list">'+pending.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3><p>'+t.points+' Denare</p>'+submissionLabel(t)+'</div><button class="btn secondary" data-review="'+t.id+'">Rückmeldung geben</button>'+teacherDiscussion(t)+'</article>').join('')+'</div>':'<div class="quiet-panel quiet-empty">Zurzeit wartet keine Abgabe auf Rückmeldung.</div>');
 }
 function reviewLabels(task){
  return (task.reviewLabels??[]).map(label=>'<span class="check-status review-custom-label">'+esc(label)+'</span>').join('');
