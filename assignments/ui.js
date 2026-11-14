@@ -346,7 +346,7 @@ async function studentFeedback(id, comment=null) {
  const task=taskBy(id);
  if(role!=='student'||task?.profile!==profile||task.status!=='approved'||isFinished(task))return;
  if(comment===null){
-  if(task.studentReview==='question')return;
+  if(!canCompleteAssignment(task))return;
   task.studentReview='complete';
   task.completedAt=Date.now();
   await save();
@@ -522,6 +522,9 @@ function hasUnreadDiscussion(task){
  const seen=discussionReads[discussionReadKey(task)]??{};
  return incomingMessages(task).some(({key,text})=>seen[key]!==text);
 }
+function canCompleteAssignment(task){
+ return task.status==='approved'&&!isFinished(task)&&task.studentReview!=='question'&&!hasUnreadDiscussion(task);
+}
 function unreadBadge(count,scope){
  return count?'<span class="discussion-count" data-unread-scope="'+scope+'" aria-label="'+count+' mit neuen Nachrichten">'+count+'</span>':'';
 }
@@ -533,6 +536,10 @@ function clearDiscussionNotice(task,button){
  button.classList.remove('discussion-unread');
  button.querySelector?.('.discussion-bell')?.remove();
  button.setAttribute('aria-label',button.dataset.readLabel);
+ if(role==='student'){
+  const complete=document.getElementById('task-complete-'+task.id);
+  if(complete)complete.hidden=!canCompleteAssignment(task);
+ }
  const tasks=role==='student'?myTasks(profile):myTasks(task.profile);
  const groups=role==='student'?{
   tasks:tasks.filter(t=>taskSection(t)==='tasks'),feedback:tasks.filter(t=>taskSection(t)!=='tasks')
@@ -588,7 +595,7 @@ function taskCard(t) {
    ${hasDiscussion?discussionToggle(t,messageCount,reviewFacts):''}
   </div>
   <div class="check-meta check-finish">
-   ${canComplete?'<button type="button" class="check-finish-button" data-task-complete="'+esc(t.id)+'">Auftrag abschließen</button>':''}
+   ${canComplete?'<button type="button" class="check-finish-button" id="task-complete-'+esc(t.id)+'" data-task-complete="'+esc(t.id)+'"'+(canCompleteAssignment(t)?'':' hidden')+'>Auftrag abschließen</button>':''}
   </div>
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
