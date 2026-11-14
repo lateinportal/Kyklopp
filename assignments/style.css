@@ -719,6 +719,8 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .fact-resource:hover { background: #eef5fc; }
 .fact-resource .worksheet-icon { width: 15px; height: 18px; }
 .fact-resource .site-favicon { margin: 0; }
+.fact-resource { max-width: 100%; }
+.fact-resource span { overflow-wrap: anywhere; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }

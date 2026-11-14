@@ -446,7 +446,7 @@ function isLearningVideo(href){
   /\.(mp4|webm|mov|m4v)$/i.test(url.pathname)||
   /\/(videos?|lernvideo)(\/|$)/i.test(url.pathname);
 }
-function assignmentResources(task){
+function assignmentResources(task,compact=true){
  const videos=new Map();
  const addVideo=(href,label)=>{if(!videos.has(href))videos.set(href,label);};
  const reference=linkedText(task.reference,false,addVideo)||esc(task.reference);
@@ -460,7 +460,7 @@ function assignmentResources(task){
  }
  const numberedLink=(label,content)=>' aria-label="'+esc(label)+'" title="'+esc(label)+'">'+content;
  const worksheets=(task.attachments??[]).map((file,index)=>
-  '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'"'+numberedLink('Arbeitsblatt '+(index+1)+' · '+file.name,worksheetIcon()+'<span>'+(index+1)+'</span>')+'</button>');
+  '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'"'+numberedLink('Arbeitsblatt '+(index+1)+' · '+file.name,worksheetIcon()+'<span>'+(compact?index+1:esc(file.name))+'</span>')+'</button>');
  const videoLinks=[...videos].map(([href,label],index)=>
   '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer"'+numberedLink('Lernvideo '+(index+1)+' · '+label,siteFavicon(href)+'<span>'+(index+1)+'</span>')+'</a>');
  return {reference,description,facts:worksheets.concat(videoLinks).join(''),otherLinks:otherLinks.length?'<div class="task-attachments">'+otherLinks.join('')+'</div>':''};
@@ -522,7 +522,7 @@ function taskCard(t) {
  const messages=conversationMessages(t);
  const messageCount=messages.length;
  const editable = ['open','revise','missing'].includes(t.status);
- const resources=assignmentResources(t);
+ const resources=assignmentResources(t,!editable);
  const reviewFacts=editable?'':[
   submissionLabel(t,true),
   t.status==='approved'&&t.grade?`<span class="check-rating">Bewertung ${taskStars(t)}</span>`:'',
@@ -836,7 +836,7 @@ function hasTaskReview(task){
   (task.status==='open'&&Boolean(task.feedback?.trim()||task.reviewLabels?.length));
 }
 function managementTaskCard(t){
-    const resources=assignmentResources(t);
+    const resources=assignmentResources(t,taskSection(t)!=='tasks');
     const hasReview=hasTaskReview(t);
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
     const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Erledigt · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
