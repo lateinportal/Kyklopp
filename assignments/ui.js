@@ -576,7 +576,7 @@ function taskCard(t) {
   </div>
   <div class="check-meta check-feedback">
    <div class="check-feedback-summary">
-   ${!status||t.status==='open'?'':'<span class="check-result'+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
+   ${!status||t.status==='open'?'':'<span class="check-result'+(status==='Korrigiert!'?' check-result-corrected':'')+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${reviewLabels(t)}
    </div>
    ${hasDiscussion?discussionToggle(t,messageCount,reviewFacts):''}

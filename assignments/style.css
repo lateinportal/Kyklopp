@@ -744,6 +744,11 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .feedback-discussion-toggle .discussion-bell { width: 13px; height: 13px; }
 .check-finish-button[hidden] { display: none; }
 
+@media (max-width: 650px) {
+ .check-result-corrected,
+ .check-feedback-summary:has(> .check-result-corrected:only-child) { display: none; }
+}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }
