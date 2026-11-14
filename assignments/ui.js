@@ -253,20 +253,26 @@ function questionHistory(task) {
  return task.questionHistory || [];
 }
 
-const feedbackEmojis=['👍','❤️','😊','🎉','🙏','😕'];
+const feedbackEmojis=['👍','❤️','😊','🎉','🙏','😕','✅','🏅'];
 function feedbackText(task,key,original){
  return task.messageMeta?.[key]?.text ?? original;
+}
+function reactionChoices(value){
+ return Array.isArray(value)?value:value?[value]:[];
 }
 function feedbackActions(task,key,original,author){
  const meta=task.messageMeta?.[key]||{};
  if(meta.text==='')return '';
+ const student=reactionChoices(meta.student),teacher=reactionChoices(meta.teacher);
+ const own=role==='student'?student:teacher;
+ const active=new Set([...student,...teacher]);
  const reactions=feedbackEmojis.map(emoji=>{
-  const count=Number(meta.student===emoji)+Number(meta.teacher===emoji);
-  return count?`<button type="button" data-message-action="reaction" data-emoji="${emoji}" aria-pressed="${meta[role]===emoji}">${emoji} ${count}</button>`:'';
+  const count=Number(student.includes(emoji))+Number(teacher.includes(emoji));
+  return count?`<button type="button" data-message-action="reaction" data-emoji="${emoji}" aria-pressed="${own.includes(emoji)}">${emoji} ${count}</button>`:'';
  }).join('');
  return `<div class="feedback-message-actions" data-message-task="${esc(task.id)}" data-message-key="${key}">
-  ${reactions}<details><summary aria-label="Emoji-Reaktion hinzufügen">☺+</summary><div class="feedback-emoji-picker">
-  ${feedbackEmojis.map(emoji=>`<button type="button" data-message-action="reaction" data-emoji="${emoji}" aria-label="Mit ${emoji} reagieren">${emoji}</button>`).join('')}
+  ${reactions}<details><summary aria-label="Emoji-Reaktion hinzufügen"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20.7 11A8.8 8.8 0 1 0 12 20.8M7.6 13.2a4.7 4.7 0 0 0 7.6 0M9 8.8v1M14.7 8.8v1M18 15v5.5m-2.75-2.75h5.5"/></svg></summary><div class="feedback-emoji-picker">
+  ${feedbackEmojis.map(emoji=>`<button type="button" data-message-action="reaction" data-emoji="${emoji}" aria-label="Mit ${emoji} reagieren" aria-pressed="${own.includes(emoji)}" ${active.size>=4&&!active.has(emoji)?'disabled':''}>${emoji}</button>`).join('')}
   </div></details>
   ${role===author?`<button type="button" data-message-action="edit" data-message-text="${esc(feedbackText(task,key,original))}">Bearbeiten</button><button type="button" data-message-action="delete">Löschen</button>`:''}
  </div>`;
@@ -315,7 +321,11 @@ function messageAction(button){
  if(!task)return;
  if(button.dataset.messageAction==='reaction'){
   const emoji=button.dataset.emoji;
-  return saveMessageAction(id,key,role,task.messageMeta?.[key]?.[role]===emoji?'':emoji);
+  const meta=task.messageMeta?.[key]||{};
+  const selected=reactionChoices(meta[role]);
+  const active=new Set([...reactionChoices(meta.student),...reactionChoices(meta.teacher)]);
+  if(!active.has(emoji)&&active.size>=4)return;
+  return saveMessageAction(id,key,role,selected.includes(emoji)?selected.filter(choice=>choice!==emoji):[...selected,emoji]);
  }
  const deleting=button.dataset.messageAction==='delete';
  const original=button.dataset.messageText;
