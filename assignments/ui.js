@@ -176,7 +176,7 @@ function render(){
    const thread=document.getElementById(button.dataset.feedbackToggle);
    thread.hidden=!thread.hidden;
    button.setAttribute('aria-expanded',String(!thread.hidden));
-   if(!thread.hidden){const task=taskBy(button.dataset.discussionTask);if(task)clearDiscussionNotice(task,button);}
+   if(!thread.hidden){const task=taskBy(button.dataset.discussionTask);if(task)return clearDiscussionNotice(task,button);}
   };
  });
  $$('[data-task-comment]').forEach(form=>{
@@ -508,9 +508,6 @@ function submissionLabel(task,compact=false) {
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
  return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time></span>';
 }
-let discussionReads;
-try{discussionReads=JSON.parse(localStorage.getItem(KEY+'-discussion-reads'))||{};}catch{discussionReads={};}
-function discussionReadKey(task){return JSON.stringify([role,task.profile,task.id]);}
 function incomingMessages(task){
  const incoming=conversationMessages(task).filter(message=>message.author!==role);
  if(role==='student'&&['approved','revise','missing'].includes(task.status)){
@@ -518,8 +515,9 @@ function incomingMessages(task){
  }
  return incoming;
 }
+function discussionReadField(){return role==='student'?'studentDiscussionRead':'teacherDiscussionRead';}
 function hasUnreadDiscussion(task){
- const seen=discussionReads[discussionReadKey(task)]??{};
+ const seen=task[discussionReadField()]??{};
  return incomingMessages(task).some(({key,text})=>seen[key]!==text);
 }
 function canCompleteAssignment(task){
@@ -529,10 +527,10 @@ function unreadBadge(count,scope){
  return count?'<span class="discussion-count" data-unread-scope="'+scope+'" aria-label="'+count+' mit neuen Nachrichten">'+count+'</span>':'';
 }
 function unreadTasks(tasks){return tasks.filter(hasUnreadDiscussion).length;}
-function clearDiscussionNotice(task,button){
+async function clearDiscussionNotice(task,button){
  if(!hasUnreadDiscussion(task))return;
- discussionReads[discussionReadKey(task)]=Object.fromEntries(incomingMessages(task).map(({key,text})=>[key,text]));
- try{localStorage.setItem(KEY+'-discussion-reads',JSON.stringify(discussionReads));}catch{}
+ task[discussionReadField()]=Object.fromEntries(incomingMessages(task).map(({key,text})=>[key,text]));
+ await save();
  button.classList.remove('discussion-unread');
  button.querySelector?.('.discussion-bell')?.remove();
  button.setAttribute('aria-label',button.dataset.readLabel);
