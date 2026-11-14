@@ -123,7 +123,7 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  font-size: 12px;
 }
 @media (max-width: 480px) {
- .check-finish-button { max-width: 112px; }
+ .check-finish-button { white-space: nowrap; }
 }
 .check-instruction { margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .check-done { display: grid; place-items: center; width: 19px; height: 19px; margin: 3px 0; border-radius: 3px; background: var(--green); color: white; }
