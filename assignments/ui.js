@@ -158,17 +158,6 @@ function render(){
   button.dataset.reward=reward.id;
   button.disabled=available(profile)<reward.cost;
  };
- const moreCompleted = $('#completed-more');
- if(moreCompleted){
-  const completed = completedTasks(myTasks(profile));
-  let visibleCount = completedPageSize;
-  moreCompleted.onclick=()=>{
-   const next=completed.slice(visibleCount,visibleCount+completedPageSize);
-   $('#completed-task-rows').insertAdjacentHTML('beforeend',next.map(taskCard).join(''));
-   visibleCount+=next.length;
-   moreCompleted.hidden=visibleCount>=completed.length;
-  };
- }
  $$('[data-task-complete]').forEach(b=>b.onclick=()=>studentFeedback(b.dataset.taskComplete));
  $$('[data-message-action]').forEach(button=>button.onclick=()=>messageAction(button));
  $$('[data-feedback-toggle]').forEach(button=>{
@@ -712,7 +701,6 @@ function wallet(showRewards=false){
  const gift='<button type="button" class="quiet-wallet reward-link" data-target="rewards" aria-label="Belohnungen ansehen" title="Belohnungen ansehen"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v9H4zM3 8h18v4H3zM12 8v13M12 8H8.5A2.5 2.5 0 1 1 11 5.5L12 8Zm0 0h3.5A2.5 2.5 0 1 0 13 5.5L12 8Z"/></svg></button>';
  return '<div class="wallet-actions'+(formatDenare(available(profile)).length>9?' wallet-wide':'')+'"><div class="wallet-with-change">'+balance+'<span class="wallet-change" id="wallet-change" role="status" aria-live="polite"></span></div>'+(showRewards?gift:'')+'</div>';
 }
-const completedPageSize = 5;
 function completedTasks(tasks) {
  return tasks.filter(isFinished).reverse().sort((a,b)=>(b.completedAt??0)-(a.completedAt??0));
 }
@@ -725,7 +713,7 @@ function studentPage(){
  const counts={tasks:unreadTasks(todo),feedback:unreadTasks([...feedbackTasks,...done])};
  const tabs='<div class="management-tabs student-task-tabs" role="tablist" aria-label="Aufträge und Rückmeldungen">'+[['tasks','Aufträge'],['feedback','Rückmeldungen']].map(([id,label])=>'<button type="button" role="tab" id="student-task-tab-'+id+'" aria-controls="student-task-panel" aria-selected="'+(studentTaskTab===id)+'" tabindex="'+(studentTaskTab===id?'0':'-1')+'" data-student-task-tab="'+id+'">'+label+unreadBadge(counts[id],id)+'</button>').join('')+'</div>';
  const pending='<section class="quiet-panel task-card-list" id="tasks" aria-label="Aufträge">'+(overview&&todo.length>shown.length?'<div class="quiet-panel-heading"><button class="link" data-target="tasks">Alle Aufträge →</button></div>':'')+(shown.length?shown.map(taskCard).join(''):'<div class="quiet-empty">Heute ist noch nichts offen.</div>')+'</section>';
- const feedback='<section class="quiet-panel waiting-panel task-card-list" aria-label="Rückmeldungen">'+(feedbackTasks.length?feedbackTasks.map(taskCard).join(''):'<div class="quiet-empty">Zurzeit gibt es keine offenen Rückmeldungen.</div>')+'</section>'+(done.length?'<details class="quiet-history"><summary>Erledigt · '+done.length+' Aufträge</summary><div class="quiet-panel task-card-list" id="completed-task-rows">'+done.slice(0,completedPageSize).map(taskCard).join('')+'</div>'+(done.length>completedPageSize?'<button class="link completed-more" id="completed-more">Weitere anzeigen</button>':'')+'</details>':'');
+ const feedback='<section class="quiet-panel waiting-panel task-card-list" aria-label="Rückmeldungen">'+(feedbackTasks.length?feedbackTasks.map(taskCard).join(''):'<div class="quiet-empty">Zurzeit gibt es keine offenen Rückmeldungen.</div>')+'</section>'+(done.length?'<details class="quiet-history"><summary>Abgeschlossen · '+done.length+' Aufträge</summary><div class="quiet-panel task-card-list" id="completed-task-rows">'+done.map(taskCard).join('')+'</div>'+'</details>':'');
  return '<header class="page-head assignment-page-head"><h1>'+(overview?'Hallo, '+esc(p.name)+'!':'Aufträge')+'</h1>'+wallet(true)+'<p class="quiet-subtitle">Bearbeite die Aufgaben vor, während und nach der Nachhilfestunde. Reiche deine Lösungen über Discord ein, erhalte „Denare“ <span class="instruction-symbol">('+icon('denar')+')</span> und schalte dir Belohnungen <span class="instruction-symbol">('+icon('gift')+')</span> frei!</p></header>'+tabs+'<div id="student-task-panel" role="tabpanel" aria-labelledby="student-task-tab-'+studentTaskTab+'">'+(studentTaskTab==='feedback'?feedback:pending)+'</div>';
 
 }
@@ -885,7 +873,7 @@ function managementTaskCard(t){
     const resources=assignmentResources(t,taskSection(t)!=='tasks');
     const hasReview=hasTaskReview(t);
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
-    const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Erledigt · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
+    const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Abgeschlossen · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
     return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span>${reviewLabels(t)}<h3>${resources.reference}</h3>${resources.description.replaceAll('<br>','').trim()?'<p>'+resources.description+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)+resources.facts}</div>${submissionLabel(t)}${resources.otherLinks}</div>
      <div class="review-actions"><button class="btn secondary" data-edit-task="${esc(t.id)}">Aufgabe bearbeiten</button>
@@ -902,12 +890,12 @@ function managementRewardCard(purchase){
 }
 function studentManagementPage(p){
  const tasks=myTasks(p.id),purchases=state.purchases.filter(item=>item.profile===p.id);
- const tabs=[['tasks','Aufgaben'],['submissions','Abgaben'],['done','Erledigt'],['denare','Denarverwaltung'],['requests','Belohnungsanfragen'],['redemptions','Einlösungen']];
+ const tabs=[['tasks','Aufgaben'],['submissions','Abgaben'],['done','Abgeschlossen'],['denare','Denarverwaltung'],['requests','Belohnungsanfragen'],['redemptions','Einlösungen']];
  const counts={submissions:tasks.filter(task=>task.status==='submitted').length,requests:purchases.filter(item=>item.status==='pending').length};
  let content;
  if(['tasks','submissions','done'].includes(managementTab)){
   const filtered=managementTab==='done'?completedTasks(tasks):tasks.filter(task=>taskSection(task)===managementTab);
-  const empty={tasks:'Keine offenen Lernaufträge.',submissions:'Zurzeit gibt es keine Abgaben oder Rückmeldungen.',done:'Noch keine erledigten Lernaufträge.'}[managementTab];
+  const empty={tasks:'Keine offenen Lernaufträge.',submissions:'Zurzeit gibt es keine Abgaben oder Rückmeldungen.',done:'Noch keine abgeschlossenen Lernaufträge.'}[managementTab];
   content='<div class="teacher-list task-card-list">'+(filtered.length?filtered.map(managementTaskCard).join(''):'<div class="quiet-empty">'+empty+'</div>')+'</div>';
  }else if(managementTab==='denare'){
   content='<section class="quiet-panel management-denare"><h2>'+formatDenare(available(p.id))+' Denare</h2><p class="quiet-subtitle">Verfügbarer Denarstand</p><div class="management-denare-actions"><button class="btn" data-grant-denare>Denare vergeben</button><button class="btn secondary" data-deduct-denare>Denare abziehen</button><button class="link" data-denare-history="'+esc(p.id)+'">Buchungen ansehen</button></div></section>';
@@ -929,7 +917,7 @@ function teacherPage(){
  const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></header>';
  if(teacherSection==='students')return heading+
  '<div class="denare-grant-action"><button class="btn secondary" data-deduct-denare>Denare abziehen</button><button class="btn" data-grant-denare>Denare vergeben</button></div>'+
- '<div class="student-table"><table class="students-overview"><thead><tr><th scope="col">Schüler</th><th scope="col">Aufgaben</th><th scope="col">Erledigt</th><th scope="col">Abgaben</th><th scope="col">Denare</th><th scope="col">Belohnungsanfragen</th><th scope="col"><span class="student-action-label">Verwaltung</span></th></tr></thead><tbody>'+
+ '<div class="student-table"><table class="students-overview"><thead><tr><th scope="col">Schüler</th><th scope="col">Aufgaben</th><th scope="col">Abgeschlossen</th><th scope="col">Abgaben</th><th scope="col">Denare</th><th scope="col">Belohnungsanfragen</th><th scope="col"><span class="student-action-label">Verwaltung</span></th></tr></thead><tbody>'+
  profiles.map(p=>{
   const tasks=myTasks(p.id),submitted=tasks.filter(task=>task.status==='submitted').length;
   const open=tasks.filter(task=>taskSection(task)==='tasks').length,done=tasks.filter(isFinished).length;
