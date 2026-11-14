@@ -701,6 +701,24 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
  background: #e2effa;
  color: #145991;
 }
+.fact-resource {
+ display: inline-flex;
+ align-items: center;
+ gap: 4px;
+ min-height: 29px;
+ padding: 2px 7px;
+ border: 1px solid #cbddec;
+ border-radius: 6px;
+ background: #fff;
+ color: var(--blue);
+ font: inherit;
+ font-size: 12px;
+ text-decoration: none;
+ cursor: pointer;
+}
+.fact-resource:hover { background: #eef5fc; }
+.fact-resource .worksheet-icon { width: 15px; height: 18px; }
+.fact-resource .site-favicon { margin: 0; }
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
