@@ -551,31 +551,35 @@ function teacherDiscussion(task){
   '<div class="feedback-thread check-feedback teacher-discussion" id="feedback-thread-'+esc(task.id)+'" hidden>'+conversationMarkup(task,messages)+'</div>';
 }
 function taskCard(t) {
- const canComment=t.status==='approved'&&!isFinished(t);
+ const finished=isFinished(t);
+ const canComment=t.status==='approved'&&!finished;
  const canComplete=canComment&&t.studentReview!=='question';
  const messages=conversationMessages(t);
  const messageCount=messages.length;
  const editable = ['open','revise','missing'].includes(t.status);
  const resources=assignmentResources(t,!editable);
+ const rating=t.status==='approved'&&t.grade?`<span class="check-rating">Bewertung ${taskStars(t)}</span>`:'';
+ const denare=taskDenareLabel(t);
  const reviewFacts=editable?'':[
   submissionLabel(t,true),
-  t.status==='approved'&&t.grade?`<span class="check-rating">Bewertung ${taskStars(t)}</span>`:'',
-  taskDenareLabel(t),resources.facts
+  finished?'':rating,
+  finished?'':denare,resources.facts
  ].join('');
  const instruction=resources.description;
- const hasDiscussion=Boolean(messageCount||canComment||reviewFacts);
+ const hasDiscussion=Boolean(finished||messageCount||canComment||reviewFacts);
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
  return `<article class="task-row checklist-row">
-  ${isFinished(t)?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
+  ${finished?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
    <strong>${resources.reference}</strong>
    ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
    ${editable?resources.otherLinks:''}
+   ${finished?`<div class="check-facts">${rating}${denare}${discussionToggle(t,messageCount,true)}</div>`:''}
    ${editable?`<div class="check-facts">${durationLabel(t)+deadlineLabel(t)+taskDenareLabel(t)+resources.facts}</div>`:''}
   </div>
-  <div class="check-meta check-feedback">
+  ${finished?'':`<div class="check-meta check-feedback">
    <div class="check-feedback-summary">
    ${!status||t.status==='open'?'':'<span class="check-result'+(status==='Korrigiert!'?' check-result-corrected':'')+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${reviewLabels(t)}
@@ -585,9 +589,11 @@ function taskCard(t) {
   <div class="check-meta check-finish">
    ${canComplete?'<button type="button" class="check-finish-button" id="task-complete-'+esc(t.id)+'" data-task-complete="'+esc(t.id)+'"'+(canCompleteAssignment(t)?'':' hidden')+'>Auftrag abschließen</button>':''}
   </div>
+  `}
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
     ${!editable&&(instruction||resources.otherLinks)?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div>'+resources.otherLinks+'</details>':''}
+    ${finished?reviewLabels(t):''}
     ${conversationMarkup(t,messages)}
     ${canComment?`<div class="feedback-message">
      <img class="feedback-avatar" src="${esc(profileImage(t.profile))}" alt="">
