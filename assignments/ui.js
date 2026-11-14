@@ -789,8 +789,12 @@ function deleteTask(id){
  };
 }
 
+function hasTaskReview(task){
+ return ['approved','revise','missing'].includes(task.status)||
+  (task.status==='open'&&Boolean(task.feedback?.trim()||task.reviewLabels?.length));
+}
 function managementTaskCard(t){
-    const hasReview=['approved','revise','missing'].includes(t.status);
+    const hasReview=hasTaskReview(t);
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
     const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Erledigt · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
@@ -854,15 +858,16 @@ function reviewLabels(task){
  return (task.reviewLabels??[]).map(label=>'<span class="check-status review-custom-label">'+esc(label)+'</span>').join('');
 }
 function reviewLabelPicker(task,editing){
- const statuses=[['approved','Ohne Statuslabel'],['revise','Bitte überarbeiten'],['missing','Abgabe fehlt']];
- const options=editing?'':statuses.map(([value,label])=>'<label><input type="radio" name="review-status" value="'+value+'" '+(value==='approved'?'checked':'')+'>'+label+'</label>').join('');
+ const initial=editing?task.status:'approved';
+ const statuses=[[editing?'open':'approved','Ohne Statuslabel'],['revise','Bitte überarbeiten'],['missing','Abgabe fehlt']];
+ const options=editing&&initial==='approved'?'':statuses.map(([value,label])=>'<label class="review-label-option"><input type="radio" name="review-status" value="'+value+'" '+(value===initial?'checked':'')+'>'+label+'</label>').join('');
  return '<fieldset class="review-label-picker"><legend>Labels</legend>'+options+'<div id="review-custom-labels"></div><div class="review-label-add"><input id="review-new-label" maxlength="40" aria-label="Eigenes Label" placeholder="Eigenes Label"><button type="button" class="btn secondary" id="review-add-label">Hinzufügen</button></div></fieldset>';
 }
-function bindReviewLabels(task,editing){
+function bindReviewLabels(task,showRating){
  const chosen=new Set(task.reviewLabels??[]);
  const labels=new Set(state.tasks.flatMap(entry=>entry.reviewLabels??[]));
  const renderLabels=()=>{
-  $('#review-custom-labels').innerHTML=[...labels].map(label=>'<label><input type="checkbox" data-review-label="'+esc(label)+'" '+(chosen.has(label)?'checked':'')+'>'+esc(label)+'</label>').join('');
+  $('#review-custom-labels').innerHTML=[...labels].map(label=>'<label class="review-label-option"><input type="checkbox" data-review-label="'+esc(label)+'" '+(chosen.has(label)?'checked':'')+'>'+esc(label)+'</label>').join('');
   $$('[data-review-label]').forEach(input=>input.onchange=()=>{
    if(input.checked)chosen.add(input.dataset.reviewLabel);
    else chosen.delete(input.dataset.reviewLabel);
@@ -887,19 +892,20 @@ function bindReviewLabels(task,editing){
  };
  $('#review-add-label').onclick=add;
  field.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();add();}};
- if(!editing)$$('[name="review-status"]').forEach(input=>input.onchange=()=>{
+ if(showRating)$$('[name="review-status"]').forEach(input=>input.onchange=()=>{
   $('#review-rating-fields').hidden=input.value!=='approved';
   $('#review-error').textContent='';
  });
  renderLabels();
  return chosen;
 }
-function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const editing=['approved','revise','missing'].includes(t.status);if(!editing&&t.status!=='submitted')return;
+function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const editing=hasTaskReview(t);if(!editing&&t.status!=='submitted')return;
  const rated=editing&&t.status==='approved';
+ const readStatus=()=> $('[name="review-status"]:checked')?.value||(editing?t.status:'approved');
  const previousAward=t.awardedPoints??t.points;
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
  modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}${reviewLabelPicker(t,editing)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();
- const chosenLabels=bindReviewLabels(t,editing);
+ const chosenLabels=bindReviewLabels(t,!editing);
  $$('#modal [name="review-stars"]').forEach(radio=>{
   radio.onchange=()=>{
    $('#review-grade').value=radio.value;
@@ -917,7 +923,7 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  }if(chosenLabels.size>20){$('#review-error').textContent='Wähle höchstens 20 Labels pro Auftrag.';return;}
  if(chosenLabels.size||t.reviewLabels)t.reviewLabels=[...chosenLabels];
  t.feedback=feedback;t.status=status;await save();closeModal();render();toast(editing?'Rückmeldung gespeichert.':status==='approved'?who(t.profile).name+' erhält '+t.awardedPoints+' Denare.':'Die Rückmeldung wartet jetzt im Schülerprofil.')};
- $('#approve-task').onclick=()=>finish(editing?t.status:($('[name="review-status"]:checked')?.value||'approved'));
+ $('#approve-task').onclick=()=>finish(readStatus());
 }
 
 

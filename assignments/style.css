@@ -676,6 +676,11 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 #review-rating-fields[hidden] { display: none; }
 .review-custom-label { display: inline-block; background: #e8f1fb; color: #264a6d; overflow-wrap: anywhere; }
 .teacher-item .review-custom-label { margin-inline-start: 6px; }
+.review-label-option:has(input:checked) {
+ background: #dbeaf9;
+ box-shadow: inset 0 0 0 1px #8bb6dc;
+ color: #164f82;
+}
 
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
