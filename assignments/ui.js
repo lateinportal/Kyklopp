@@ -387,7 +387,7 @@ function siteFavicon(href){
 document.addEventListener?.('load',event=>{
  const image=event.target;if(image?.matches?.('img[data-site-favicon]'))image.parentElement.classList.add('has-favicon');
 },true);
-function linkedText(value,format=false,collectVideo=null) {
+function linkedText(value,format=false,collectLink=null) {
  const links=[];
  const withMarkdown=String(value??'').replace(/\u0000/g,'').replace(/\[([^\]\n]+)\]\(#grammatik\)/gi,(match,label)=>{
   links.push('<button type="button" class="internal-training-link" data-open-grammar>'+esc(label)+'</button>');
@@ -395,7 +395,7 @@ function linkedText(value,format=false,collectVideo=null) {
  }).replace(/\[([^\]\n]+)\]\(((?:https?:\/\/|www\.)[^\s<>"']*?(?:\([^\s<>"']*\)[^\s<>"']*?)?)\)/gi,(match,label,address)=>{
   const href=webAddress(address);
   if(!href)return match;
-  if(collectVideo&&(isLearningVideo(href)||/\b(?:lernvideo|video)\b/i.test(label))){links.push(collectVideo(href,label)||esc(label));return '\u0000'+(links.length-1)+'\u0000';}
+  if(collectLink){links.push(collectLink(href,label)||esc(label));return '\u0000'+(links.length-1)+'\u0000';}
   links.push('<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(label)+'</a>');
   return '\u0000'+(links.length-1)+'\u0000';
  });
@@ -404,8 +404,8 @@ function linkedText(value,format=false,collectVideo=null) {
   while(address.endsWith(')')&&(address.match(/\)/g)??[]).length>(address.match(/\(/g)??[]).length)address=address.slice(0,-1);
   const href=webAddress(address);
   if(!href)return match;
-  if(collectVideo&&isLearningVideo(href)){
-   const video=collectVideo(href,address);
+  if(collectLink){
+   const video=collectLink(href,address);
    if(!video)return match.slice(address.length);
    links.push(video);
    return '\u0000'+(links.length-1)+'\u0000'+match.slice(address.length);
@@ -443,29 +443,32 @@ function isLearningVideo(href){
 }
 function assignmentResources(task,compact=true){
  const videos=new Map();
- const videoLink=(href,label,index)=>
-  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc('Lernvideo '+index+' · '+label)+'" title="'+esc(label)+'">'+siteFavicon(href)+'<span>'+index+'</span></a>';
- const addVideo=(href,label)=>{
-  if(!videos.has(href))videos.set(href,{label,index:videos.size+1,inline:false});
-  const video=videos.get(href);
-  if(compact)return '';
-  video.inline=true;
-  return videoLink(href,label,video.index);
+ const resourceLink=(href,label,text,accessible=label)=>
+  '<a class="fact-resource" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(accessible)+'" title="'+esc(label)+'">'+siteFavicon(href)+(text?'<span>'+esc(text)+'</span>':'')+'</a>';
+ const inlineLink=(href,label)=>{
+  if(compact&&(isLearningVideo(href)||/\b(?:lernvideo|video)\b/i.test(label))){
+   if(!videos.has(href))videos.set(href,label);
+   return '';
+  }
+  return resourceLink(href,label,label);
  };
- const reference=linkedText(task.reference,false,addVideo)||esc(task.reference);
- const description=linkedText(task.description,false,addVideo);
+ const reference=linkedText(task.reference,false,inlineLink)||esc(task.reference);
+ const description=linkedText(task.description,false,inlineLink);
  const otherLinks=[];
  for(const address of task.links??[]){
   const href=webAddress(address);
   if(!href)continue;
-  if(isLearningVideo(href))addVideo(href,address);
-  else otherLinks.push('<a class="link" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer">'+siteFavicon(href)+esc(address)+'</a>');
+  const link=inlineLink(href,address);
+  if(link)otherLinks.push(link);
  }
- const numberedLink=(label,content)=>' aria-label="'+esc(label)+'" title="'+esc(label)+'">'+content;
- const worksheets=(task.attachments??[]).map((file,index)=>
-  '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'"'+numberedLink('Arbeitsblatt '+(index+1)+' · '+file.name,worksheetIcon()+'<span>'+(compact?index+1:esc(file.name))+'</span>')+'</button>');
- const videoLinks=[...videos].filter(([,video])=>!video.inline)
-  .map(([href,{label,index}])=>videoLink(href,label,index));
+ const files=task.attachments??[];
+ const worksheets=files.map((file,index)=>{
+  const label='Arbeitsblatt '+(index+1)+' · '+file.name;
+  const text=compact?(files.length>1?String(index+1):''):file.name;
+  return '<button type="button" class="fact-resource" data-open-attachment="'+esc(file.id)+'" aria-label="'+esc(label)+'" title="'+esc(label)+'">'+worksheetIcon()+(text?'<span>'+esc(text)+'</span>':'')+'</button>';
+ });
+ const videoLinks=[...videos].map(([href,label],index)=>
+  resourceLink(href,label,videos.size>1?String(index+1):'','Lernvideo '+(index+1)+' · '+label));
  return {reference,description,facts:worksheets.concat(videoLinks).join(''),otherLinks:otherLinks.length?'<div class="task-attachments">'+otherLinks.join('')+'</div>':''};
 }
 async function openAttachment(id) {
