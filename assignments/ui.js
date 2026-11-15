@@ -279,7 +279,7 @@ function conversationMessages(task){
 }
 function conversationMarkup(task,messages=conversationMessages(task),withActions=true){
  return messages.map(({key,original,author,label,text})=>`<div class="feedback-message">
-  <img class="feedback-avatar" src="${author==='teacher'?'../vokabelbilder/favicon/kloppo-gelb-32.png':esc(profileImage(task.profile))}" alt="">
+  <img class="feedback-avatar" src="${author==='teacher'?'../vokabelbilder/profile/gelb-lehrkraft.webp':esc(profileImage(task.profile))}" alt="">
   <div><strong>${esc(role==='teacher'&&author==='teacher'?(key==='feedback'?'Deine Rückmeldung':'Deine Antwort'):label)}</strong><p>${key==='feedback'?formattedFeedback(text):esc(text)}</p>
   ${withActions?feedbackActions(task,key,original,author):''}</div>
  </div>`).join('');
