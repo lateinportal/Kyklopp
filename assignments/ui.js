@@ -272,7 +272,7 @@ function conversationMessages(task){
   {key:'feedback',original:task.feedback,author:'teacher',label:'Rückmeldung deiner Lehrkraft'},
   ...[...questionHistory(task),task].flatMap((entry,index)=>[
    {key:'question-'+index,original:entry.question,author:'student',label:who(task.profile)?.name||'Schüler'},
-   {key:'answer-'+index,original:entry.answer,author:'teacher',label:'Lehrer/in'}
+   {key:'answer-'+index,original:entry.answer,author:'teacher',label:'Lehrer'}
   ])
  ].map(message=>({...message,text:feedbackText(task,message.key,message.original)}))
   .filter(message=>message.text?.trim());
