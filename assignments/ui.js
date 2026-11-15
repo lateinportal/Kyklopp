@@ -566,7 +566,7 @@ function taskCard(t) {
   finished?'':denare,resources.facts
  ].join('');
  const instruction=resources.description;
- const hasDiscussion=Boolean(finished||messageCount||canComment||reviewFacts);
+ const hasDiscussion=Boolean(finished||messageCount||canComment||reviewFacts||['revise','missing'].includes(t.status));
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
@@ -584,7 +584,7 @@ function taskCard(t) {
    ${!status||t.status==='open'?'':'<span class="check-result'+(status==='Korrigiert!'?' check-result-corrected':'')+(labelTone?' check-status check-status-'+labelTone:'')+'">'+status+'</span>'}
    ${reviewLabels(t)}
    </div>
-   ${hasDiscussion?discussionToggle(t,messageCount,reviewFacts):''}
+   ${hasDiscussion?discussionToggle(t,messageCount,reviewFacts||editable):''}
   </div>
   <div class="check-meta check-finish">
    ${canComplete?'<button type="button" class="check-finish-button" id="task-complete-'+esc(t.id)+'" data-task-complete="'+esc(t.id)+'"'+(canCompleteAssignment(t)?'':' hidden')+'>Auftrag abschließen</button>':''}
@@ -593,6 +593,7 @@ function taskCard(t) {
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
     ${!editable&&(instruction||resources.otherLinks)?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div>'+resources.otherLinks+'</details>':''}
+    ${editable&&!messageCount?'<p>'+esc(status)+'</p>':''}
     ${finished?reviewLabels(t):''}
     ${conversationMarkup(t,messages)}
     ${canComment?`<div class="feedback-message">
@@ -997,7 +998,7 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
    $('#review-star-display').innerHTML=taskStars({grade:radio.value});
   };
  });
- const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='revise'&&!feedback){toast('Schreibe kurz dazu, was noch verbessert werden soll.');return}if(status==='approved'){
+ const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='approved'){
  const field=$('#award-points'),points=Number(field.value),grade=$('#review-grade').value;
  if(field.value.trim()===''||!Number.isSafeInteger(points)||points<minAward||points>t.points){$('#review-error').textContent='Wähle eine ganze Zahl zwischen '+minAward+' und '+t.points+'.';return;}
  if(!grades.some(([value])=>value===grade)){$('#review-error').textContent='Wähle eine Sternbewertung.';return;}
