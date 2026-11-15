@@ -26,7 +26,7 @@
   if(!snapshot.teacher){localStorage.removeItem(sessionKey);auth=null;throw new Error('Dieser Code gehört zu einem Schülerprofil. Bitte nutze deinen Lehrer-Zugangscode.');}
   window.KykloppHubTransport={url,request};
   document.querySelector('#teacher-logout').hidden=false;
-  const script=document.createElement('script');script.src='ui.js?v=445be8b123a9';document.body.appendChild(script);
+  const script=document.createElement('script');script.src='ui.js?v=0e8b44edd245';document.body.appendChild(script);
  }
  function login(message=''){
   document.querySelector('#main').innerHTML='<section class="teacher-login"><h1>Lehrerzugang</h1><form id="teacher-login-form"><label for="teacher-code">Dein Lehrer-Zugangscode</label><input id="teacher-code" type="password" autocomplete="current-password" spellcheck="false" required><p class="error" id="teacher-login-error" role="alert">'+escape(message)+'</p><button class="btn">Anmelden</button></form></section>';

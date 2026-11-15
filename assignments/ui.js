@@ -272,7 +272,7 @@ function conversationMessages(task){
   {key:'feedback',original:task.feedback,author:'teacher',label:'Rückmeldung deiner Lehrkraft'},
   ...[...questionHistory(task),task].flatMap((entry,index)=>[
    {key:'question-'+index,original:entry.question,author:'student',label:who(task.profile)?.name||'Schüler'},
-   {key:'answer-'+index,original:entry.answer,author:'teacher',label:'Antwort deiner Lehrkraft'}
+   {key:'answer-'+index,original:entry.answer,author:'teacher',label:'Lehrer/in'}
   ])
  ].map(message=>({...message,text:feedbackText(task,message.key,message.original)}))
   .filter(message=>message.text?.trim());
@@ -941,7 +941,7 @@ function teacherPage(){
  return heading+questionList+(pending.length?'<div class="teacher-list">'+pending.map(t=>'<article class="teacher-item"><div>'+person(t.profile)+'<h3>'+linkedText(t.reference)+'</h3><p>'+t.points+' Denare</p>'+submissionLabel(t)+'</div><button class="btn secondary" data-review="'+t.id+'">Rückmeldung geben</button>'+teacherDiscussion(t)+'</article>').join('')+'</div>':'<div class="quiet-panel quiet-empty">Zurzeit wartet keine Abgabe auf Rückmeldung.</div>');
 }
 function reviewLabels(task){
- return (task.reviewLabels??[]).map(label=>'<span class="check-status review-custom-label">'+esc(label)+'</span>').join('');
+ return (task.reviewLabels??[]).map(label=>'<span class="check-status check-status-red review-custom-label">'+esc(label)+'</span>').join('');
 }
 function reviewLabelPicker(task,editing){
  const initial=editing?task.status:'approved';
