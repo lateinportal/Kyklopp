@@ -499,7 +499,7 @@ function submissionLabel(task,compact=false) {
 }
 function incomingMessages(task){
  const incoming=conversationMessages(task).filter(message=>message.author!==role);
- if(role==='student'&&['approved','revise','missing'].includes(task.status)){
+ if(role==='student'&&task.status==='approved'){
   incoming.unshift({key:'review-status',text:JSON.stringify([task.status,task.submittedAt,task.grade,task.awardedPoints])});
  }
  return incoming;
@@ -566,7 +566,8 @@ function taskCard(t) {
   finished?'':denare,resources.facts
  ].join('');
  const instruction=resources.description;
- const hasDiscussion=Boolean(finished||messageCount||canComment||reviewFacts||['revise','missing'].includes(t.status));
+ const statusOnly=['revise','missing'].includes(t.status);
+ const hasDiscussion=statusOnly?messages.some(message=>message.author==='teacher'):Boolean(finished||messageCount||canComment||reviewFacts);
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
@@ -593,7 +594,6 @@ function taskCard(t) {
   ${hasDiscussion?`<div class="feedback-thread check-feedback" id="feedback-thread-${esc(t.id)}" hidden>
     ${reviewFacts?`<div class="check-facts feedback-review-facts">${reviewFacts}</div>`:''}
     ${!editable&&(instruction||resources.otherLinks)?'<details class="feedback-instruction"><summary>Arbeitsauftrag</summary><div class="check-instruction">'+instruction+'</div>'+resources.otherLinks+'</details>':''}
-    ${editable&&!messageCount?'<p>'+esc(status)+'</p>':''}
     ${finished?reviewLabels(t):''}
     ${conversationMarkup(t,messages)}
     ${canComment?`<div class="feedback-message">
