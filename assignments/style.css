@@ -64,6 +64,11 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  padding-bottom: 8px;
  border-bottom: 1px solid var(--line);
 }
+.feedback-thread .feedback-score { display: contents; }
+@media (max-width: 480px) {
+ .feedback-review-facts:has(.feedback-score) > .feedback-submission { flex-basis: 100%; }
+ .feedback-thread .feedback-score { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+}
 .feedback-avatar {
  display: block;
  width: 26px;

@@ -482,7 +482,7 @@ function submissionLabel(task,compact=false) {
  const late=hasDeadline&&submittedDay>task.due;
  if(compact){
   const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'2-digit'});
-  return '<span><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?'&nbsp;· Verspätet':'')+'</span>';
+  return '<span class="feedback-submission"><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?'&nbsp;· Verspätet':'')+'</span>';
  }
  const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric'});
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
@@ -553,8 +553,8 @@ function taskCard(t) {
  const denare=taskDenareLabel(t);
  const reviewFacts=editable?'':[
   submissionLabel(t,true),
-  finished?'':rating,
-  finished?'':denare,resources.facts
+  finished?'':rating?'<span class="feedback-score">'+rating+denare+'</span>':denare,
+  resources.facts
  ].join('');
  const instruction=resources.description;
  const statusOnly=['revise','missing'].includes(t.status);
