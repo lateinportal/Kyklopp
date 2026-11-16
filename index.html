@@ -2743,7 +2743,11 @@ function renderTestWords(){
 
 function planScopeSummary(plan,isTest){
  const selected=[...plan.lessons].sort((a,b)=>a-b),last=Math.max(...selected);
- if(!currentBook().hasPacks)return selected.map(l=>'<li><strong>Lektion '+l+'</strong></li>').join('');
+ if(!currentBook().hasPacks){
+  if(isTest)return selected.map(l=>'<li><strong>Lektion '+l+'</strong></li>').join('');
+  if(!selected.length)return '';
+  return '<li><strong>Lektion '+selected[0]+(selected.length>1?' bis '+last:'')+'</strong></li>';
+ }
  const earlier=!isTest&&selected.length>1?'<li><strong>Lektion '+selected[0]+(selected.length>2?'–'+selected[selected.length-2]:'')+'</strong><span>Alle Päckchen</span></li>':'';return earlier+(isTest?selected:[last]).map(l=>{const pack=plan.packs?.[l],limited=pack!=null&&(isTest||l===last);return '<li><strong>Lektion '+l+'</strong><span>'+(!limited?'Alle Päckchen':Number(pack)===1?'Nur Päckchen '+esc(lessonPacks(l)[0]?.label||1):'Päckchen '+esc(lessonPacks(l)[0]?.label||1)+' bis '+esc(lessonPacks(l).find(x=>x.number===Number(pack))?.label||pack))+'</span></li>'}).join('');
 }
 function renderAddedPlanWords(plan){
