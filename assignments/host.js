@@ -57,7 +57,7 @@
  function open(main){
   modal(false);frame=null;
   if(!window.KykloppHubTransport){main.innerHTML='<section class="panel"><h1>Aufträge</h1><p>Melde dich in der Online-Version mit deinem persönlichen Zugangscode an, um deine Lernaufträge zu öffnen.</p></section>';return;}
-  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=3c0f321e49fe"></iframe>';
+  main.innerHTML='<iframe class="learning-assignments-frame" title="Lernaufträge" src="assignments/student.html?v=b2326c74b9f3"></iframe>';
   frame=main.querySelector('iframe');frame.addEventListener('load',()=>syncHeading(main));
  }
  window.addEventListener('message',event=>{

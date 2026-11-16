@@ -477,15 +477,16 @@ function submissionLabel(task,compact=false) {
  if(!task.submittedAt)return '';
  const date=new Date(task.submittedAt);
  if(Number.isNaN(date.getTime()))return '';
+ const submittedDay=date.toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'});
+ const hasDeadline=/^\d{4}-\d{2}-\d{2}$/.test(task.due??'');
+ const late=hasDeadline&&submittedDay>task.due;
  if(compact){
-  const submittedDay=date.toLocaleDateString('sv-SE',{timeZone:'Europe/Berlin'});
   const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'2-digit'});
-  const late=/^\d{4}-\d{2}-\d{2}$/.test(task.due??'')&&submittedDay>task.due;
   return '<span><time datetime="'+submittedDay+'">Abgabe: '+esc(day)+'</time>'+(late?'&nbsp;· Verspätet':'')+'</span>';
  }
  const day=date.toLocaleDateString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',year:'numeric'});
  const time=date.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'});
- return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time></span>';
+ return '<span class="submission-time"><time datetime="'+esc(date.toISOString())+'">Abgegeben am '+esc(day)+' um '+esc(time)+' Uhr</time>'+(hasDeadline?'&nbsp;· '+(late?'Verspätet':'Pünktlich'):'')+'</span>';
 }
 function incomingMessages(task){
  const incoming=conversationMessages(task).filter(message=>message.author!==role);
@@ -960,11 +961,12 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
   $('#review-rating-fields').hidden=readStatus()!=='approved';
   $('#review-error').textContent='';
  });
+ const gradeField=$('#review-grade'),starDisplay=$('#review-star-display');
+ const showGrade=grade=>{starDisplay.innerHTML=taskStars({grade});};
+ $('#modal .review-star-picker').onpointerleave=()=>showGrade(gradeField.value);
  $$('#modal [name="review-stars"]').forEach(radio=>{
-  radio.onchange=()=>{
-   $('#review-grade').value=radio.value;
-   $('#review-star-display').innerHTML=taskStars({grade:radio.value});
-  };
+  radio.onpointerenter=event=>{if(event.pointerType!=='touch')showGrade(radio.value);};
+  radio.onchange=()=>{gradeField.value=radio.value;showGrade(gradeField.value);};
  });
  const finish=async status=>{if(!editing&&t.status!=='submitted')return;const feedback=$('#feedback').value.trim();if(status==='approved'){
  const field=$('#award-points'),points=Number(field.value),grade=$('#review-grade').value;
