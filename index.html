@@ -2360,7 +2360,7 @@ function nextTrainingAt(now=Date.now()){
  return dates.length?Math.min(...dates):Infinity;
 }
 function trainingCompletionTitle(now=Date.now()){
- const at=nextTrainingAt(now);return Number.isFinite(at)&&examDay(at)===examDay(now)?'Für den Moment geschafft!':'Für heute geschafft!';
+ const at=nextTrainingAt(now);return Number.isFinite(at)&&examDay(at)===examDay(now)?'Zeit für eine Lernpause':'Für heute geschafft!';
 }
 
 // END REPETITION SCHEDULE
