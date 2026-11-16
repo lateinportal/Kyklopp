@@ -500,17 +500,17 @@ html{scrollbar-gutter:stable}
 .prima-lesson-preview{box-sizing:border-box;width:min(100%,190px);min-height:128px;background:#fff;border:1px solid #d9e2e4;box-shadow:3px 4px 0 #cfdae5;padding:0 12px 10px;text-align:center}
 .free-mode-image.prima-lesson-image{padding-bottom:0}
 .prima-lesson-image .prima-lesson-preview{align-self:stretch;min-height:0;border-bottom:0;box-shadow:3px 0 0 #cfdae5}
-.prima-lesson-number{display:table;margin:0 auto 8px;padding:4px 8px 5px;background:#007a60;color:#fff;font-size:13px;font-weight:700;line-height:1.2}
-.prima-lesson-number[data-color="red"]{background:#be3542}
-.prima-lesson-number[data-color="light-purple"]{background:#ded0f1;color:#45296a}
-.prima-lesson-number[data-color="purple"]{background:#7845a0}
-.prima-lesson-number[data-color="blue"]{background:#2267a5}
-.prima-lesson-number[data-color="light-blue"]{background:#b9e1f5;color:#194766}
-.prima-lesson-number[data-color="dark-green"]{background:#00634f}
-.prima-lesson-number[data-color="green"]{background:#2e7e42}
-.prima-lesson-number[data-color="light-green"]{background:#cde6a6;color:#324c21}
-.prima-lesson-number[data-color="orange"]{background:#f2aa58;color:#502e0e}
-.prima-lesson-preview strong{display:block;margin-bottom:8px;color:#006954;font-size:12px;line-height:1.25}
+.prima-lesson-preview[data-color="red"]{--lesson-accent:#be3542}
+.prima-lesson-preview[data-color="light-purple"]{--lesson-accent:#7653a0;--lesson-badge:#ded0f1;--lesson-number:#45296a}
+.prima-lesson-preview[data-color="purple"]{--lesson-accent:#7845a0}
+.prima-lesson-preview[data-color="blue"]{--lesson-accent:#2267a5}
+.prima-lesson-preview[data-color="light-blue"]{--lesson-accent:#287091;--lesson-badge:#b9e1f5;--lesson-number:#194766}
+.prima-lesson-preview[data-color="dark-green"]{--lesson-accent:#00634f}
+.prima-lesson-preview[data-color="green"]{--lesson-accent:#2e7e42}
+.prima-lesson-preview[data-color="light-green"]{--lesson-accent:#526f2d;--lesson-badge:#cde6a6;--lesson-number:#324c21}
+.prima-lesson-preview[data-color="orange"]{--lesson-accent:#a65112;--lesson-badge:#f2aa58;--lesson-number:#502e0e}
+.prima-lesson-number{display:table;margin:0 auto 8px;padding:4px 8px 5px;background:var(--lesson-badge,var(--lesson-accent));color:var(--lesson-number,#fff);font-size:13px;font-weight:700;line-height:1.2}
+.prima-lesson-preview strong{display:block;margin-bottom:8px;color:var(--lesson-accent);font-size:12px;line-height:1.25}
 .prima-lesson-preview .lesson-text-lines{opacity:.65}
 </style><style>.cloud-locked aside{display:none}.cloud-locked main{margin:0 auto;max-width:600px;padding-top:9vh}.cloud-login{padding:32px}.cloud-login-logo{width:180px;height:auto;display:block;margin-bottom:30px}.cloud-login h1{font-size:40px}.cloud-login p{font-size:14px;line-height:1.7;color:var(--muted)}.cloud-login form{display:grid;gap:12px;margin-top:24px}.cloud-login label{font-size:13px}.cloud-login input{width:100%;font-size:16px;letter-spacing:1px}#cloud-login-error{color:#b13f40;margin:0}
 .cloud-recovery-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.cloud-login .cloud-recovery-actions .btn{font-size:13px}
@@ -964,7 +964,7 @@ function lessonTextPreview(n){
  if(currentBook().review){
   const title=esc(currentBook().review.titles[n]||'Textvorbereitung');
   const color=PRIMA_LESSON_COLORS.find(([last])=>n<=last)?.[1]||'orange';
-  return `<div class="prima-lesson-preview"><span class="prima-lesson-number" data-color="${color}" aria-label="Lektion ${n}">${n}</span><strong>${title}</strong><div class="lesson-text-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
+  return `<div class="prima-lesson-preview" data-color="${color}"><span class="prima-lesson-number" aria-label="Lektion ${n}">${n}</span><strong>${title}</strong><div class="lesson-text-lines" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>`;
  }
  const p=LESSON_TEXT_PREVIEWS[n];return `<div class="lesson-text-page" role="img" aria-label="Vereinfachte Textseite zu Lektion ${n}: ${esc(p.title)}"><div aria-hidden="true"><div class="lesson-text-top"><span>TEXT ERSCHLIESSEN</span><b>${n}</b></div><strong>${esc(p.title)}</strong><div class="lesson-text-lines"><i></i><i></i><i></i></div><img src="vokabelbilder/${p.art}.webp" alt=""><div class="lesson-text-lines"><i></i><i></i><i></i><i></i></div><small>Lektion ${n}</small></div></div>`}
 function freeOverview(){main.innerHTML=header()+`<h1>Freies Üben</h1><p class="subtitle">Was möchtest du üben?</p><div class="free-mode-grid">
