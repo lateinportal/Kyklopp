@@ -947,13 +947,15 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  const readStatus=()=> $('[name="review-status"]:checked')?.value||(editing&&!rated?'open':'approved');
  const previousAward=t.awardedPoints??t.points;
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
+ const studentName=who(t.profile)?.name||'Schüler';
  const resources=assignmentResources(t,false);
+ const instructionTitle='Arbeitsauftrag: '+resources.reference;
  const duration=t.plannedMinutes==null?'':'<div class="check-instruction">Dauer: '+esc(t.plannedMinutes)+' min</div>';
  const instruction=resources.description||resources.otherLinks||resources.facts||duration?
-  '<details class="feedback-instruction review-instruction"><summary>Arbeitsauftrag</summary>'+
+  '<details class="feedback-instruction review-instruction"><summary>'+instructionTitle+'</summary>'+
   (resources.description?'<div class="check-instruction">'+resources.description+'</div>':'')+
-  resources.otherLinks+(resources.facts?'<div class="task-attachments">'+resources.facts+'</div>':'')+duration+'</details>':'';
- modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+resources.reference+`</p>${instruction}${submissionLabel(t)}${reviewLabelPicker(t)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span><textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');
+  resources.otherLinks+(resources.facts?'<div class="task-attachments">'+resources.facts+'</div>':'')+duration+'</details>':'<div class="review-instruction review-instruction-title">'+instructionTitle+'</div>';
+ modal('Rückmeldung an '+studentName,`${instruction}${submissionLabel(t)}${reviewLabelPicker(t)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(studentName)+' (optional)</span><textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');
  $$('#modal [data-open-attachment]').forEach(button=>button.onclick=()=>openAttachment(button.dataset.openAttachment));
  $$('#modal [data-open-grammar]').forEach(button=>button.onclick=openGrammarLink);
  const statusOptions=$$('#modal [name="review-status"]');

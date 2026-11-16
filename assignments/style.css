@@ -580,7 +580,7 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 }
 .review-star-picker .check-stars { font-size: 28px; vertical-align: top; }
 .review-instruction { margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--paper); overflow-wrap: anywhere; }
-.review-instruction summary { font-size: 14px; color: var(--ink); }
+.review-instruction summary, .review-instruction-title { font-size: 14px; color: var(--ink); }
 .review-instruction .check-instruction, .review-instruction .task-attachments { margin-top: 6px; }
 .review-star-choices {
  position: absolute;
