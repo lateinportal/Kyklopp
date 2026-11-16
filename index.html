@@ -2317,7 +2317,7 @@ function repetitionLabel(c,context=repetitionContext()){
 function nextTrainingAt(now=Date.now()){
  const context=repetitionContext(now),exam=context.plan,normal=exam?null:dailyTrainingPlan();
  const level=exam?examLevel(exam):state.level,scope=exam?[...new Map([...examCards(exam),...eligible()].map(c=>[c.id,c])).values()]:eligible(),dates=[];
- const tomorrow=repetitionDayStart(examDay(now),1),budget=exam?Math.max(0,TRAINING_PORTION_TASKS-trainingTasksToday()):normal.budget;
+ const tomorrow=repetitionDayStart(examDay(now),1),budget=exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):normal.budget;
  for(const c of scope){
   if(!pfor(c).reviews&&!exam?.history?.[c.id]?.firstSeen)continue;
   const at=nextRepetitionAt(c,context),cost=trainingTaskTypes(c,level).length;
@@ -2341,7 +2341,9 @@ function examStats(p=activeExam()){
  let reviews=cards.filter(c=>examReviewReady(c,p));
  return {cards,fresh,days,buffer,learningDays,quota,newToday,reviews,safe,startedToday};
 }
-const TRAINING_PORTION_TASKS=40;
+const DAILY_TRAINING_TASK_LIMIT=80;
+const CATCH_UP_TRAINING_TASK_LIMIT=100;
+const EXAM_TRAINING_TASK_LIMIT=40;
 function takeTrainingPortion(cards,level,budget){
  const selected=[];
  for(const card of cards){
@@ -2364,7 +2366,7 @@ function examTrainingSelection(extra=false){
  const reviews=stats.reviews.sort((a,b)=>pfor(a).stage-pfor(b).stage||
   (plan.history?.[a.id]?.correctAt||0)-(plan.history?.[b.id]?.correctAt||0));
  const candidates=[...stats.fresh.slice(0,extra?undefined:stats.newToday),...reviews];
- return takeTrainingPortion(candidates,level,extra?TRAINING_PORTION_TASKS:Math.max(0,TRAINING_PORTION_TASKS-trainingTasksToday()));
+ return takeTrainingPortion(candidates,level,extra?EXAM_TRAINING_TASK_LIMIT:Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()));
 }
 function examExtraMarkup(required){
  const exam=activeExam();
@@ -2585,7 +2587,7 @@ function dailyTrainingPlan(){
  const yesterday=examDay(repetitionDayStart(today,-1));
  const missed=!state.activity?.[yesterday]?.training &&
   (reviews.some(c=>examDay(pfor(c).due)<today)||Object.entries(state.activity||{}).some(([day,activity])=>day<yesterday&&activity.training));
- const budget=Math.max(0,TRAINING_PORTION_TASKS*(missed?2:1)-trainingTasksToday());
+ const budget=Math.max(0,(missed?CATCH_UP_TRAINING_TASK_LIMIT:DAILY_TRAINING_TASK_LIMIT)-trainingTasksToday());
  const selected=takeTrainingPortion([...reviews,...candidates],state.level,budget);
  const reviewCount=selected.filter(c=>pfor(c).reviews).length;
  return {today,quota,used,remaining,budget,fresh,reviews,cards:selected,newCount:selected.length-reviewCount,reviewCount};
@@ -2636,7 +2638,7 @@ function plannedTrainingRows(count,now=Date.now()){
   });
   const additions=fresh.slice(0,quota);
   const cards=exam?[...additions,...reviews]:[...reviews,...additions];
-  let budget=i===0?(exam?Math.max(0,TRAINING_PORTION_TASKS-trainingTasksToday()):normal.budget):TRAINING_PORTION_TASKS;
+  let budget=i===0?(exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):normal.budget):(exam?EXAM_TRAINING_TASK_LIMIT:DAILY_TRAINING_TASK_LIMIT);
   for(const card of cards){
    const reviewing=reviewDates.has(card.id);
    const cost=i===0&&(!reviewing||reviewDates.get(card.id)<=now)?pendingTrainingTasks(card,level).length:costs.get(card.id);
