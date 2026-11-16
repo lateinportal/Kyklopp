@@ -899,6 +899,10 @@ function studentManagementPage(p){
  let content;
  if(['tasks','submissions','done'].includes(managementTab)){
   const filtered=managementTab==='done'?completedTasks(tasks):tasks.filter(task=>taskSection(task)===managementTab);
+  if(managementTab==='submissions'){
+   const needsResponse=task=>task.status==='submitted'||task.studentReview==='question';
+   filtered.sort((a,b)=>Number(needsResponse(b))-Number(needsResponse(a)));
+  }
   const empty={tasks:'Keine offenen Lernaufträge.',submissions:'Zurzeit gibt es keine Abgaben oder Rückmeldungen.',done:'Noch keine abgeschlossenen Lernaufträge.'}[managementTab];
   content='<div class="teacher-list task-card-list">'+(filtered.length?filtered.map(managementTaskCard).join(''):'<div class="quiet-empty">'+empty+'</div>')+'</div>';
  }else if(managementTab==='denare'){
