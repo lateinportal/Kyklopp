@@ -708,12 +708,18 @@ function wallet(showRewards=false){
  const gift='<button type="button" class="quiet-wallet reward-link" data-target="rewards" aria-label="Belohnungen ansehen" title="Belohnungen ansehen"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v9H4zM3 8h18v4H3zM12 8v13M12 8H8.5A2.5 2.5 0 1 1 11 5.5L12 8Zm0 0h3.5A2.5 2.5 0 1 0 13 5.5L12 8Z"/></svg></button>';
  return '<div class="wallet-actions'+(formatDenare(available(profile)).length>9?' wallet-wide':'')+'"><div class="wallet-with-change">'+balance+'<span class="wallet-change" id="wallet-change" role="status" aria-live="polite"></span></div>'+(showRewards?gift:'')+'</div>';
 }
+function compareFeedbackTasks(a,b) {
+ const aWaiting=a.status==='submitted',bWaiting=b.status==='submitted';
+ if(aWaiting!==bWaiting)return Number(bWaiting)-Number(aWaiting);
+ if(!aWaiting)return 0;
+ return (new Date(b.submittedAt).getTime()||0)-(new Date(a.submittedAt).getTime()||0);
+}
 function completedTasks(tasks) {
  return tasks.filter(isFinished).reverse().sort((a,b)=>(b.completedAt??0)-(a.completedAt??0));
 }
 
 function studentPage(){
- const p=who(profile),tasks=myTasks(profile),active=tasks.filter(t=>!isFinished(t)),todo=active.filter(t=>taskSection(t)==='tasks'),feedbackTasks=active.filter(t=>taskSection(t)==='submissions'),done=completedTasks(tasks);
+ const p=who(profile),tasks=myTasks(profile),active=tasks.filter(t=>!isFinished(t)),todo=active.filter(t=>taskSection(t)==='tasks'),feedbackTasks=active.filter(t=>taskSection(t)==='submissions').sort(compareFeedbackTasks),done=completedTasks(tasks);
  if(studentSection==='denare')return denarePage();
  if(studentSection==='rewards')return studentBack(rewardsReturnSection)+'<header class="page-head"><div><h1>Belohnungen</h1><p class="quiet-subtitle">Mit deinen verdienten Denaren kannst du dir eine Belohnung aussuchen.</p></div>'+wallet()+'</header><div class="reward-grid">'+rewardCard(rewardChoices.voucher,'voucher')+rewardCard(rewardChoices.park,'park')+rewardCard(specialReward(profile),'special')+'</div><p class="quiet-foot">Sprich die Belohnung zuerst mit deinen Eltern ab. Danach kannst du sie bei deiner Lehrkraft anfragen.</p>';
  const overview=studentSection==='top',shown=overview?todo.slice(0,2):todo;
