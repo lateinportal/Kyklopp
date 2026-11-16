@@ -702,9 +702,9 @@ function homeGreeting(now=Date.now()){
 }
 let greetingRefreshTimer;
 function queueGreetingRefresh(){if(greetingRefreshTimer)window.clearTimeout?.(greetingRefreshTimer);greetingRefreshTimer=setTimeout(()=>{if(view!=='home')return;const heading=document.querySelector('#home-greeting');if(heading)heading.textContent=homeGreeting();queueGreetingRefresh()},60000)}
-function homeTrainingCounts(exam,plan,cards){
+function homeTrainingCounts(exam,plan,cards,hasExtra){
  const level=exam?examLevel(exam):state.level,tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount;
- return tasks?'<div class="training-start-counts home-training-counts"><div><strong>'+tasks+'</strong><span>Aufgaben</span></div><div><strong>'+fresh+'</strong><span>neue Wörter</span></div><div><strong>'+(cards.length-fresh)+'</strong><span>Wiederholungswörter</span></div></div>':'<p class="home-training-complete">'+trainingCompletedCopy()+'</p>';
+ return tasks?'<div class="training-start-counts home-training-counts"><div><strong>'+tasks+'</strong><span>Aufgaben</span></div><div><strong>'+fresh+'</strong><span>neue Wörter</span></div><div><strong>'+(cards.length-fresh)+'</strong><span>Wiederholungswörter</span></div></div>':'<p class="home-training-complete">'+(hasExtra?EXAM_EXTRA_COPY:trainingCompletedCopy())+'</p>';
 }
 function home(){
  queueMicrotaskSafeMobileProfile();
@@ -714,8 +714,8 @@ function home(){
  const hasExtra=exam&&!due.length&&examTrainingSelection(true).length;
  const pack=state.pack==null?null:lessonPacks(state.level).find(p=>p.number===Number(state.pack))?.label??state.pack;
  const scope=exam?'':' · BIS LEKTION '+state.level+(pack==null?'':' · BIS PÄCKCHEN '+pack);
- main.innerHTML=header()+`<div class="section-header"><h2 id="home-greeting">${esc(homeGreeting())}</h2>${mobileProfileButton()}<span class="streak-pill">${learningMotivation()}</span></div><div class="learning-grid"><section class="training-tile primary"><p class="eyebrow">ROMA A · VOKABELN${esc(scope)}</p><h2>${due.length?'Deine heutige Runde':esc(trainingCompletionTitle())}</h2>
- ${exam?`<div class="training-plan-selection"><div class="home-exam-scope"><span>Du übst für deine Klassenarbeit am ${esc(examDateLabel(exam))} <span class="exam-countdown-pill">${esc(examCountdown(exam))}</span></span><small>${esc(examScopeLabel(exam))}</small></div></div>`:''}<div class="training-summary">${homeTrainingCounts(exam,plan,due)}<div class="tile-footer">${!due.length?'<button class="btn secondary" id="home-free-continue" type="button">'+(hasExtra?'Zur Zusatzrunde':'Freies Üben')+'</button>':''}${due.length?'<button class="btn" id="train">Training starten</button>':''}${due.length?`<div class="tile-art pupil-art"><img src="${art.src}" alt="${esc(art.alt)}"></div>`:''}</div></div></section>${homeProgress()}</div>`;document.querySelectorAll('[data-home-stage]').forEach(b=>b.onclick=()=>showCompartment(+b.dataset.homeStage,'home'));if(due.length)document.querySelector('#train').onclick=()=>start('training');if(!due.length)document.querySelector('#home-free-continue').onclick=()=>navigate(hasExtra?'training':'free')}
+ main.innerHTML=header()+`<div class="section-header"><h2 id="home-greeting">${esc(homeGreeting())}</h2>${mobileProfileButton()}<span class="streak-pill">${learningMotivation()}</span></div><div class="learning-grid"><section class="training-tile primary"><p class="eyebrow">ROMA A · VOKABELN${esc(scope)}</p><h2>${due.length?'Deine heutige Runde':hasExtra?EXAM_EXTRA_HEADING:esc(trainingCompletionTitle())}</h2>
+ ${exam?`<div class="training-plan-selection"><div class="home-exam-scope"><span>Du übst für deine Klassenarbeit am ${esc(examDateLabel(exam))} <span class="exam-countdown-pill">${esc(examCountdown(exam))}</span></span><small>${esc(examScopeLabel(exam))}</small></div></div>`:''}<div class="training-summary">${homeTrainingCounts(exam,plan,due,hasExtra)}<div class="tile-footer">${!due.length?'<button class="btn secondary" id="home-free-continue" type="button">'+(hasExtra?'Zur Zusatzrunde':'Freies Üben')+'</button>':''}${due.length?'<button class="btn" id="train">Training starten</button>':''}${due.length?`<div class="tile-art pupil-art"><img src="${art.src}" alt="${esc(art.alt)}"></div>`:''}</div></div></section>${homeProgress()}</div>`;document.querySelectorAll('[data-home-stage]').forEach(b=>b.onclick=()=>showCompartment(+b.dataset.homeStage,'home'));if(due.length)document.querySelector('#train').onclick=()=>start('training');if(!due.length)document.querySelector('#home-free-continue').onclick=()=>navigate(hasExtra?'training':'free')}
 function profileStatisticsColor(){const colors={'blau-brille.webp':'blau','gruen-basecap.webp':'gruen','orange-kopfhoerer.webp':'orange','lila-schleife.webp':'lila','tuerkis-zoepfe.webp':'tuerkis'};return colors[(state.profile?.avatar||'').split('/').pop()]||'blau';}
 function compartmentImageSource(tone){return 'vokabelbilder/statistik/'+profileStatisticsColor()+'/kloppo-'+tone+'.webp';}
 function compartmentIcon(f){return `<img class="compartment-icon" data-compartment-tone="${f.tone}" src="${compartmentImageSource(f.tone)}" alt="" width="64" height="64">`}
@@ -2109,7 +2109,8 @@ function trainingLevelSummary(){
 function trainingOverviewMarkup(){
  const exam=activeExam(),plan=exam?null:normalTrainingForDisplay(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
  const tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount,reviews=cards.length-fresh;
- return header()+`<h1>Training</h1><section class="panel training-start-panel${tasks?'':' training-complete-panel'}"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):esc(trainingCompletionTitle())}</h2>${!tasks?'<p>'+trainingCompletedCopy()+'</p>':''}${examExtraMarkup(cards)}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:''}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>${!exam?trainingLevelSummary():''}`;
+ const extra=exam&&!tasks?examTrainingSelection(true):[];
+ return header()+`<h1>Training</h1><section class="panel training-start-panel${tasks?'':' training-complete-panel'}"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):extra.length?EXAM_EXTRA_HEADING:esc(trainingCompletionTitle())}</h2>${!tasks?'<p>'+(extra.length?EXAM_EXTRA_COPY:trainingCompletedCopy())+'</p>':''}${examExtraMarkup(cards,extra)}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:''}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>${!exam?trainingLevelSummary():''}`;
 }
 let examDisclosureOpen=false;
 function trainingOverview(){openExamPlan(false,false)}
@@ -2374,6 +2375,8 @@ function examStats(p=activeExam()){
  return {cards,fresh,days,buffer,learningDays,quota,newToday,reviews,safe,startedToday};
 }
 const EXAM_TRAINING_TASK_LIMIT=40;
+const EXAM_EXTRA_HEADING='Deine Tagesrunde ist geschafft!';
+const EXAM_EXTRA_COPY='Wenn du noch für die Klassenarbeit üben möchtest, steht eine freiwillige Zusatzrunde bereit.';
 function takeTrainingPortion(cards,level,budget){
  const selected=[];
  for(const card of cards){
@@ -2398,7 +2401,7 @@ function examTrainingSelection(extra=false){
  const candidates=[...stats.fresh.slice(0,extra?undefined:stats.newToday),...reviews];
  return takeTrainingPortion(candidates,level,extra?EXAM_TRAINING_TASK_LIMIT:Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()));
 }
-function examExtraMarkup(required){
+function examExtraMarkup(required,cards){
  const exam=activeExam();
  if(!exam)return '';
  const stats=examStats(exam);
@@ -2406,7 +2409,6 @@ function examExtraMarkup(required){
   const scheduledNew=required.filter(card=>!pfor(card).reviews&&!exam.history?.[card.id]?.firstSeen).length;
   return stats.newToday>scheduledNew?'<p class="note">Ein Teil der neuen Prüfungswörter passt heute nicht in die Tagesportion. Danach kannst du freiwillig weiterüben.</p>':'';
  }
- const cards=examTrainingSelection(true);
  if(!cards.length)return '';
  const tasks=trainingTaskCount(cards,examLevel(exam));
  const fresh=stats.fresh.length;
