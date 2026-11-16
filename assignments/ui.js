@@ -178,7 +178,7 @@ function render(){
  $$('[data-review]').forEach(b=>b.onclick=()=>reviewTask(b.dataset.review));$$('[data-reward]').forEach(b=>b.onclick=()=>buyReward(b.dataset.reward));$$('[data-request]').forEach(b=>b.onclick=()=>confirmRequest(b.dataset.request));$$('[data-new-task]').forEach(b=>b.onclick=()=>newTask());
  $$('[data-teacher-denare-back]').forEach(button=>button.onclick=()=>{if(role!=='teacher'||!teacherDenareReturn)return;({teacherSection,managedStudent,managementTab}=teacherDenareReturn);render();window.scrollTo(0,0);});
  $$('[data-student-back]').forEach(button=>button.onclick=()=>{if(role!=='student')return;studentSection=button.dataset.studentBack;render();window.scrollTo(0,0);});
- $$('[data-open-grammar]').forEach(button=>button.onclick=()=>{if(window.KykloppOpenGrammarLink)window.KykloppOpenGrammarLink();else toast('Dieser Link öffnet im Kyklopp des Schülers die Grammatikübersicht.');});
+ $$('[data-open-grammar]').forEach(button=>button.onclick=openGrammarLink);
  $$('[data-student-task-tab]').forEach(button=>{
   button.onclick=()=>{if(role!=='student')return;studentTaskTab=button.dataset.studentTaskTab;render();};
   button.onkeydown=event=>{const tabs=$$('[data-student-task-tab]'),index=tabs.indexOf(button),next={ArrowRight:(index+1)%tabs.length,ArrowLeft:(index+tabs.length-1)%tabs.length,Home:0,End:tabs.length-1}[event.key];if(next===undefined)return;event.preventDefault();tabs[next].onclick();$('[data-student-task-tab="'+tabs[next].dataset.studentTaskTab+'"]').focus({preventScroll:true});};
@@ -418,19 +418,9 @@ function linkedText(value,format=false,collectLink=null) {
  return html.replace(/\n/g,'<br>').replace(/\u0000(\d+)\u0000/g,(_,index)=>links[Number(index)]);
 }
 function formattedFeedback(value) {return linkedText(value,true);}
-function feedbackToolbar() {
- return '<div class="feedback-tools" role="group" aria-label="Feedback formatieren">'+
- [['**','Fett','<strong>F</strong>'],['*','Kursiv','<em>K</em>'],['__','Unterstrichen','<u>U</u>']].map(([marker,label,text])=>
- '<button type="button" class="btn secondary" data-feedback-format="'+marker+'" aria-label="'+label+'" title="'+label+'">'+text+'</button>').join('')+'</div>';
-}
-function bindFeedbackToolbar() {
- $$('[data-feedback-format]').forEach(button=>button.onclick=()=>{
-  const field=$('#feedback'),start=field.selectionStart,end=field.selectionEnd,marker=button.dataset.feedbackFormat;
-  const selected=field.value.slice(start,end);
-  field.setRangeText(marker+selected+marker,start,end,'select');
-  field.focus({preventScroll:true});
-  field.setSelectionRange(start+marker.length,start+marker.length+selected.length);
- });
+function openGrammarLink() {
+ if(window.KykloppOpenGrammarLink)window.KykloppOpenGrammarLink();
+ else toast('Dieser Link öffnet im Kyklopp des Schülers die Grammatikübersicht.');
 }
 function worksheetIcon(){
  return '<svg class="worksheet-icon" viewBox="0 0 24 28" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h10l6 6v17a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm10 0v7h6"/><path stroke-width="1.3" d="m6 21 2.5-7 2.5 7m-4-2h3m4-5v7h2.3a1.8 1.8 0 0 0 0-3.6H14m0-3.4h2.1a1.7 1.7 0 0 1 0 3.4"/></svg>';
@@ -956,7 +946,14 @@ function reviewTask(id){const t=taskBy(id);if(role!=='teacher'||!t)return;const 
  const readStatus=()=> $('[name="review-status"]:checked')?.value||(editing&&!rated?'open':'approved');
  const previousAward=t.awardedPoints??t.points;
  const minAward=rated?Math.max(0,previousAward-available(t.profile)):0;
- modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+esc(t.reference)+`</p>${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}${reviewLabelPicker(t)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span>'+feedbackToolbar()+'<textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');bindFeedbackToolbar();
+ const resources=assignmentResources(t,false);
+ const instruction=resources.description||resources.otherLinks||resources.facts?
+  '<details class="feedback-instruction review-instruction"><summary>Arbeitsauftrag</summary>'+
+  (resources.description?'<div class="check-instruction">'+resources.description+'</div>':'')+
+  resources.otherLinks+(resources.facts?'<div class="task-attachments">'+resources.facts+'</div>':'')+'</details>':'';
+ modal(editing?'Rückmeldung bearbeiten':'Deine Rückmeldung','<p class="modal-source">'+esc(who(t.profile).name)+' · '+resources.reference+`</p>${instruction}${t.plannedMinutes==null?'':'<p>Dauer: '+t.plannedMinutes+' min</p>'}${submissionLabel(t)}${reviewLabelPicker(t)}<div id="review-rating-fields" class="form-grid" ${editing&&!rated?'hidden':''}><label>Denare (max. ${t.points})<input id="award-points" type="number" min="${minAward}" max="${t.points}" value="${rated?previousAward:t.points}"></label>${reviewStarPicker(t)}</div><p id="review-error" class="error" role="alert"></p>`+'<label class="feedback-label"><span>Kommentar für '+esc(who(t.profile).name)+' (optional)</span><textarea id="feedback" rows="3" placeholder="Was ist schon gut? Was hilft beim nächsten Schritt?">'+esc(t.feedback??'')+'</textarea></label>','<button class="btn quiet" data-close>Abbrechen</button>'+'<button class="btn" id="approve-task">'+(editing?'Speichern':'Bestätigen')+'</button>');
+ $$('#modal [data-open-attachment]').forEach(button=>button.onclick=()=>openAttachment(button.dataset.openAttachment));
+ $$('#modal [data-open-grammar]').forEach(button=>button.onclick=openGrammarLink);
  const statusOptions=$$('#modal [name="review-status"]');
  statusOptions.forEach(input=>input.onchange=()=>{
   if(input.checked)statusOptions.forEach(other=>{if(other!==input)other.checked=false;});

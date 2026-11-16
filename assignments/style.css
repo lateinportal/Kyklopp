@@ -309,8 +309,6 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  .teacher-item .badge { white-space: normal; }
 }
 
-.feedback-tools { display: flex; gap: 6px; margin: 8px 0; }
-.feedback-tools .btn { min-width: 40px; min-height: 38px; padding: 5px 12px; }
 .task-attachments { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0; }
 .task-attachments .link { display: inline-flex; align-items: center; gap: 5px; overflow-wrap: anywhere; text-align: left; }
 .task-attachments svg { width: 16px; height: 16px; flex-shrink: 0; }
@@ -580,7 +578,10 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
  font-size: 32px;
  line-height: 1.4;
 }
-.review-star-picker .check-stars { vertical-align: top; }
+.review-star-picker .check-stars { font-size: 28px; vertical-align: top; }
+.review-instruction { margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--paper); overflow-wrap: anywhere; }
+.review-instruction summary { font-size: 14px; color: var(--ink); }
+.review-instruction .check-instruction, .review-instruction .task-attachments { margin-top: 6px; }
 .review-star-choices {
  position: absolute;
  inset: 0;
