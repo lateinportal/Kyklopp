@@ -665,7 +665,10 @@ function packButtons(lesson,selected,mode){return '<div class="pack-list" role="
 function freePackControls(){return [...freeLessons].sort((a,b)=>a-b).map(l=>'<div class="pack-lesson"><h3>Lektion '+l+'</h3>'+packButtons(l,freePack(l),'free')+'</div>').join('')}
 function bindFreePacks(){document.querySelectorAll('[data-pack-mode="free"]').forEach(b=>b.onclick=()=>{freePacks[+b.dataset.packLesson]=+b.dataset.packNumber;document.querySelector('#free-packs').innerHTML=freePackControls();bindFreePacks()})}
 
-function dueCards(){return dailyTrainingPlan().cards}
+function normalTrainingForDisplay(){
+ settleCompletedTrainingRounds(eligible(),state.level);
+ const plan=dailyTrainingPlan();rememberNormalTraining(plan);return plan;
+}
 window.addEventListener('kyklopp-open-grammar',()=>{if(view!=='assignments'||window.KykloppLearningAssignments?.busy())return;navigate('free');grammarOverview();window.scrollTo(0,0);});
 function header(label){return ''}
 const PAGE_KEY='kyklopp-last-page',PERSISTED_PAGES=['home','free','training','library','settings','exam','assignments'];
@@ -687,20 +690,20 @@ function homeGreeting(now=Date.now()){
 }
 let greetingRefreshTimer;
 function queueGreetingRefresh(){if(greetingRefreshTimer)window.clearTimeout?.(greetingRefreshTimer);greetingRefreshTimer=setTimeout(()=>{if(view!=='home')return;const heading=document.querySelector('#home-greeting');if(heading)heading.textContent=homeGreeting();queueGreetingRefresh()},60000)}
-function homeTrainingCounts(){
- const exam=activeExam(),plan=exam?null:dailyTrainingPlan(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level,tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount;
+function homeTrainingCounts(exam,plan,cards){
+ const level=exam?examLevel(exam):state.level,tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount;
  return tasks?'<div class="training-start-counts home-training-counts"><div><strong>'+tasks+'</strong><span>Aufgaben</span></div><div><strong>'+fresh+'</strong><span>neue Wörter</span></div><div><strong>'+(cards.length-fresh)+'</strong><span>Wiederholungswörter</span></div></div>':'<p class="home-training-complete">'+trainingCompletedCopy()+'</p>';
 }
 function home(){
  queueMicrotaskSafeMobileProfile();
  queueGreetingRefresh();
  const exam=activeExam(),art=lessonTrainingArt(exam?Math.max(1,...exam.lessons):state.level);
- const due=exam?examTrainingSelection():dueCards();
+ const plan=exam?null:normalTrainingForDisplay(),due=exam?examTrainingSelection():plan.cards;
  const hasExtra=exam&&!due.length&&examTrainingSelection(true).length;
  const pack=state.pack==null?null:lessonPacks(state.level).find(p=>p.number===Number(state.pack))?.label??state.pack;
  const scope=exam?'':' · BIS LEKTION '+state.level+(pack==null?'':' · BIS PÄCKCHEN '+pack);
  main.innerHTML=header()+`<div class="section-header"><h2 id="home-greeting">${esc(homeGreeting())}</h2>${mobileProfileButton()}<span class="streak-pill">${learningMotivation()}</span></div><div class="learning-grid"><section class="training-tile primary"><p class="eyebrow">ROMA A · VOKABELN${esc(scope)}</p><h2>${due.length?'Deine heutige Runde':esc(trainingCompletionTitle())}</h2>
- ${exam?`<div class="training-plan-selection"><div class="home-exam-scope"><span>Du übst für deine Klassenarbeit am ${esc(examDateLabel(exam))} <span class="exam-countdown-pill">${esc(examCountdown(exam))}</span></span><small>${esc(examScopeLabel(exam))}</small></div></div>`:''}<div class="training-summary">${homeTrainingCounts()}<div class="tile-footer">${!due.length?'<button class="btn secondary" id="home-free-continue" type="button">'+(hasExtra?'Zur Zusatzrunde':'Freies Üben')+'</button>':''}${due.length?'<button class="btn" id="train">Training starten</button>':''}${due.length?`<div class="tile-art pupil-art"><img src="${art.src}" alt="${esc(art.alt)}"></div>`:''}</div></div></section>${homeProgress()}</div>`;document.querySelectorAll('[data-home-stage]').forEach(b=>b.onclick=()=>showCompartment(+b.dataset.homeStage,'home'));if(due.length)document.querySelector('#train').onclick=()=>start('training');if(!due.length)document.querySelector('#home-free-continue').onclick=()=>navigate(hasExtra?'training':'free')}
+ ${exam?`<div class="training-plan-selection"><div class="home-exam-scope"><span>Du übst für deine Klassenarbeit am ${esc(examDateLabel(exam))} <span class="exam-countdown-pill">${esc(examCountdown(exam))}</span></span><small>${esc(examScopeLabel(exam))}</small></div></div>`:''}<div class="training-summary">${homeTrainingCounts(exam,plan,due)}<div class="tile-footer">${!due.length?'<button class="btn secondary" id="home-free-continue" type="button">'+(hasExtra?'Zur Zusatzrunde':'Freies Üben')+'</button>':''}${due.length?'<button class="btn" id="train">Training starten</button>':''}${due.length?`<div class="tile-art pupil-art"><img src="${art.src}" alt="${esc(art.alt)}"></div>`:''}</div></div></section>${homeProgress()}</div>`;document.querySelectorAll('[data-home-stage]').forEach(b=>b.onclick=()=>showCompartment(+b.dataset.homeStage,'home'));if(due.length)document.querySelector('#train').onclick=()=>start('training');if(!due.length)document.querySelector('#home-free-continue').onclick=()=>navigate(hasExtra?'training':'free')}
 function profileStatisticsColor(){const colors={'blau-brille.webp':'blau','gruen-basecap.webp':'gruen','orange-kopfhoerer.webp':'orange','lila-schleife.webp':'lila','tuerkis-zoepfe.webp':'tuerkis'};return colors[(state.profile?.avatar||'').split('/').pop()]||'blau';}
 function compartmentImageSource(tone){return 'vokabelbilder/statistik/'+profileStatisticsColor()+'/kloppo-'+tone+'.webp';}
 function compartmentIcon(f){return `<img class="compartment-icon" data-compartment-tone="${f.tone}" src="${compartmentImageSource(f.tone)}" alt="" width="64" height="64">`}
@@ -2092,7 +2095,7 @@ function trainingLevelSummary(){
  return '<details class="panel training-exam-disclosure training-level-disclosure" id="training-level-disclosure"><summary>Dein Lernstand</summary><div class="training-level-summary"><div class="training-level-summary-row"><div><p class="training-level-summary-value"><strong>Lektion '+state.level+'</strong><span>· '+esc(pack)+'</span></p></div><button class="btn secondary" id="training-level-edit" type="button" aria-haspopup="dialog">Ändern</button></div></div></details>';
 }
 function trainingOverviewMarkup(){
- const exam=activeExam(),plan=exam?null:dailyTrainingPlan(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
+ const exam=activeExam(),plan=exam?null:normalTrainingForDisplay(),cards=exam?examTrainingSelection():plan.cards,level=exam?examLevel(exam):state.level;
  const tasks=trainingTaskCount(cards,level),fresh=exam?cards.filter(c=>!pfor(c).reviews).length:plan.newCount,reviews=cards.length-fresh;
  return header()+`<h1>Training</h1><section class="panel training-start-panel${tasks?'':' training-complete-panel'}"><div class="training-start-copy"><h2>${tasks?(exam?'Dein Training für die Klassenarbeit':'Bereit für deine nächste Runde?'):esc(trainingCompletionTitle())}</h2>${!tasks?'<p>'+trainingCompletedCopy()+'</p>':''}${examExtraMarkup(cards)}${tasks?`<div class="training-start-counts"><div><strong>${tasks}</strong><span>Aufgaben</span></div><div><strong>${fresh}</strong><span>neue Wörter</span></div><div><strong>${reviews}</strong><span>Wiederholungswörter</span></div></div><p class="note">Etwa ${Math.max(1,Math.round(tasks/4))} Minuten</p>`:''}${tasks?'<div class="training-start-actions"><button class="btn" type="button" id="training-preview-start">Training starten</button></div>':''}</div>${tasks?'<img class="training-start-kloppo" src="vokabelbilder/kloppo-training-bereit.png" alt="Der gelbe Kloppo hält Karteikarten und zeigt motivierend einen Daumen hoch.">':''}</section>${!exam?trainingLevelSummary():''}`;
 }
@@ -2132,7 +2135,7 @@ function showTrainingLevelEditor(){
  document.body.appendChild(dialog);openDialogAtStart(dialog,'#training-level-title');
 }
 function orderTrainingQueue(queue){let result=[];for(const rank of [0,1,2]){let block=E.mixQueue(queue.filter(x=>(x.t.id==='choice'?0:x.t.id==='translation'?2:1)===rank));if(result.length&&block.length>1&&result[result.length-1].c.id===block[0].c.id){let other=block.findIndex(x=>x.c.id!==block[0].c.id);if(other>0)[block[0],block[other]]=[block[other],block[0]]}result.push(...block)}return result}
-function start(mode,options={}){document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===(mode==='training'?'training':'free')));let cards,level;if(mode==='training'){level=state.level;cards=dailyTrainingPlan().cards;if(activeExam()){cards=examTrainingSelection(options.examExtra===true);level=examLevel(activeExam())}}else{level=Math.max(...freeLessons,...(options.cardIds||[]).map(id=>CARDS.find(c=>c.id===id)?.lesson||1));cards=shuffle((options.cards||CARDS).filter(c=>(options.cardIds?options.cardIds.includes(c.id):freeEligible(c))&&(options.type==='Alle Wortarten'||c.pos===options.type)&&freeTaskTypes(c,level,options.goal).length));if(options.count!=='Alle')cards=cards.slice(0,+options.count)}if(!cards.length){view='training';main.innerHTML=header()+`<div class="panel empty"><div class="big">☀</div><h1>Alles im Plan.</h1><p class="subtitle">${mode==='training'?trainingReturnHint(): 'Für diese Auswahl gibt es keine Vokabeln.'}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}session={mode,goal:options.goal,level,cards,scopeLessons:mode==='free'?[...freeLessons]:null,scopePacks:mode==='free'?{...freePacks}:null,testRound:!!options.testRound,lessonRound:options.lessonRound||null,startedAt:Date.now(),queue:[],total:0,done:0,correct:0,wrong:0,earned:[],index:0};for(let c of cards){let tasks=mode==='free'?freeTaskTypes(c,level,options.goal):trainingTaskTypes(c,level);const requiredTest=tasks.map(t=>t.id);if(options.testRound)tasks=tasks.filter(t=>!testProgress().words[c.id]?.passed?.[t.id]);if(options.lessonRound)tasks=tasks.filter(t=>!lessonPreparationProgress(options.lessonRound)[c.id]?.[t.id]);for(let t of tasks){if(mode==='training'&&pfor(c).passed.includes(t.id)&&!(activeExam()&&pfor(c).due>Date.now()))continue;session.queue.push({c,t,required:options.testRound?requiredTest:tasks.map(x=>x.id),rehearsal:mode==='training'&&!!activeExam()&&pfor(c).due>Date.now()})}}session.queue=(mode==='training'||options.testRound||options.lessonRound)?orderTrainingQueue(session.queue):E.mixQueue(session.queue);session.total=session.queue.length;if(!session.total){session=null;view='training';main.innerHTML=header()+`<div class="panel empty"><h1>Alles im Plan.</h1><p class="subtitle">${trainingReturnHint()}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}view='quiz';quiz()}
+function start(mode,options={}){document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===(mode==='training'?'training':'free')));let cards,level,normalTrainingDay;if(mode==='training'){const exam=activeExam();if(exam){cards=examTrainingSelection(options.examExtra===true);level=examLevel(exam)}else{const plan=normalTrainingForDisplay();cards=plan.cards;level=state.level;normalTrainingDay=plan.day}}else{level=Math.max(...freeLessons,...(options.cardIds||[]).map(id=>CARDS.find(c=>c.id===id)?.lesson||1));cards=shuffle((options.cards||CARDS).filter(c=>(options.cardIds?options.cardIds.includes(c.id):freeEligible(c))&&(options.type==='Alle Wortarten'||c.pos===options.type)&&freeTaskTypes(c,level,options.goal).length));if(options.count!=='Alle')cards=cards.slice(0,+options.count)}if(!cards.length){view='training';main.innerHTML=header()+`<div class="panel empty"><div class="big">☀</div><h1>Alles im Plan.</h1><p class="subtitle">${mode==='training'?trainingReturnHint(): 'Für diese Auswahl gibt es keine Vokabeln.'}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}session={mode,goal:options.goal,level,cards,normalTrainingDay,scopeLessons:mode==='free'?[...freeLessons]:null,scopePacks:mode==='free'?{...freePacks}:null,testRound:!!options.testRound,lessonRound:options.lessonRound||null,startedAt:Date.now(),queue:[],total:0,done:0,correct:0,wrong:0,earned:[],index:0};for(let c of cards){let tasks=mode==='free'?freeTaskTypes(c,level,options.goal):trainingTaskTypes(c,level);const requiredTest=tasks.map(t=>t.id);if(options.testRound)tasks=tasks.filter(t=>!testProgress().words[c.id]?.passed?.[t.id]);if(options.lessonRound)tasks=tasks.filter(t=>!lessonPreparationProgress(options.lessonRound)[c.id]?.[t.id]);for(let t of tasks){if(mode==='training'&&pfor(c).passed.includes(t.id)&&!(activeExam()&&pfor(c).due>Date.now()))continue;session.queue.push({c,t,required:options.testRound?requiredTest:tasks.map(x=>x.id),rehearsal:mode==='training'&&!!activeExam()&&pfor(c).due>Date.now()})}}session.queue=(mode==='training'||options.testRound||options.lessonRound)?orderTrainingQueue(session.queue):E.mixQueue(session.queue);session.total=session.queue.length;if(!session.total){session=null;view='training';main.innerHTML=header()+`<div class="panel empty"><h1>Alles im Plan.</h1><p class="subtitle">${trainingReturnHint()}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}view='quiz';quiz()}
 function packHelpContent(){return `<div class="pack-help-content"><div class="pack-book" role="img" aria-label="Vereinfachte Buchansicht: Die kleine Zahl links neben einem Wortblock zeigt die Päckchennummer."><span class="book-heading">Lernwörter · Beispiel</span><div class="book-pack"><span class="book-pack-number">1</span><div><b>Mercurius</b><b>parvus</b><b>contentus</b><span>… weitere Lernwörter</span></div></div><div class="book-pack"><span class="book-pack-number">2</span><div><b>puer</b><b>quis?</b><span>… weitere Lernwörter</span></div></div></div><div><p>Schau im Buch bei <strong>„Lernwörter“</strong>: Links neben jedem Wortblock steht eine kleine Zahl. Das ist die Päckchennummer – hier gelb umkreist.</p><p>Ein Päckchen enthält meist <strong>7–8 Vokabeln</strong>. So kannst du kleine Portionen lernen. Die Wörter stehen in der Reihenfolge, in der sie im Lektionstext vorkommen.</p><p>„Päckchen 1 bis 3“ nimmt die Päckchen 1, 2 und 3 dazu.</p></div></div>`}
 function showPackHelp(){showOverviewHelp('Was ist ein Päckchen? Wo finde ich die Nummer?',packHelpContent())}
 function showLevelHelp(){showOverviewHelp('Was bedeutet Lernstand?',`<div class="pack-help-content level-help-content"><div class="level-book" role="img" aria-label="Vereinfachte Buchseite: Oben links steht die große Lektionsnummer 5 in einem roten Feld. Ein gelber Kreis hebt sie hervor."><div class="level-book-top"><span class="level-book-number">5</span><span class="level-book-banner">GRAMMATIK ENTDECKEN</span></div><div class="level-book-page"><strong>Schulunterricht</strong><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span><div class="level-book-paragraph"><b>A</b><div><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span></div></div><div class="level-book-paragraph"><b>B</b><div><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span></div></div><img src="vokabelbilder/c1110.webp" alt="" aria-hidden="true"><small>Vereinfachtes Beispiel</small></div></div><div><p>Welche Lektion besprecht ihr gerade im Lateinunterricht? Genau diese Lektion wählst du hier aus.</p><p><strong>Die Lektionsnummer findest du oben links auf der Buchseite.</strong> Hier ist die große <strong>5</strong> gelb umkreist.</p><p>Seid ihr zum Beispiel bei <strong>Lektion 5</strong>, stellst du <strong>„Bis Lektion 5“</strong> ein. Dann berücksichtigt dein tägliches Training die Wörter bis zu dieser Lektion.</p><p><strong>Startet ihr im Unterricht mit einer neuen Lektion?</strong> Denk daran, deine Auswahl hier anzupassen. So passt dein Training immer zu eurem Unterricht.</p><p>Bei „Päckchen“ kannst du genauer auswählen, wie weit ihr in der aktuellen Lektion schon seid.</p></div></div>`)}
@@ -2190,7 +2193,7 @@ function wordLearningDetails(card){
 
 function quiz(){if(session?.grammarRound)return grammarQuiz();if(!session)return;if(session.index>=session.queue.length)return finish();let {c,t}=session.queue[session.index];session.feedback=null;session.attempt=0;let pos=c.pos==='Undefiniert'?'Wendung / Partikel':c.pos;let pct=session.done/session.total*100;main.innerHTML=`<div class="practice-shell"><div class="practice-top"><button class="back" id="back">${session.lessonRound||session.testRound?'← Freies Üben':'← Übersicht'}</button><span class="eyebrow">${session.lessonRound?'Wörter auffrischen':session.testRound?'Vokabeltest':session.mode==='training'?'Training':session.mode==='correction'?'Fehler wiederholen':'Freies Üben'}</span><span class="smallcaps">${session.index+1}/${session.total}</span></div><div class="exercise-progress"><span>${pos} · ${exerciseLessonLabel(c)}</span><span>${Math.round(pct)}% geschafft</span></div><div class="exercise-bar"><i style="width:${pct}%"></i></div><div class="word-card" id="word"><div class="reader-scene ${window.VOCAB_ART?.[c.id]?'has-vocab-image':''}">${window.VOCAB_ART?.[c.id]?`<img class="vocab-image" src="${esc(window.VOCAB_ART[c.id].src)}" alt="Lernillustration" decoding="async" onerror="this.parentElement.classList.remove('has-vocab-image');this.hidden=true;this.nextElementSibling.hidden=false"><span class="vocab-fallback" hidden>${reader}</span>`:reader}</div><span class="badge" id="result-badge" aria-live="polite">${medal(pfor(c))||masterySymbol(0)}</span><div class="word-turn"><div class="word-body card-front" id="card-front"><h1>${esc(t.infinitive||c.latin)}</h1>${t.hint?`<p>${esc(t.hint)}</p>`:t.id==='class'?`<p>${esc(c.grammar)}</p>`:''}</div><div class="word-body card-back" id="card-back" aria-hidden="true"><div class="word-meta">LÖSUNG</div><div class="card-solution">${esc(t.answer)}</div></div></div><button class="card-toggle" id="card-toggle" type="button" aria-label="Vorderseite anzeigen" hidden><svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M19 10a7 7 0 1 0 .2 4M19 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><section class="question-panel"><div id="feedback" aria-live="polite" aria-atomic="true"><h2>${esc(t.title)}</h2></div><form id="answer-form" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">${t.kind==='input'?`<div class="answers">${t.fields.map((f,i)=>`<label>${esc(f.label)}<span class="input-wrap"><input name="answer${i}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" aria-label="${esc(f.label)}"><span class="field-badge" id="field-badge-${i}" hidden aria-hidden="true"></span></span></label>`).join('')}</div>`:`<div class="options">${optionsFor(c,t).map(o=>`<button type="button" class="option" data-answer="${esc(o)}">${esc(o)}</button>`).join('')}</div>`}<div class="actions ${t.kind!=='input'?'choice-actions':'translation-actions'}">${t.kind==='input'?'<button type="submit" class="btn" id="check">Überprüfen</button>':''}<button type="button" class="btn ghost" id="reveal">Antwort anzeigen</button></div></form><div id="after"></div>${session.mode==='free'?wordLearningDetails(c):''}</section>${session.mode==='free'&&!session.testRound&&!session.lessonRound?'<p class="note" style="margin-top:17px">Freies Üben · Dein Medaillenfortschritt bleibt unverändert.</p>':''}</div>`;
 document.querySelector('#card-toggle').onclick=()=>{let word=document.querySelector('#word');word.classList.toggle('flipped');let flipped=word.classList.contains('flipped');document.querySelector('#card-front').setAttribute('aria-hidden',String(flipped));document.querySelector('#card-back').setAttribute('aria-hidden',String(!flipped));document.querySelector('#card-toggle').setAttribute('aria-label',flipped?'Vorderseite anzeigen':'Lösung anzeigen')};document.querySelector('#back').onclick=()=>{if(session.lessonRound){const lesson=session.lessonRound;showExitPopup(()=>lessonPreparationOverview(lesson))}else if(session.testRound){showExitPopup(()=>{view='free';freeGoal='test';openTestPlan()})}else navigate('home')};document.querySelector('#reveal').onclick=()=>answer(false,true);if(t.kind==='input'){let check=document.querySelector('#check');check.disabled=true;document.querySelectorAll('.answers input').forEach(i=>i.oninput=()=>{check.disabled=![...document.querySelectorAll('.answers input')].every(x=>x.value.trim())});focusInputOnDesktop(document.querySelector('.answers input'))}document.querySelector('#answer-form').onsubmit=e=>{e.preventDefault();let values=[...document.querySelectorAll('.answers input')].map(i=>i.value);if(session.feedback){nextTask();return}if(values.some(v=>!v.trim()))return;answer(t.fields.every((f,i)=>(t.id==='translation'||f.translation?E.matchesTranslation:E.matches)(values[i],f.answers)))};document.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.option').forEach(x=>{if(b.dataset.answer===t.answer&&x===b)x.classList.add('correct')});if(b.dataset.answer!==t.answer)b.classList.add('wrong');answer(b.dataset.answer===t.answer)});}
-function answer(correct,reveal=false){if(session.feedback)return;let {c,t,required,rehearsal}=session.queue[session.index];session.feedback={correct,reveal};if(session.lessonRound)recordLessonPreparation(c,t,correct);if(session.testRound)recordTestAnswer(c,t,required,correct);recordLearningActivity(session.mode,c);let status=correct?'correct':t.kind==='input'&&[...document.querySelectorAll('.answers input')].some(i=>i.value.trim())?'almost':'wrong';(session.results??=[])[session.index]={status};if(correct)session.correct++;else session.wrong++;if(session.mode==='training'){if(!correct){session.failedTrainingWords??={};session.failedTrainingWords[c.id]=Math.max(session.failedTrainingWords[c.id]||0,pfor(c).stage>0?1:0);session.trainingRetryTasks??=new Map();if(!session.retryPhase)session.trainingRetryTasks.set(c.id+':'+t.id,{c,t,required,rehearsal:true,retry:true});}markTrainingIntroduction(c);recordExamAnswer(c,t,required,correct);if(!rehearsal){let old=pfor(c);let p=E.review(old,t.id,correct,required);state.progress[c.id]=p;if(p.stage>old.stage)session.earned.push({latin:c.latin,stage:p.stage});}save()}
+function answer(correct,reveal=false){if(session.feedback)return;let {c,t,required,rehearsal}=session.queue[session.index];session.feedback={correct,reveal};if(session.lessonRound)recordLessonPreparation(c,t,correct);if(session.testRound)recordTestAnswer(c,t,required,correct);recordLearningActivity(session.mode,c);let status=correct?'correct':t.kind==='input'&&[...document.querySelectorAll('.answers input')].some(i=>i.value.trim())?'almost':'wrong';(session.results??=[])[session.index]={status};if(correct)session.correct++;else session.wrong++;if(session.mode==='training'){if(!correct){session.failedTrainingWords??={};session.failedTrainingWords[c.id]=Math.max(session.failedTrainingWords[c.id]||0,pfor(c).stage>0?1:0);session.trainingRetryTasks??=new Map();if(!session.retryPhase)session.trainingRetryTasks.set(c.id+':'+t.id,{c,t,required,rehearsal:true,retry:true});}markTrainingIntroduction(c);recordExamAnswer(c,t,required,correct);if(!rehearsal){let old=pfor(c);let p=E.review(old,t.id,correct,required);writeTrainingProgress(c.id,p);if(p.stage>old.stage)session.earned.push({latin:c.latin,stage:p.stage});}save()}
 let word=document.querySelector('#word');word.classList.add('flipped',correct?'result-correct':'result-wrong');document.querySelector('#card-front').setAttribute('aria-hidden','true');document.querySelector('#card-back').setAttribute('aria-hidden','false');document.querySelector('#result-badge').textContent=correct?'✓':'!';document.querySelector('#result-badge').setAttribute('aria-label',correct?'Richtig':'Falsch oder aufgedeckt');document.querySelector('#card-toggle').hidden=false;document.querySelectorAll('#answer-form button,#answer-form input').forEach(b=>b.disabled=true);document.querySelector('#feedback').innerHTML=`<h2 class="feedback ${correct?'good':'bad'}">${correct?'Das war richtig!':reveal?'Antwort aufgedeckt. Diese Aufgabe wird wiederholt.':'Noch nicht richtig. Diese Aufgabe wird wiederholt.'}</h2>`;
 applyInputFeedback(t,correct);if(t.kind==='input'){translationResult(correct);return}document.querySelector('#after').innerHTML=!correct&&t.kind==='input'&&!reveal?'<button class="btn secondary" id="retry" type="button">Noch einmal schreiben</button>':'';if(t.kind==='input'){let check=document.querySelector('#check');check.disabled=false;check.type='button';check.textContent='Weiter';check.onclick=nextTask}else{let next=document.querySelector('#reveal');next.disabled=false;next.classList.remove('ghost');next.textContent='Weiter';next.onclick=nextTask}let retry=document.querySelector('#retry');if(retry)retry.onclick=()=>{document.querySelectorAll('.answers input').forEach(i=>{i.disabled=false;i.value=''});document.querySelector('#feedback').innerHTML='<h2 class="feedback">Schreibe die Lösung noch einmal. Der erste Versuch bleibt als Fehler gewertet.</h2>';clearInputFeedback();retry.disabled=true;let retryCheck=document.querySelector('#check');retryCheck.type='submit';retryCheck.textContent='Überprüfen';retryCheck.disabled=true;retryCheck.onclick=null;document.querySelectorAll('.answers input').forEach(i=>i.oninput=()=>{retryCheck.disabled=![...document.querySelectorAll('.answers input')].every(x=>x.value.trim())});document.querySelector('#answer-form').onsubmit=e=>{e.preventDefault();let values=[...document.querySelectorAll('.answers input')].map(i=>i.value);if(values.some(v=>!v.trim()))return;let good=t.fields.every((f,i)=>(t.id==='translation'||f.translation?E.matchesTranslation:E.matches)(values[i],f.answers));document.querySelector('#feedback').innerHTML=`<h2 class="feedback ${good?'good':'bad'}">${good?'Das war richtig!':'Prüfe die Lösung noch einmal: '+esc(t.answer)}</h2>`;applyInputFeedback(t,good);if(good){document.querySelectorAll('.answers input').forEach(i=>i.disabled=true);retryCheck.type='button';retryCheck.textContent='Weiter';retryCheck.disabled=false;retryCheck.onclick=nextTask}};focusInputOnDesktop(document.querySelector('.answers input'))};}
 function translationResult(correct){
@@ -2222,7 +2225,7 @@ if(!correct&&hasText){word.classList.remove('result-wrong','result-correct');wor
 inputs.forEach((input,i)=>{let badge=document.querySelector('#field-badge-'+i);if(!badge)return;let filled=Boolean(input.value.trim());badge.hidden=!filled;if(!filled){input.removeAttribute?.('aria-invalid');return}let good=(t.id==='translation'||t.fields[i].translation?E.matchesTranslation:E.matches)(input.value,t.fields[i].answers);badge.className='field-badge '+(good?'field-good':'field-warning');badge.textContent=good?'✓':'!';badge.setAttribute('aria-label',good?'Richtig':'Noch nicht richtig');badge.setAttribute('aria-hidden','false');input.setAttribute?.('aria-invalid',String(!good));});
 }
 function settleTrainingFailures(){
- if(session?.mode!=='training')return;for(const id of Object.keys(session.failedTrainingWords||{})){const p=pfor({id});const tomorrow=new Date(Date.now());tomorrow.setHours(24,0,0,0);state.progress[id]={...p,stage:session.failedTrainingWords[id],passed:[],roundFails:0,crownConfirmations:0,due:tomorrow.getTime()};session.earned=session.earned.filter(item=>item.latin!==CARDS.find(c=>c.id===id)?.latin);const h=activeExam()?.history?.[id];if(h){h.lastDay=examDay();h.pending=null;}}save();
+ if(session?.mode!=='training')return;for(const id of Object.keys(session.failedTrainingWords||{})){const p=pfor({id});const tomorrow=new Date(Date.now());tomorrow.setHours(24,0,0,0);writeTrainingProgress(id,{...p,stage:session.failedTrainingWords[id],passed:[],roundFails:0,crownConfirmations:0,due:tomorrow.getTime()});session.earned=session.earned.filter(item=>item.latin!==CARDS.find(c=>c.id===id)?.latin);const h=activeExam()?.history?.[id];if(h){h.lastDay=examDay();h.pending=null;}}save();
 }
 function nextTask(){if(session?.grammarRound)return nextGrammarTask();if(!session)return;if(!session.feedback){answer(false,true);return}session.done++;session.index++;if(session.mode==='training'&&session.index>=session.queue.length){if(!session.retryPhase&&session.trainingRetryTasks?.size){session.retryPhase=true;const retry=orderTrainingQueue([...session.trainingRetryTasks.values()]);session.queue.push(...retry);session.total=session.queue.length;}else settleTrainingFailures();}quiz();window.scrollTo(0,0)}
 function repeatMistakes(previous){
@@ -2290,11 +2293,11 @@ function examReviewReady(c,plan,now=Date.now()){
 function repetitionDayStart(day,offset=0){const d=new Date(day+'T00:00:00');d.setDate(d.getDate()+offset);return d.getTime();}
 function repetitionContext(now=Date.now()){
  const plan=state.exam?.date>=examDay(now)&&state.exam?.lessons?.length?state.exam:null;
- return {now,plan,ids:new Set(plan?examCards(plan).map(c=>c.id):[]),excluded:new Set(plan?.exclude||[])};
+ return {now,plan,normal:plan?null:dailyTrainingPlan(now),ids:new Set(plan?examCards(plan).map(c=>c.id):[]),excluded:new Set(plan?.exclude||[])};
 }
 function nextRepetitionAt(c,context=repetitionContext()){
- const {now,plan,ids,excluded}=context,p=pfor(c),raw=Number.isFinite(p.due)?p.due:0;
- if(!plan)return raw;
+ const {now,plan,normal,ids,excluded}=context,p=pfor(c),raw=Number.isFinite(p.due)?p.due:0;
+ if(!plan)return moveTrainingDate(normalWordDue(c),normal.day,normal.today);
  const afterExam=repetitionDayStart(plan.date,1);
  // Words outside the exam scope wait until it ends.
  if(excluded.has(c.id)||!ids.has(c.id))return Math.max(raw,afterExam);
@@ -2315,15 +2318,15 @@ function repetitionLabel(c,context=repetitionContext()){
 }
 
 function nextTrainingAt(now=Date.now()){
- const context=repetitionContext(now),exam=context.plan,normal=exam?null:dailyTrainingPlan();
+ const context=repetitionContext(now),exam=context.plan,normal=context.normal;
  const level=exam?examLevel(exam):state.level,scope=exam?[...new Map([...examCards(exam),...eligible()].map(c=>[c.id,c])).values()]:eligible(),dates=[];
- const tomorrow=repetitionDayStart(examDay(now),1),budget=exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):normal.budget;
+ const tomorrow=repetitionDayStart(examDay(now),1),budget=exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):Infinity;
  for(const c of scope){
   if(!pfor(c).reviews&&!exam?.history?.[c.id]?.firstSeen)continue;
   const at=nextRepetitionAt(c,context),cost=trainingTaskTypes(c,level).length;
   if(cost&&at>now&&(at>=tomorrow||cost<=budget))dates.push(at);
  }
- const deferred=exam?examTrainingSelection(true).length:normal.reviews.length||normal.fresh.some(c=>trainingTaskTypes(c,level).length);
+ const deferred=exam?examTrainingSelection(true).length:normal.fresh.length;
  if(deferred)dates.push(tomorrow);
  return dates.length?Math.min(...dates):Infinity;
 }
@@ -2341,8 +2344,6 @@ function examStats(p=activeExam()){
  let reviews=cards.filter(c=>examReviewReady(c,p));
  return {cards,fresh,days,buffer,learningDays,quota,newToday,reviews,safe,startedToday};
 }
-const DAILY_TRAINING_TASK_LIMIT=80;
-const CATCH_UP_TRAINING_TASK_LIMIT=100;
 const EXAM_TRAINING_TASK_LIMIT=40;
 function takeTrainingPortion(cards,level,budget){
  const selected=[];
@@ -2390,7 +2391,7 @@ function settleCompletedTrainingRounds(cards,level){
   const required=trainingTaskTypes(c,level).map(t=>t.id);
   if(required.length&&required.every(id=>p.passed.includes(id))){
    // Finish a saved round left open under an older set of required task types.
-   const settled=E.review(p,required[required.length-1],true,required);settled.reviews=p.reviews;state.progress[c.id]=settled;changed=true;
+   const settled=E.review(p,required[required.length-1],true,required);settled.reviews=p.reviews;writeTrainingProgress(c.id,settled);changed=true;
   }
  }
  if(changed)save();
@@ -2578,23 +2579,62 @@ function recordExamAnswer(c,t,required,correct){
  p.history[c.id]=h;
 }
 
-function dailyTrainingPlan(){
- const today=examDay(),cards=eligible();settleCompletedTrainingRounds(cards,state.level);const fresh=cards.filter(c=>!pfor(c).reviews),log=state.trainingIntroduced||{};
- const used=Object.values(log).filter(day=>day===today).length;
- const quota=state.dailyTraining?.day===today?state.dailyTraining.quota:(fresh.length>150?12:10);
- const remaining=Math.max(0,quota-used),reviews=cards.filter(c=>pfor(c).reviews&&pfor(c).due<=Date.now()&&pendingTrainingTasks(c,state.level).length).sort((a,b)=>pfor(a).due-pfor(b).due);
- const candidates=fresh.filter(c=>pendingTrainingTasks(c,state.level).length).sort((a,b)=>a.lesson-b.lesson).slice(0,remaining);
- const yesterday=examDay(repetitionDayStart(today,-1));
- const missed=!state.activity?.[yesterday]?.training &&
-  (reviews.some(c=>examDay(pfor(c).due)<today)||Object.entries(state.activity||{}).some(([day,activity])=>day<yesterday&&activity.training));
- const budget=Math.max(0,(missed?CATCH_UP_TRAINING_TASK_LIMIT:DAILY_TRAINING_TASK_LIMIT)-trainingTasksToday());
- const selected=takeTrainingPortion([...reviews,...candidates],state.level,budget);
- const reviewCount=selected.filter(c=>pfor(c).reviews).length;
- return {today,quota,used,remaining,budget,fresh,reviews,cards:selected,newCount:selected.length-reviewCount,reviewCount};
+function moveTrainingDate(at,from,to){
+ if(!Number.isFinite(at)||from===to)return at;
+ const date=new Date(at);date.setDate(date.getDate()+examOrdinal(to)-examOrdinal(from));return date.getTime();
+}
+// Normal training advances through one planned date per completed day. Exam scheduling uses the original calendar due time.
+function normalWordDue(c){const p=pfor(c);return p.trainingDueFor===p.due&&Number.isFinite(p.trainingDue)?p.trainingDue:Number.isFinite(p.due)?p.due:0;}
+function writeTrainingProgress(id,progress){
+ const today=examDay(),day=session?.normalTrainingDay||state.normalTraining?.day;
+ if(day&&progress.due!==pfor({id}).due){
+  progress.trainingDue=moveTrainingDate(progress.due,today,day);
+  progress.trainingDueFor=progress.due;
+ }
+ state.progress[id]=progress;
+}
+function dailyTrainingPlan(now=Date.now()){
+ const today=examDay(now),scope=eligible(),stored=state.normalTraining;
+ const saved=stored?.day<=today&&Number.isFinite(examOrdinal(stored.day))&&Array.isArray(stored.introduced)&&Number.isFinite(stored.quota)?stored:null;
+ const fresh=scope.filter(c=>!pfor(c).reviews&&pendingTrainingTasks(c,state.level).length).sort((a,b)=>a.lesson-b.lesson);
+ const reviewPool=scope.filter(c=>pfor(c).reviews&&pendingTrainingTasks(c,state.level).length).sort((a,b)=>normalWordDue(a)-normalWordDue(b));
+ const history=saved?null:Object.entries(state.activity||{}).filter(([day,entry])=>day<=today&&entry?.training)
+  .sort(([a],[b])=>b.localeCompare(a))[0];
+ const legacyFinished=history?.[1]?.completed?.training?history[0]:null;
+ let day=saved?.day||history?.[0]||today;
+ let portion=saved||{day,quota:state.dailyTraining?.day===day?state.dailyTraining.quota:fresh.length>150?12:10,
+  introduced:Object.keys(state.trainingIntroduced||{}).filter(id=>state.trainingIntroduced[id]===day),
+  finishedOn:legacyFinished,workedOn:history?.[0]};
+ const exhausted=portion.introduced.length>=portion.quota||!fresh.length;
+ const noReviewToday=!reviewPool.length||normalWordDue(reviewPool[0])>=repetitionDayStart(day,1);
+ if((portion.finishedOn&&portion.finishedOn<today)||(!portion.finishedOn&&day<today&&portion.workedOn!==today&&exhausted&&noReviewToday)){
+  day=examDay(repetitionDayStart(day,1));portion=null;
+ }
+ if(day<today&&!portion?.finishedOn&&portion?.workedOn!==today&&!fresh.length){
+  const nextDue=reviewPool.length?examDay(normalWordDue(reviewPool[0])):today;
+  const next=nextDue<today?nextDue:today;
+  if(next>day){day=next;portion=null;}
+ }
+ portion??={day,quota:fresh.length>150?12:10,introduced:[]};
+ const remaining=Math.max(0,portion.quota-portion.introduced.length),nextDay=repetitionDayStart(day,1);
+ const cutoff=day===today?now:nextDay-1;
+ const reviews=portion.finishedOn?[]:reviewPool.filter(c=>normalWordDue(c)<=cutoff);
+ const additions=portion.finishedOn?[]:fresh.slice(0,remaining);
+ const laterToday=!portion.finishedOn&&reviewPool.find(c=>normalWordDue(c)>cutoff&&normalWordDue(c)<nextDay);
+ return {today,day,portion,quota:portion.quota,used:portion.introduced.length,remaining,fresh,reviews,
+  cards:[...reviews,...additions],newCount:additions.length,reviewCount:reviews.length,laterToday};
+}
+function rememberNormalTraining(plan){
+ if(state.normalTraining===plan.portion)return;
+ state.normalTraining=plan.portion;save();
 }
 function markTrainingIntroduction(c){
- if(activeExam()||pfor(c).reviews)return;
- const plan=dailyTrainingPlan();state.dailyTraining={day:plan.today,quota:plan.quota};state.trainingIntroduced??={};state.trainingIntroduced[c.id]??=plan.today;
+ const portion=state.normalTraining;
+ if(!session?.normalTrainingDay||!portion)return;
+ portion.workedOn=examDay();
+ if(pfor(c).reviews)return;
+ if(!portion.introduced.includes(c.id))portion.introduced.push(c.id);
+ state.trainingIntroduced??={};state.trainingIntroduced[c.id]??=examDay();
 }
 function returnHint(at,now=Date.now()){
  if(!Number.isFinite(at))return 'Für deinen gewählten Lernstand ist alles erledigt.';
@@ -2618,7 +2658,7 @@ function trainingReturnHint(){
 function dailyTrainingCopy(){const p=dailyTrainingPlan();return p.cards.length?`Für deine nächste Runde: <strong>${p.newCount} neue Wörter</strong>${p.reviewCount?' und <strong>'+p.reviewCount+' Wiederholungen</strong>':''} · <strong>${trainingTaskCount(p.cards,state.level)} Aufgaben</strong>.<br>Neue Wörter werden automatisch auf die nächsten Tage verteilt.`:`Deine Portion ist geschafft. ${trainingReturnHint()}`}
 
 function plannedTrainingRows(count,now=Date.now()){
- const context=repetitionContext(now),exam=context.plan,normal=exam?null:dailyTrainingPlan(),stats=exam?examStats(exam):null;
+ const context=repetitionContext(now),exam=context.plan,normal=context.normal,stats=exam?examStats(exam):null;
  const today=examDay(now),level=exam?examLevel(exam):state.level,scope=exam?stats.cards:eligible();
  const rows=Array.from({length:count},(_,i)=>{
   const at=repetitionDayStart(today,i);
@@ -2629,7 +2669,7 @@ function plannedTrainingRows(count,now=Date.now()){
  const reviewDates=new Map(scope.filter(c=>costs.get(c.id)&&(pfor(c).reviews||exam?.history?.[c.id]?.firstSeen)).map(c=>[c.id,nextRepetitionAt(c,context)]));
  for(const [i,row] of rows.entries()){
   const nextDay=repetitionDayStart(row.day,1);
-  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/Math.max(1,examOrdinal(exam.date)-examOrdinal(row.day)+1-stats.buffer))):(i===0?normal.remaining:fresh.length>150?12:10);
+  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/Math.max(1,examOrdinal(exam.date)-examOrdinal(row.day)+1-stats.buffer))):(i===0?(normal.portion.finishedOn?0:normal.remaining):fresh.length>150?12:10);
   const reviews=scope.filter(c=>reviewDates.get(c.id)<nextDay).sort((a,b)=>{
    const atA=reviewDates.get(a.id),atB=reviewDates.get(b.id);
    if(exam)return (i===0?Number(atA>now)-Number(atB>now):0)||pfor(a).stage-pfor(b).stage||
@@ -2638,7 +2678,7 @@ function plannedTrainingRows(count,now=Date.now()){
   });
   const additions=fresh.slice(0,quota);
   const cards=exam?[...additions,...reviews]:[...reviews,...additions];
-  let budget=i===0?(exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):normal.budget):(exam?EXAM_TRAINING_TASK_LIMIT:DAILY_TRAINING_TASK_LIMIT);
+  let budget=exam?(i===0?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):EXAM_TRAINING_TASK_LIMIT):Infinity;
   for(const card of cards){
    const reviewing=reviewDates.has(card.id);
    const cost=i===0&&(!reviewing||reviewDates.get(card.id)<=now)?pendingTrainingTasks(card,level).length:costs.get(card.id);
@@ -2692,7 +2732,15 @@ function learningMotivation(now=Date.now()){
 function recordCompletedLearningRound(round){
  if(!round||round.total<=0||round.done<round.total)return;
  let type=null;
- if(round.mode==='training'){const exam=activeExam(),cards=exam?examTrainingSelection():dailyTrainingPlan().cards;if(trainingTaskCount(cards,exam?examLevel(exam):state.level)>0)return;type='training';}
+ if(round.mode==='training'){
+  const exam=activeExam(),normal=exam?null:dailyTrainingPlan();
+  const cards=exam?examTrainingSelection():normal.cards;
+  if(trainingTaskCount(cards,exam?examLevel(exam):state.level)>0)return;
+  if(normal&&round.normalTrainingDay===normal.day&&!normal.laterToday){
+   rememberNormalTraining(normal);normal.portion.finishedOn=examDay();
+  }
+  type='training';
+ }
  else if(round.mode==='free')type='free';
  if(!type)return;const day=examDay();state.activity??={};const a=state.activity[day]??={tasks:0,training:0,free:0,correction:0};a.completed??={};a.completed[type]=(Number(a.completed[type])||0)+1;save();
 }
@@ -2932,6 +2980,14 @@ syncSidebarViewport();
   window.KykloppLearningAssignments?.prepare();
   bridge.account(async()=>{if(window.KykloppLearningAssignments?.busy()){status('Bitte warte, bis die Änderung am Lernauftrag gespeichert oder abgeglichen ist.');return;}if(bridge.inExercise()){status('Bitte beende zuerst deine laufende Übung.');return;}await flush();if(pending||saving){status('Bitte warte, bis dein Lernstand online gespeichert ist.');return;}try{await request('/auth/v1/logout?scope=local',{method:'POST'});}catch{status('Abmelden nicht möglich. Bitte Verbindung prüfen.');return;}ready=false;window.KykloppLearningAssignments?.clear();localStorage.removeItem(sessionKey);localStorage.removeItem(accountKey());auth=null;bridge.account(null);bridge.clear();login();});status('Online gespeichert');
  }
+ function cacheLoadedState(value){
+  const loaded=bridge.read(),beforeTrainingDay={...loaded};
+  if(value?.normalTraining)beforeTrainingDay.normalTraining=value.normalTraining;
+  else delete beforeTrainingDay.normalTraining;
+  lastSaved=JSON.stringify(beforeTrainingDay);
+  cache({revision,state:loaded,dirty:false});
+  if(lastSaved!==JSON.stringify(loaded))window.kykloppCloudSave(loaded);
+ }
  async function loadAccount(){
   if(auth.user?.app_metadata?.kyklopp_role==='teacher')throw new Error('Bitte nutze deinen Lehrer-Zugangscode in der separaten Lehrer-Verwaltung.');
   const rows=await request('/rest/v1/kyklopp_progress?user_id=eq.'+encodeURIComponent(auth.user.id)+'&select=state,revision');
@@ -2939,7 +2995,7 @@ syncSidebarViewport();
   if(draft?.dirty&&Number(draft.revision)!==revision){if(JSON.stringify(draft.state)===JSON.stringify(row.state)){draft=null;}else{showConflict(row,draft);return;}}
   const value=draft?.dirty?draft.state:row.state;
   bridge.load(auth.user.id,value);ready=true;document.body.classList.remove('cloud-locked');accountBar();
-  if(draft?.dirty){pending=draft.state;await flush();}else{lastSaved=JSON.stringify(bridge.read());cache({revision,state:bridge.read(),dirty:false});}
+  if(draft?.dirty){pending=bridge.read();await flush();}else cacheLoadedState(value);
  }
  function showConflict(row,draft){
   ready=false;document.body.classList.add('cloud-locked');localStorage.setItem(accountKey()+'-recovery',JSON.stringify({local:draft,online:row,at:Date.now()}));
@@ -2947,8 +3003,8 @@ syncSidebarViewport();
   document.querySelector('#main').innerHTML='<section class="panel cloud-login"><h1>Welchen Lernstand möchtest du behalten?</h1><p>Auf diesem Gerät und online liegen unterschiedliche Stände. Beide sind auf diesem Gerät als Sicherung aufbewahrt.</p><p><strong>Auf diesem Gerät:</strong> '+escape(describe(draft.state))+'</p><p><strong>Online:</strong> '+escape(describe(row.state))+'</p><div class="cloud-recovery-actions"><button class="btn" type="button" id="cloud-keep-local">Stand dieses Geräts behalten</button><button class="btn secondary" type="button" id="cloud-use-online">Online-Stand laden</button><button class="btn ghost" type="button" id="cloud-backup">Lokale Sicherung herunterladen</button></div></section>';
   document.querySelector('#cloud-backup').onclick=()=>{const blob=new Blob([JSON.stringify({version:1,state:draft.state},null,2)],{type:'application/json'}),link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download='Kyklopp-lokaler-Lernstand.json';link.click();URL.revokeObjectURL(link.href);};
   function resume(value){revision=Number(row.revision);conflict=false;bridge.load(auth.user.id,value);ready=true;document.body.classList.remove('cloud-locked');accountBar();}
-  document.querySelector('#cloud-use-online').onclick=()=>{resume(row.state);pending=null;cache({revision,state:bridge.read(),dirty:false});};
-  document.querySelector('#cloud-keep-local').onclick=async()=>{resume(draft.state);pending=draft.state;cache({revision,state:pending,dirty:true});await flush();};
+  document.querySelector('#cloud-use-online').onclick=()=>{resume(row.state);pending=null;cacheLoadedState(row.state);};
+  document.querySelector('#cloud-keep-local').onclick=async()=>{resume(draft.state);pending=bridge.read();cache({revision,state:pending,dirty:true});await flush();};
  }
  function login(message=''){
   ready=false;document.body.classList.add('cloud-locked');document.querySelector('#main').innerHTML='<section class="panel cloud-login"><img class="cloud-login-logo" src="vokabelbilder/kyklopp-logo.png" alt="Kyklopp"><h1>Willkommen!</h1><p>Gib deinen persönlichen Zugangscode ein und starte mit deinem Lateintraining.</p><form id="cloud-login-form"><label for="cloud-code">Zugangscode</label><input id="cloud-code" type="password" autocomplete="current-password" spellcheck="false" required placeholder="Dein Zugangscode"><p id="cloud-login-error" role="alert">'+escape(message)+'</p><button class="btn" id="cloud-login-submit" type="submit">Anmelden</button></form></section>';
