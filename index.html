@@ -473,10 +473,17 @@ html{scrollbar-gutter:stable}
  white-space: nowrap;
 }
 
-.dictionary-history { margin: -12px 0 18px; }
-.dictionary-history summary { width: fit-content; cursor: pointer; color: var(--muted); font-size: .875rem; }
-.dictionary-history ul { list-style: none; padding: 0; margin: 8px 0; max-height: 12rem; overflow-y: auto; }
-.dictionary-history li button, .dictionary-save-word { border: 0; background: transparent; padding: 4px 0; color: var(--blue); text-align: left; overflow-wrap: anywhere; }
+.dictionary-history { width: min(100%, 42rem); margin: -12px 0 18px; }
+.dictionary-history summary { width: fit-content; cursor: pointer; color: var(--muted); font-size: .875rem; padding: 5px 0; }
+.dictionary-history[open] summary { color: var(--ink); }
+#dictionary-history-content { margin-top: 5px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.dictionary-history ul { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 2px 4px; margin: -2px -4px; max-height: 12rem; overflow-y: auto; }
+.dictionary-history li { min-width: 0; max-width: 100%; }
+.dictionary-history li button { min-height: 36px; max-width: 100%; border: 1px solid var(--line); border-radius: 999px; background: #f3f7fc; padding: 5px 12px; color: var(--blue); text-align: left; overflow-wrap: anywhere; }
+.dictionary-history li button:hover { background: #e8f1fc; }
+.dictionary-history .btn { margin-top: 14px; white-space: normal; }
+.dictionary-history .note { margin: 0; }
+.dictionary-save-word { border: 0; background: transparent; padding: 4px 0; color: var(--blue); text-align: left; }
 .dictionary-save-word { margin: 0 0 8px; }
 </style><style>.cloud-locked aside{display:none}.cloud-locked main{margin:0 auto;max-width:600px;padding-top:9vh}.cloud-login{padding:32px}.cloud-login-logo{width:180px;height:auto;display:block;margin-bottom:30px}.cloud-login h1{font-size:40px}.cloud-login p{font-size:14px;line-height:1.7;color:var(--muted)}.cloud-login form{display:grid;gap:12px;margin-top:24px}.cloud-login label{font-size:13px}.cloud-login input{width:100%;font-size:16px;letter-spacing:1px}#cloud-login-error{color:#b13f40;margin:0}
 .cloud-recovery-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}.cloud-login .cloud-recovery-actions .btn{font-size:13px}
@@ -2318,6 +2325,11 @@ function recordDictionaryAnswer(card,task){
 window.addEventListener('resize',()=>{const input=document.querySelector('#dictionary-search-form #search');if(input)input.placeholder=window.innerWidth<=650?'Lateinische Form':'Lateinische Form oder deutsche Grundform';});
 function library(){
 const D=window.RomaDictionary;let matches=[],visible=40,searchedQuery='';
+const savedHistory=state.dictionaryHistory;
+if(savedHistory?.queries.length){
+ const queries=savedHistory.queries.filter(query=>D.search(query).length);
+ if(queries.length!==savedHistory.queries.length){savedHistory.queries=queries;save();}
+}
 main.innerHTML=header()+`<h1>Wörterbuch</h1><form id="dictionary-search-form" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" class="dictionary-search-form"><div class="dictionary-search-input"><input class="search" id="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="${window.innerWidth<=650?'Lateinische Form':'Lateinische Form oder deutsche Grundform'}" aria-label="Lateinische Form oder deutsche Grundform"><button type="button" class="dictionary-clear" id="dictionary-clear" aria-label="Suche löschen" hidden>×</button></div><button class="btn" type="submit" id="dictionary-search-btn">Suchen</button></form><details class="dictionary-history"><summary>Suchverlauf ansehen</summary><div id="dictionary-history-content"></div></details><div id="results" aria-live="polite"></div>`;
 function render(){
  let q=searchedQuery;
@@ -2353,6 +2365,7 @@ function lookup(query){
  searchedQuery=query.trim();visible=40;
  if(!searchedQuery){document.querySelector('#results').innerHTML='';return;}
  matches=D.search(searchedQuery);
+ if(!matches.length){render();return;}
  const history=state.dictionaryHistory??={queries:[],wordIds:[]};
  history.queries=[searchedQuery,...history.queries.filter(q=>q.toLocaleLowerCase('de-DE')!==searchedQuery.toLocaleLowerCase('de-DE'))];
  if(matches.length===1&&!history.wordIds.includes(matches[0].card.id))history.wordIds.push(matches[0].card.id);
