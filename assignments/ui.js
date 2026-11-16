@@ -177,6 +177,15 @@ function render(){
  $$('[data-answer-question]').forEach(b=>b.onclick=()=>answerTaskQuestion(b.dataset.answerQuestion));
  $$('[data-review]').forEach(b=>b.onclick=()=>reviewTask(b.dataset.review));$$('[data-reward]').forEach(b=>b.onclick=()=>buyReward(b.dataset.reward));$$('[data-request]').forEach(b=>b.onclick=()=>confirmRequest(b.dataset.request));$$('[data-new-task]').forEach(b=>b.onclick=()=>newTask());
  $$('[data-teacher-denare-back]').forEach(button=>button.onclick=()=>{if(role!=='teacher'||!teacherDenareReturn)return;({teacherSection,managedStudent,managementTab}=teacherDenareReturn);render();window.scrollTo(0,0);});
+ $$('[data-student-book]').forEach(select=>select.onchange=async()=>{
+  const student=who(select.dataset.studentBook),book=select.value;
+  select.disabled=true;
+  try{
+   if(window.KykloppHubAPI){const snapshot=await window.KykloppHubAPI.setStudentBook(student.id,book);profiles=snapshot.profiles;}
+   else student.bookId=book;
+   render();toast('Schulbuch gespeichert.');
+  }catch(error){select.value=student.bookId||'roma-a';select.disabled=false;toast(error.message);}
+ });
  $$('[data-student-back]').forEach(button=>button.onclick=()=>{if(role!=='student')return;studentSection=button.dataset.studentBack;render();window.scrollTo(0,0);});
  $$('[data-open-grammar]').forEach(button=>button.onclick=openGrammarLink);
  $$('[data-student-task-tab]').forEach(button=>{
@@ -893,6 +902,7 @@ function managementRewardCard(purchase){
  (pending?'<button class="btn" data-request="'+esc(purchase.id)+'">Anfrage prüfen</button>':'')+'</article>';
 }
 function studentManagementPage(p){
+ const bookPicker='<div class="management-book"><label for="student-book">Schulbuch</label><select id="student-book" data-student-book="'+esc(p.id)+'">'+Object.entries({'roma-a':'Roma A','prima-nova':'Prima.nova'}).map(([id,title])=>'<option value="'+id+'" '+(id===(p.bookId||'roma-a')?'selected':'')+'>'+title+'</option>').join('')+'</select></div>';
  const tasks=myTasks(p.id),purchases=state.purchases.filter(item=>item.profile===p.id);
  const tabs=[['tasks','Aufgaben'],['submissions','Abgaben'],['done','Abgeschlossen'],['denare','Denarverwaltung'],['requests','Belohnungsanfragen'],['redemptions','Einlösungen']];
  const counts={submissions:tasks.filter(task=>task.status==='submitted').length,requests:purchases.filter(item=>item.status==='pending').length};
@@ -913,7 +923,7 @@ function studentManagementPage(p){
   const picker=pending?'<label class="special-reward-picker">Wechselnde Belohnung<select data-special-reward="'+esc(p.id)+'">'+rotatingRewards.map(reward=>'<option value="'+esc(reward.id)+'" '+(reward.id===specialReward(p.id).id?'selected':'')+'>'+esc(reward.title)+' · '+formatDenare(reward.cost)+' Denare</option>').join('')+'</select></label>':'';
   content='<div class="teacher-list">'+picker+(list.length?list.map(managementRewardCard).join(''):'<div class="quiet-empty">'+(pending?'Keine offenen Belohnungsanfragen.':'Noch keine bestätigten Einlösungen.')+'</div>')+'</div>';
  }
- return '<button type="button" class="hub-back" data-target="students">← Schüler</button><header class="page-head management-head"><div><h1>'+esc(p.name)+'</h1><p class="quiet-subtitle">Profil-ID · '+esc(p.id)+'</p></div><button class="btn secondary" data-new-task>Aufgabe zuweisen '+icon('plus')+'</button></header>'+
+ return '<button type="button" class="hub-back" data-target="students">← Schüler</button><header class="page-head management-head"><div><h1>'+esc(p.name)+'</h1><p class="quiet-subtitle">Profil-ID · '+esc(p.id)+'</p>'+bookPicker+'</div><button class="btn secondary" data-new-task>Aufgabe zuweisen '+icon('plus')+'</button></header>'+
  '<div class="management-tabs" role="tablist" aria-label="Schülerverwaltung">'+tabs.map(([id,label])=>'<button type="button" role="tab" id="management-tab-'+id+'" aria-controls="management-content" aria-selected="'+(managementTab===id)+'" tabindex="'+(managementTab===id?'0':'-1')+'" data-management-tab="'+id+'">'+label+(counts[id]?'<span class="submission-count tab-count" aria-label="'+counts[id]+' offen">'+counts[id]+'</span>':'')+unreadBadge(unreadTasks(tasks.filter(task=>taskSection(task)===id)),id)+'</button>').join('')+'</div>'+
  '<section id="management-content" role="tabpanel" aria-labelledby="management-tab-'+managementTab+'">'+content+'</section>';
 }

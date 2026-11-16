@@ -59,6 +59,14 @@
    throw new Error(error.status?message(error):error.message);
   }finally{working=false;}
  }
+ async function setStudentBook(student,book){
+  if(!context.teacher)throw new Error('Nur Lehrkräfte können hier das Schulbuch ändern.');
+  if(working)throw new Error('Bitte warte, bis die aktuelle Änderung gespeichert ist.');
+  working=true;
+  try{return accept(await request('/rest/v1/rpc/kyklopp_set_student_book',{method:'POST',body:JSON.stringify({p_student:student,p_book:book})}));}
+  catch(error){throw new Error(error.status?message(error):error.message);}
+  finally{working=false;}
+ }
  async function upload(file,id){
   if(!context.teacher)throw new Error('Nur Lehrkräfte können Dateien anhängen.');
   if(file.size>20*1024*1024)throw new Error('Eine Datei darf höchstens 20 MB groß sein.');
@@ -70,5 +78,5 @@
   if(!url)throw new Error('Die Datei konnte nicht geöffnet werden.');
   return url.startsWith('http')?url:transport.url+'/storage/v1'+url;
  }
- window.KykloppHubAPI={connect,load,save,upload,fileURL,get context(){return context;},get working(){return working;},get uncertain(){return Boolean(pending);}};
+ window.KykloppHubAPI={connect,load,save,setStudentBook,upload,fileURL,get context(){return context;},get working(){return working;},get uncertain(){return Boolean(pending);}};
 })();

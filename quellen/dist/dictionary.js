@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-const data=root.ROMA_FORMS,cards=root.CARDS;
+function createDictionary(cards,data){
 const normalize=s=>String(s||'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/j/g,'i').replace(/v/g,'u').replace(/[.!?„“"'’]/g,'').replace(/\s+/g,' ').trim();
 const cases={n:'Nominativ',v:'Vokativ',a:'Akkusativ',g:'Genitiv',d:'Dativ',b:'Ablativ',l:'Lokativ'},numbers={s:'Singular',p:'Plural'},genders={m:'Maskulinum',f:'Femininum',n:'Neutrum'},tenses={p:'Präsens',i:'Imperfekt',f:'Futur I',r:'Perfekt',l:'Plusquamperfekt',t:'Futur II'},moods={i:'Indikativ',s:'Konjunktiv',m:'Imperativ',n:'Infinitiv'},voices={a:'Aktiv',p:'Passiv'};
 function describe(id,c){
@@ -29,5 +29,8 @@ function search(query){
  return [...found.values()].sort((a,b)=>Number(b.exact)-Number(a.exact)||a.card.latin.localeCompare(b.card.latin,'de'));
 }
 function analyses(hit){return [...new Set(hit.forms.flatMap(f=>f.tags.length?f.tags.map(id=>describe(id,hit.card)):['Grundform / Angabe aus der Vokabeltabelle']))];}
-root.RomaDictionary={search,describe,analyses,normalize,formsFor:c=>data.byCard[c.id]||[],count:Object.values(data.byCard).reduce((n,a)=>n+a.length,0)};
+return {search,describe,analyses,normalize,formsFor:c=>data.byCard[c.id]||[],count:Object.values(data.byCard).reduce((n,a)=>n+a.length,0)};
+}
+root.RomaDictionary=createDictionary(root.CARDS,root.ROMA_FORMS);
+if(root.PRIMA_NOVA&&root.PRIMA_NOVA_FORMS)root.PrimaNovaDictionary=createDictionary(root.PRIMA_NOVA.cards,root.PRIMA_NOVA_FORMS);
 })(typeof window!=='undefined'?window:globalThis);

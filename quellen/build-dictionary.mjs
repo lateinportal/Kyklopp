@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
-const context={window:{}};vm.createContext(context);vm.runInContext(fs.readFileSync('dist/data.js','utf8'),context);
-const cards=context.window.CARDS, data=JSON.parse(fs.readFileSync('collatinus.json','utf8'));
+const prima=process.argv.includes('--prima-nova');
+const context={window:{}};vm.createContext(context);vm.runInContext(fs.readFileSync(prima?'dist/prima-nova-data.js':'dist/data.js','utf8'),context);
+const cards=prima?context.window.PRIMA_NOVA.cards:context.window.CARDS, data=JSON.parse(fs.readFileSync('collatinus.json','utf8'));
 // Corrections and school-vocabulary entries absent from the historical lexicon.
 // These affect dictionary lookup only; original cards and learning IDs are untouched.
 const added={latus:['corpus','later'],salvus:['nonus'],victor:['infans','victor'],melior:['deterior'],maior:['deterior'],minor:['deterior']};
@@ -136,6 +137,6 @@ for(const c of cards){
  coverage.push({id:c.id,latin:c.latin,pos:c.pos,lesson:c.lesson,models:keys,status,count:unique.size});
  if(inflect&&status==='Zu prüfen')unknown.push({latin:c.latin,grammar:c.grammar,pos:c.pos,cls:c.cls,id:c.id});
 }
-fs.writeFileSync('dictionary-coverage.json',JSON.stringify(coverage,null,2));fs.writeFileSync('dictionary-unresolved.json',JSON.stringify(unknown,null,2));
-fs.writeFileSync('dist/morphology-data.js','window.ROMA_FORMS='+JSON.stringify({tags:data.pos,byCard,source:'Collatinus / CLTK',license:'GPL-3.0-or-later',version:1})+';');
+if(!prima){fs.writeFileSync('dictionary-coverage.json',JSON.stringify(coverage,null,2));fs.writeFileSync('dictionary-unresolved.json',JSON.stringify(unknown,null,2));}
+fs.writeFileSync(prima?'dist/prima-nova-forms.js':'dist/morphology-data.js',prima?'window.PRIMA_NOVA_FORMS='+JSON.stringify({tags:data.pos,byCard,source:'Collatinus / CLTK',license:'GPL-3.0-or-later',version:1})+';':'window.ROMA_FORMS='+JSON.stringify({tags:data.pos,byCard,source:'Collatinus / CLTK',license:'GPL-3.0-or-later',version:1})+';');
 console.log(JSON.stringify({cards:cards.length,modelled:coverage.filter(x=>x.models.length).length,unresolved:unknown.length,forms:Object.values(byCard).reduce((s,x)=>s+x.length,0),unknown},null,2));
