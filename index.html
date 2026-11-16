@@ -2677,7 +2677,11 @@ function returnHint(at,now=Date.now()){
  if(hours<24)return 'Komm in etwa '+hours+' Stunden wieder.';
  const days=Math.ceil(delta/86400000);return 'Komm in etwa '+days+(days===1?' Tag':' Tagen')+' wieder.';
 }
-function trainingCompletedCopy(){const hint=trainingReturnHint();return hint.startsWith('Komm ')?esc(hint.replace(/\.$/,''))+' oder gehe ins <strong>Freie Üben</strong> und lerne weiter.':esc(hint)+' Gehe ins <strong>Freie Üben</strong>, wenn du weiterlernen möchtest.'}
+function trainingCompletedCopy(){
+ const now=Date.now(),at=nextTrainingAt(now),hint=returnHint(at,now);
+ if(Number.isFinite(at)&&examDay(at)===examDay(now))return esc(hint);
+ return hint.startsWith('Komm ')?esc(hint.replace(/\.$/,''))+' oder gehe ins <strong>Freie Üben</strong> und lerne weiter.':esc(hint)+' Gehe ins <strong>Freie Üben</strong>, wenn du weiterlernen möchtest.';
+}
 function trainingReturnHint(){
  const p=activeExam(),cards=p?examTrainingSelection():dailyTrainingPlan().cards;
  const tasks=trainingTaskCount(cards,p?examLevel(p):state.level);
