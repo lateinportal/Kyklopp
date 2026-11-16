@@ -2563,7 +2563,7 @@ function openExamPlan(edit=false,open=true){
 function selectExamLesson(last){const same=Math.max(0,...examDraft.lessons)===last;const pack=same?examDraft.packs[last]??null:null;examDraft.lessons=lessons.filter(l=>l<=last);examDraft.packs={[last]:pack}}
 function renderExamPlan(){
  let p=activeExam();
- main.innerHTML=examTrainingFrame(`${activeExam()?'<button class="back" id="exam-back">← Zur Zusammenfassung</button>':''}<h2>Deine Klassenarbeit</h2><p class="subtitle">Was kommt dran? Stell es hier ein. Wir verteilen das Lernen auf die Tage bis zur Arbeit.</p>
+ main.innerHTML=examTrainingFrame(`${activeExam()?'<button class="back" id="exam-back">← Zur Zusammenfassung</button>':''}<p class="subtitle">Was kommt dran? Stell es hier ein. Wir verteilen das Lernen auf die Tage bis zur Arbeit.</p>
  <form class="panel exam-planner" id="exam-form">
  <section class="exam-step"><h2><span class="step-number">1</span> Wann schreibst du?</h2><label class="exam-date">Datum der Klassenarbeit<input id="exam-date" type="date" lang="de" placeholder="TT.MM.JJJJ" min="${examDay()}" value="${esc(examDraft.date)}" required></label></section>
  <section class="exam-step"><h2><span class="step-number">2</span> Bis zu welcher Lektion kommen Vokabeln dran?</h2><div class="lesson-list">${lessons.map(l=>`<button type="button" class="lesson-chip ${examDraft.lessons.includes(l)?'selected':''}" data-exam-lesson="${l}" aria-pressed="${examDraft.lessons.includes(l)}" aria-label="Lektion ${l}">${l}</button>`).join('')}</div>
