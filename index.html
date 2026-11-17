@@ -586,6 +586,14 @@ function matchesAllMeanings(value,c){
  return answers.every(answer=>answer&&required.some(group=>matches(answer,group)))&&
   required.every(group=>answers.some(answer=>matches(answer,group)));
 }
+function primaNovaStemIndexes(card,level){
+ const stems=card.stems||[];
+ const occurrences=card.lessons?.length?card.lessons:[card.lesson];
+ const taught=(from)=>occurrences.some(lesson=>lesson>=from&&lesson<=level);
+ const perfect=normalize(stems[1]),participle=normalize(stems[2]);
+ const predictablePPP=/vi$/.test(perfect)&&perfect.replace(/vi$/,'tum')===participle;
+ return [0,...(taught(11)?[1]:[]),...(level>=25&&(taught(25)||predictablePPP)?[2]:[])].filter(i=>stems[i]);
+}
 function tasks(c,level=30){let result=[{id:'choice',kind:'choice',title:'Wähle die richtige Übersetzung.',answer:c.de},{id:'translation',kind:'input',title:'Schreibe die Übersetzung.',fields:[{label:'Übersetzung',answers:meanings(c)}],answer:c.de}];
 if(c.pos==='Substantiv'){if(c.cls)result.push({id:'class',kind:'class',title:'Wähle die richtige Deklination.',answer:c.cls});if(c.gen&&c.gender)result.push({id:'forms',kind:'input',title:'Gib den Genitiv und das Genus an.',fields:[{label:'Genitiv',answers:[c.gen]},{label:'Genus (m, f oder n)',answers:['m f','m/f'].includes(c.gender)?['m f','m/f','m und f','maskulin und feminin']:[c.gender,({m:'maskulin',f:'feminin',n:'neutrum'})[c.gender]]}],answer:c.gen+' · '+c.gender});}
 if(['Adjektiv','Pronomen'].includes(c.pos)){if(c.pos==='Adjektiv'&&c.cls)result.push({id:'class',kind:'class',title:'Wähle die richtige Deklination.',answer:c.cls});if(c.forms?.length===2)result.push({id:'forms',kind:'input',title:'Gib die feminine und neutrale Form an.',fields:[{label:'Femininum',answers:[c.forms[0]]},{label:'Neutrum',answers:[c.forms[1]]}],answer:c.forms.join(' · ')});}
@@ -593,7 +601,7 @@ if(c.pos==='Verb'){
  if(c.cls)result.push({id:'class',kind:'class',title:'Wähle die richtige Konjugation.',answer:c.cls});
  const stems=c.stems||[],early=Number(c.lesson)<=7,prima=c.book==='prima-nova';
  const labels=['1. Sg. Präsens',prima?'1. Sg. Perfekt':'1. Singular Perfekt',prima?'PPP':'PPP / Supinum'];
- const indexes=prima?[0,...(level>=11?[1]:[]),...(level>=25?[2]:[])].filter(i=>stems[i]):
+ const indexes=prima?primaNovaStemIndexes(c,level):
   early?(stems.length?[0]:[]):level>=25&&stems.length>=3?[1,2]:stems.length>=2?[0,1]:stems.length?[0]:[];
  if(indexes.length)result.push({id:'forms',kind:'input',title:'Gib die Stammformen an.',
   fields:indexes.map(i=>({label:labels[i],answers:[stems[i]]})),answer:indexes.map(i=>stems[i]).join(' · ')});
