@@ -2615,7 +2615,7 @@ dialog.querySelector('#reset-confirm').onclick=()=>{dialog.close();dialog.remove
 function settings(returnStage=null){const hasReturn=Number.isInteger(returnStage)&&compartments.some(f=>f.stage===returnStage);let cards=masteryCards();main.innerHTML=header()+`${hasReturn?'<button type="button" class="back" id="statistics-back">← Zurück zur Vokabeltabelle</button>':''}<h1>Lernstatistik</h1><section class="panel mastery-panel" aria-labelledby="mastery-heading"><div class="stats-explanation"><h2 id="mastery-heading">So sicher kannst du deine Wörter schon</h2><p>Mit jeder erfolgreichen Wiederholung steigt dein Wort eine Stufe auf. Tippe auf einen Kloppo, um seine Wörter anzusehen.</p></div><div class="stats">${[...compartments].reverse().map(f=>`<button type="button" class="stat ${f.tone}" data-stage="${f.stage}" aria-label="${f.name}: ${cards.filter(c=>pfor(c).stage===f.stage).length} Wörter anzeigen"><span class="medal" aria-hidden="true">${compartmentIcon(f)}</span><span><strong>${cards.filter(c=>pfor(c).stage===f.stage).length}</strong><small>${f.name}</small></span></button>`).join('')}</div></section>${activityCalendar()}<div class="panel"><h2>Lernstand exportieren</h2><p class="subtitle">Medaillen und Termine werden in diesem Browser gespeichert. Sichere sie als Datei, um sie auf ein anderes Gerät zu übertragen.</p><div class="export-actions"><button class="btn" id="export">Lernstand herunterladen</button><label class="file-label">Sicherung importieren<input type="file" id="import" accept="application/json"></label></div><p id="import-error" role="alert" class="note"></p></div><div class="panel reset-panel"><h2>Neu anfangen</h2><p class="subtitle">Setze deinen Lernstand auf null zurück. Alle Medaillen, beantworteten Aufgaben und Wiederholungstermine auf diesem Gerät werden gelöscht.</p><button class="btn danger" id="reset-progress" type="button">Lernstand zurücksetzen</button><p class="note" style="margin-top:14px">Du kannst deinen bisherigen Lernstand vorher als Sicherung herunterladen.</p></div><details class="panel repetition-help"><summary>Wie funktioniert der Wiederholungsplan?</summary><p class="subtitle">Lernen → Bronze → 1 Tag → Silber → 3 Tage → Gold → 7 Tage → Edelstein → 14 Tage → Königskrone → 30 Tage → Königskrone bestätigen.</p><p class="note">Danach bleibt die Krone eine kleine Herausforderung: Bestätige sie nach weiteren 30 Tagen, dann nach 60, 120, 240 Tagen und so weiter. Nach jeder weiteren fehlerfreien Runde verdoppelt sich der Abstand. Ein Fehler oder eine aufgedeckte Antwort setzt bereits gelernte Wörter auf „Unsicher“ zurück. Noch ungeübte Wörter bleiben „Ungeübt“. Beim erneuten Erreichen der Krone beginnt die Folge wieder von vorn.</p><p class="note">Ein Fehler oder eine aufgedeckte Antwort verhindert eine neue Medaille im aktuellen Durchlauf. Am Ende der Runde bekommst du eine zweite Chance. Morgen werden die Wörter erneut abgefragt. Bereits gelernte Wörter behalten dabei die Bronzemedaille („Unsicher“).</p></details><details class="panel repetition-help"><summary>Über die Vokabeldaten</summary><p class="note">Quelle: Tabelle ${esc(currentBook().title)}. Spätere Tabellenänderungen werden nicht automatisch übernommen. Fehlende Formen werden nicht abgefragt. Längenzeichen sind bei der Eingabe optional. Bei Übersetzungen genügt eine der hinterlegten Bedeutungen.</p></details>`;renderActivityCalendar();if(hasReturn)document.querySelector('#statistics-back').onclick=()=>showCompartment(returnStage,'home');document.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>showCompartment(+b.dataset.stage,'settings',hasReturn?returnStage:null));document.querySelector('#reset-progress').onclick=showResetPopup;document.querySelector('#export').onclick=()=>{let blob=new Blob([JSON.stringify({version:1,state},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='roma-lernstand.json';a.click();URL.revokeObjectURL(a.href)};document.querySelector('#import').onchange=async e=>{try{let d=JSON.parse(await e.target.files[0].text());if(d.version!==1||!d.state?.progress||typeof d.state.progress!=='object')throw Error();for(let [id,p] of Object.entries(d.state.progress)){if(!CARDS.some(c=>c.id===id)||!Number.isInteger(p.stage)||p.stage<0||p.stage>5||!Number.isFinite(p.due)||!Array.isArray(p.passed))throw Error()}if(!confirm('Den Lernstand dieses Browsers durch die Sicherung ersetzen?'))return;state={...state,...d.state,level:Math.min(30,Math.max(1,+d.state.level||1))};save();toast('Lernstand importiert.');navigate('home')}catch{document.querySelector('#import-error').textContent='Diese Datei ist keine gültige Roma-Sicherung.'}}}
 function examDay(value=Date.now()){let d=new Date(value);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function examOrdinal(day){return Date.parse(day+'T12:00:00Z')/86400000}
-function activeExam(){let p=state.exam;return p&&p.date>=examDay()&&p.lessons?.length?p:null}
+function activeExam(now=Date.now()){let p=state.exam;return p&&p.date>examDay(now)&&p.lessons?.length?p:null}
 function examBaseCards(p){return CARDS.filter(c=>c.packs.some(x=>p.lessons.includes(x.lesson)&&x.number<=Number(p.packs[x.lesson]||lastPack(x.lesson))))}
 function examCards(p=activeExam()){if(!p)return [];let added=new Set(p.include||[]),removed=new Set(p.exclude||[]),base=new Set(examBaseCards(p).map(c=>c.id));return CARDS.filter(c=>!removed.has(c.id)&&(base.has(c.id)||added.has(c.id)))}
 function examLevel(p){return Math.max(1,...p.lessons,...examCards(p).map(c=>c.lesson))}
@@ -2628,18 +2628,18 @@ function examReviewReady(c,plan,now=Date.now()){
  if(h.lastDay===today&&!h.pending)return false;
  if(p.due<=now)return true;
  if(h.pending)return true;
- const days=Math.max(1,examOrdinal(plan.date)-examOrdinal(today)+1),spacing=days<=3?1:p.stage>=3?3:p.stage>=2?2:1,last=h.correctAt||plan.createdAt;
+ const days=examOrdinal(plan.date)-examOrdinal(today),spacing=days<=3?1:p.stage>=3?3:p.stage>=2?2:1,last=h.correctAt||plan.createdAt;
  return examOrdinal(today)-examOrdinal(examDay(last))>=spacing;
 }
 function repetitionDayStart(day,offset=0){const d=new Date(day+'T00:00:00');d.setDate(d.getDate()+offset);return d.getTime();}
 function repetitionContext(now=Date.now()){
- const plan=state.exam?.date>=examDay(now)&&state.exam?.lessons?.length?state.exam:null;
+ const plan=activeExam(now);
  return {now,plan,normal:plan?null:dailyTrainingPlan(now),ids:new Set(plan?examCards(plan).map(c=>c.id):[]),excluded:new Set(plan?.exclude||[])};
 }
 function nextRepetitionAt(c,context=repetitionContext()){
  const {now,plan,normal,ids,excluded}=context,p=pfor(c),raw=Number.isFinite(p.due)?p.due:0;
  if(!plan)return moveTrainingDate(normalWordDue(c),normal.day,normal.today);
- const afterExam=repetitionDayStart(plan.date,1);
+ const afterExam=repetitionDayStart(plan.date);
  // Words outside the exam scope wait until it ends.
  if(excluded.has(c.id)||!ids.has(c.id))return Math.max(raw,afterExam);
  const h=plan.history?.[c.id]||{};
@@ -2648,7 +2648,7 @@ function nextRepetitionAt(c,context=repetitionContext()){
  const lastDay=examDay(h.correctAt||plan.createdAt),spacing=p.stage>=3?3:p.stage>=2?2:1;
  // Readiness can change only at a stored due time or local calendar boundary.
  // Near the exam (last three days), the spacing shortens to one day.
- const candidates=[raw,repetitionDayStart(examDay(now),1),repetitionDayStart(lastDay,spacing),Math.max(repetitionDayStart(lastDay,1),repetitionDayStart(plan.date,-2))];
+ const candidates=[raw,repetitionDayStart(examDay(now),1),repetitionDayStart(lastDay,spacing),Math.max(repetitionDayStart(lastDay,1),repetitionDayStart(plan.date,-3))];
  if(h.failedAt)candidates.push(repetitionDayStart(examDay(h.failedAt),1));
  if(h.lastDay)candidates.push(repetitionDayStart(h.lastDay,1));
  const next=candidates.filter(at=>Number.isFinite(at)&&at>now&&at<afterExam&&examReviewReady(c,plan,at)).sort((a,b)=>a-b)[0];
@@ -2668,7 +2668,7 @@ function nextTrainingAt(now=Date.now()){
   if(cost&&at>now&&(at>=tomorrow||cost<=budget))dates.push(at);
  }
  const deferred=exam?examTrainingSelection(true).length:normal.fresh.length;
- if(deferred)dates.push(tomorrow);
+ if(deferred&&(!exam||examDay(tomorrow)<exam.date))dates.push(tomorrow);
  return dates.length?Math.min(...dates):Infinity;
 }
 function trainingCompletionTitle(now=Date.now()){
@@ -2678,7 +2678,7 @@ function trainingCompletionTitle(now=Date.now()){
 // END REPETITION SCHEDULE
 function examStats(p=activeExam()){
  if(!p)return null;
- let cards=examCards(p);settleCompletedTrainingRounds(cards,examLevel(p));let today=examDay(),days=Math.max(1,examOrdinal(p.date)-examOrdinal(today)+1),buffer=Math.min(3,Math.floor((days-1)/3)),learningDays=Math.max(1,days-buffer),history=p.history||{};
+ let cards=examCards(p);settleCompletedTrainingRounds(cards,examLevel(p));let today=examDay(),days=Math.max(1,examOrdinal(p.date)-examOrdinal(today)),buffer=Math.min(3,Math.floor((days-1)/3)),learningDays=Math.max(1,days-buffer),history=p.history||{};
  let fresh=cards.filter(c=>!pfor(c).reviews&&!history[c.id]?.firstSeen),startedToday=cards.filter(c=>history[c.id]?.introduced&&history[c.id]?.firstSeen===today).length;
  let quota=Math.ceil((fresh.length+startedToday)/learningDays),newToday=Math.max(0,quota-startedToday);
  let safe=cards.filter(c=>pfor(c).stage>=2&&(!history[c.id]?.failedAt||history[c.id].correctAt>history[c.id].failedAt)).length;
@@ -2874,7 +2874,7 @@ function editExamPlanAndScroll(){
  document.querySelector('#training-exam-disclosure')?.scrollIntoView?.({behavior:reduced?'auto':'smooth',block:'start'});
 }
 function openExamPlan(edit=false,open=true){
- examDisclosureOpen=open;rememberPage('training');view='training';document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.nav==='training'));let p=state.exam;examDraft={date:p?.date>=examDay()?p.date:'',lessons:p?.lessons?.length?lessons.filter(l=>l<=Math.max(...p.lessons)):[],packs:p?.lessons?.length?{[Math.max(...p.lessons)]:p.packs?.[Math.max(...p.lessons)]??null}:{},include:[...(p?.include||[])],exclude:[...(p?.exclude||[])]};if(!edit&&activeExam())renderPlanSummary('exam');else renderExamPlan();
+ examDisclosureOpen=open;rememberPage('training');view='training';document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.nav==='training'));let p=state.exam;examDraft={date:p?.date>examDay()?p.date:'',lessons:p?.lessons?.length?lessons.filter(l=>l<=Math.max(...p.lessons)):[],packs:p?.lessons?.length?{[Math.max(...p.lessons)]:p.packs?.[Math.max(...p.lessons)]??null}:{},include:[...(p?.include||[])],exclude:[...(p?.exclude||[])]};if(!edit&&activeExam())renderPlanSummary('exam');else renderExamPlan();
 }
 function selectExamLesson(last){
  const clear=Math.max(0,...examDraft.lessons)===last;
@@ -2885,19 +2885,19 @@ function renderExamPlan(){
  let p=activeExam();
  main.innerHTML=examTrainingFrame(`${activeExam()?'<button class="back" id="exam-back">← Zur Zusammenfassung</button>':''}<p class="subtitle">Wir verteilen das Lernen auf die Tage bis zur Arbeit.</p>
  <form class="panel exam-planner" id="exam-form">
- <section class="exam-step"><h2><span class="step-number">1</span> Wann schreibst du?</h2><label class="exam-date">Datum der Klassenarbeit<input id="exam-date" type="date" lang="de" placeholder="TT.MM.JJJJ" min="${examDay()}" value="${esc(examDraft.date)}" required></label></section>
+ <section class="exam-step"><h2><span class="step-number">1</span> Wann schreibst du?</h2><label class="exam-date">Datum der Klassenarbeit<input id="exam-date" type="date" lang="de" placeholder="TT.MM.JJJJ" min="${examDay(repetitionDayStart(examDay(),1))}" value="${esc(examDraft.date)}" required></label></section>
  <section class="exam-step"><h2><span class="step-number">2</span> Bis zu welcher Lektion kommen Vokabeln dran?</h2><div class="lesson-list">${lessons.map(l=>`<button type="button" class="lesson-chip ${examDraft.lessons.includes(l)?'selected':''}" data-exam-lesson="${l}" aria-pressed="${examDraft.lessons.includes(l)}" aria-label="Lektion ${l}">${l}</button>`).join('')}</div>
  <div class="exam-packs" ${currentBook().hasPacks?"":"hidden"}>${[...examDraft.lessons].sort((a,b)=>b-a).slice(0,1).map(l=>`<div class="exam-pack-field"><label for="exam-pack-${l}">Bis zu welchem Päckchen in Lektion ${l}?</label><div class="exam-pack-select"><select id="exam-pack-${l}" data-exam-pack="${l}" aria-label="Päckchen für Lektion ${l}"><option value="all" ${examDraft.packs[l]==null?'selected':''}>Alle Päckchen</option>${lessonPacks(l).map(x=>`<option value="${x.number}" ${Number(examDraft.packs[l])===x.number?'selected':''}>${x.number===1?'Nur Päckchen '+esc(x.label):'Päckchen '+esc(lessonPacks(l)[0].label)+' bis '+esc(x.label)}</option>`).join('')}</select><button type="button" class="pack-help-button" id="exam-pack-help" aria-label="Was ist ein Päckchen? Wo finde ich die Nummer?" aria-haspopup="dialog">?</button></div></div>`).join('')}</div>
  </section>
  <section class="exam-step"><h2><span class="step-number">3</span> Einzelne Wörter hinzufügen oder entfernen</h2><div class="exam-search-row"><div class="exam-search-input"><input id="exam-word-search" type="search" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Lateinische Grundform" aria-label="Lateinische Grundform" autocomplete="off"><button type="button" class="dictionary-clear" id="exam-word-clear" aria-label="Suche löschen" hidden>×</button></div><button class="btn secondary" type="button" id="exam-word-submit">Suchen</button></div><div id="exam-word-results" aria-live="polite"></div><div class="exam-added-words" id="exam-added-words" aria-live="polite" hidden></div></section>
  <div class="exam-plan-save"><p id="exam-word-count" aria-live="polite"></p><p id="exam-error" role="alert"></p><div class="exam-plan-actions">${p?'<button class="btn ghost" id="exam-stop" type="button">Plan beenden</button>':''}<button class="btn" type="submit">${p?'Änderungen speichern':'Lernplan speichern'}</button></div></div></form>
- ${state.exam&&!p?'<section class="panel"><p>Deine Klassenarbeit ist vorbei. Du kannst einen neuen Plan machen.</p><button class="btn ghost" id="exam-stop" type="button">Alten Plan entfernen</button></section>':''}`);
+ ${state.exam&&!p?`<section class="panel"><p>${state.exam.date===examDay()?'Deine Klassenarbeit ist heute. Der Lernplan ist beendet.':'Deine Klassenarbeit ist vorbei. Du kannst einen neuen Plan machen.'}</p><button class="btn ghost" id="exam-stop" type="button">Alten Plan entfernen</button></section>`:''}`);
  bindTrainingExamFrame();if(activeExam())document.querySelector('#exam-back').onclick=()=>renderPlanSummary('exam');if(examDraft.lessons.length)document.querySelector('#exam-pack-help').onclick=showPackHelp;
  document.querySelector('#exam-date').oninput=e=>examDraft.date=e.target.value;
  document.querySelectorAll('[data-exam-lesson]').forEach(b=>b.onclick=()=>{selectExamLesson(+b.dataset.examLesson);renderExamPlan()});
  document.querySelectorAll('[data-exam-pack]').forEach(b=>b.onchange=e=>{examDraft.packs[+b.dataset.examPack]=e.target.value==='all'?null:+e.target.value;renderExamWords()});
  examWordQuery='';document.querySelector('#exam-word-search').oninput=()=>{examWordQuery='';document.querySelector('#exam-word-clear').hidden=!document.querySelector('#exam-word-search').value;renderExamWords()};bindExamWordClear();document.querySelector('#exam-word-submit').onclick=searchExamWords;document.querySelector('#exam-word-search').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchExamWords()}};renderExamWords();
- document.querySelector('#exam-form').onsubmit=e=>{e.preventDefault();if(!/^\d{4}-\d{2}-\d{2}$/.test(examDraft.date)||examDraft.date<examDay()||!examDraft.lessons.length){document.querySelector('#exam-error').textContent='Bitte wähle einen gültigen Termin und mindestens eine Lektion.';return}if(!examCards(examDraft).length){document.querySelector('#exam-error').textContent='Wähle mindestens ein Wort für deinen Lernplan aus.';return}let old=state.exam;state.exam={date:examDraft.date,lessons:[...examDraft.lessons],packs:{...examDraft.packs},include:[...examDraft.include],exclude:[...examDraft.exclude],history:old?.history||{},createdAt:old?.createdAt||Date.now()};save();openExamPlan(false,false);toast('Dein Klassenarbeitsplan ist gespeichert.')};
+ document.querySelector('#exam-form').onsubmit=e=>{e.preventDefault();if(!/^\d{4}-\d{2}-\d{2}$/.test(examDraft.date)||examDraft.date<=examDay()||!examDraft.lessons.length){document.querySelector('#exam-error').textContent='Bitte wähle einen Termin ab morgen und mindestens eine Lektion.';return}if(!examCards(examDraft).length){document.querySelector('#exam-error').textContent='Wähle mindestens ein Wort für deinen Lernplan aus.';return}let old=state.exam;state.exam={date:examDraft.date,lessons:[...examDraft.lessons],packs:{...examDraft.packs},include:[...examDraft.include],exclude:[...examDraft.exclude],history:old?.history||{},createdAt:old?.createdAt||Date.now()};save();openExamPlan(false,false);toast('Dein Klassenarbeitsplan ist gespeichert.')};
  if(state.exam)document.querySelector('#exam-stop').onclick=showEndExamPopup;
 }
 let examWordQuery='';
@@ -3020,13 +3020,13 @@ function plannedTrainingRows(count,now=Date.now()){
  const rows=Array.from({length:count},(_,i)=>{
   const at=repetitionDayStart(today,i);
   return {day:examDay(at),at,fresh:[],reviews:new Set()};
- }).filter(row=>!exam||row.day<=exam.date);
+ }).filter(row=>!exam||row.day<exam.date);
  const fresh=(exam?stats.fresh:normal.fresh).filter(c=>trainingTaskTypes(c,level).length);
  const costs=new Map(scope.map(c=>[c.id,trainingTaskTypes(c,level).length]));
  const reviewDates=new Map(scope.filter(c=>costs.get(c.id)&&(pfor(c).reviews||exam?.history?.[c.id]?.firstSeen)).map(c=>[c.id,nextRepetitionAt(c,context)]));
  for(const [i,row] of rows.entries()){
   const nextDay=repetitionDayStart(row.day,1);
-  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/Math.max(1,examOrdinal(exam.date)-examOrdinal(row.day)+1-stats.buffer))):(i===0?(normal.portion.finishedOn?0:normal.remaining):fresh.length>150?12:10);
+  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/Math.max(1,examOrdinal(exam.date)-examOrdinal(row.day)-stats.buffer))):(i===0?(normal.portion.finishedOn?0:normal.remaining):fresh.length>150?12:10);
   const reviews=scope.filter(c=>reviewDates.get(c.id)<nextDay).sort((a,b)=>{
    const atA=reviewDates.get(a.id),atB=reviewDates.get(b.id);
    if(exam)return (i===0?Number(atA>now)-Number(atB>now):0)||pfor(a).stage-pfor(b).stage||
