@@ -2876,7 +2876,11 @@ function editExamPlanAndScroll(){
 function openExamPlan(edit=false,open=true){
  examDisclosureOpen=open;rememberPage('training');view='training';document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.nav==='training'));let p=state.exam;examDraft={date:p?.date>=examDay()?p.date:'',lessons:p?.lessons?.length?lessons.filter(l=>l<=Math.max(...p.lessons)):[],packs:p?.lessons?.length?{[Math.max(...p.lessons)]:p.packs?.[Math.max(...p.lessons)]??null}:{},include:[...(p?.include||[])],exclude:[...(p?.exclude||[])]};if(!edit&&activeExam())renderPlanSummary('exam');else renderExamPlan();
 }
-function selectExamLesson(last){const same=Math.max(0,...examDraft.lessons)===last;const pack=same?examDraft.packs[last]??null:null;examDraft.lessons=lessons.filter(l=>l<=last);examDraft.packs={[last]:pack}}
+function selectExamLesson(last){
+ const clear=Math.max(0,...examDraft.lessons)===last;
+ examDraft.lessons=clear?[]:lessons.filter(lesson=>lesson<=last);
+ examDraft.packs=clear?{}:{[last]:null};
+}
 function renderExamPlan(){
  let p=activeExam();
  main.innerHTML=examTrainingFrame(`${activeExam()?'<button class="back" id="exam-back">← Zur Zusammenfassung</button>':''}<p class="subtitle">Wir verteilen das Lernen auf die Tage bis zur Arbeit.</p>
