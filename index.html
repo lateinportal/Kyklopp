@@ -2357,7 +2357,19 @@ dialog.addEventListener('cancel',event=>{event.preventDefault();keepLearning()})
 openDialogAtStart(dialog,'#exit-title');
 }
 function nextDue(){return trainingReturnHint()}
-function optionsFor(c,t){let list=t.kind==='class'?CARDS.filter(x=>x.pos===c.pos).map(x=>x.cls).filter(Boolean):CARDS.filter(x=>x.id!==c.id&&x.pos===c.pos).map(x=>x.de);list=shuffle([...new Set(list)]).filter(x=>x!==t.answer);return shuffle([t.answer,...list.slice(0,t.kind==='class'?5:3)])}
+function isVocabularyName(card){
+ if(card.pos==='Name')return true;
+ // Prima.nova lists names as nouns or unclassified entries.
+ return /^\(?\p{Lu}/u.test(card.latin)&&
+  (card.pos==='Substantiv'||(card.pos==='Undefiniert'&&/^\p{Lu}/u.test(card.de)));
+}
+function optionsFor(c,t){
+ const classTask=t.kind==='class',nameTask=isVocabularyName(c);
+ const candidates=classTask?CARDS.filter(x=>x.pos===c.pos).map(x=>x.cls).filter(Boolean):
+  CARDS.filter(x=>x.id!==c.id&&(nameTask?isVocabularyName(x):x.pos===c.pos&&!isVocabularyName(x))).map(x=>x.de);
+ const distractors=shuffle([...new Set(candidates)].filter(answer=>answer!==t.answer));
+ return shuffle([t.answer,...distractors.slice(0,classTask?5:3)]);
+}
 function exerciseLessonLabel(c){
  if(session?.lessonRound)return 'Lektion '+session.lessonRound;
  if(session?.mode==='free'){
