@@ -591,8 +591,10 @@ function primaNovaStemIndexes(card,level){
  const occurrences=card.lessons?.length?card.lessons:[card.lesson];
  const taught=(from)=>occurrences.some(lesson=>lesson>=from&&lesson<=level);
  const perfect=normalize(stems[1]),participle=normalize(stems[2]);
+ const predictablePerfect=card.cls==='e-Konj.'?/ui$/.test(perfect):
+  ['a-Konj.','i-Konj.'].includes(card.cls)&&/vi$/.test(perfect);
  const predictablePPP=/vi$/.test(perfect)&&perfect.replace(/vi$/,'tum')===participle;
- return [0,...(taught(11)?[1]:[]),...(level>=25&&(taught(25)||predictablePPP)?[2]:[])].filter(i=>stems[i]);
+ return [0,...(level>=11&&(taught(11)||predictablePerfect)?[1]:[]),...(level>=25&&(taught(25)||predictablePPP)?[2]:[])].filter(i=>stems[i]);
 }
 function tasks(c,level=30){let result=[{id:'choice',kind:'choice',title:'Wähle die richtige Übersetzung.',answer:c.de},{id:'translation',kind:'input',title:'Schreibe die Übersetzung.',fields:[{label:'Übersetzung',answers:meanings(c)}],answer:c.de}];
 if(c.pos==='Substantiv'){if(c.cls)result.push({id:'class',kind:'class',title:'Wähle die richtige Deklination.',answer:c.cls});if(c.gen&&c.gender)result.push({id:'forms',kind:'input',title:'Gib den Genitiv und das Genus an.',fields:[{label:'Genitiv',answers:[c.gen]},{label:'Genus (m, f oder n)',answers:['m f','m/f'].includes(c.gender)?['m f','m/f','m und f','maskulin und feminin']:[c.gender,({m:'maskulin',f:'feminin',n:'neutrum'})[c.gender]]}],answer:c.gen+' · '+c.gender});}
