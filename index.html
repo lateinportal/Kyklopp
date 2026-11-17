@@ -2357,7 +2357,7 @@ function examDisclosureTitle(){const p=activeExam();return p?'Klassenarbeit am '
 let classExamBoundaryTimer;
 function scheduleClassExamBoundary(){
  if(classExamBoundaryTimer)window.clearTimeout?.(classExamBoundaryTimer);const p=activeExam();if(!p)return;
- const end=new Date(p.date+'T00:00:00');end.setDate(end.getDate()+1);
+ const end=new Date(p.date+'T00:00:00');
  classExamBoundaryTimer=setTimeout(()=>{if(!session&&view==='training')openExamPlan(false,examDisclosureOpen);else if(!session&&view==='home')home();scheduleClassExamBoundary()},Math.max(1,Math.min(86400000,end.getTime()-Date.now())));
 }
 function examTrainingFrame(content){return trainingOverviewMarkup()+'<details class="panel training-exam-disclosure" id="training-exam-disclosure" '+(examDisclosureOpen?'open':'')+'><summary>'+examDisclosureTitle()+(activeExam()?'<span class="exam-countdown-pill">'+examCountdown(activeExam())+'</span>':'')+'</summary><div class="training-exam-content">'+content+'</div></details>'}
@@ -2401,7 +2401,7 @@ function orderTrainingQueue(queue){
  }
  return [...choices,...grammar,...translations];
 }
-function start(mode,options={}){document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===(mode==='training'?'training':options.dictionaryRound?'library':'free')));let cards,level,normalTrainingDay;if(mode==='training'){const exam=activeExam();if(exam){cards=examTrainingSelection(options.examExtra===true);level=examLevel(exam)}else{const plan=normalTrainingForDisplay();cards=plan.cards;level=state.level;normalTrainingDay=plan.day;if(cards.length&&plan.portion.newWordIds==null){plan.portion.newWordIds=plan.additions.map(c=>c.id);save()}}}else{level=Math.max(...freeLessons,...(options.cardIds||[]).map(id=>CARDS.find(c=>c.id===id)?.lesson||1));cards=shuffle((options.cards||CARDS).filter(c=>(options.cardIds?options.cardIds.includes(c.id):freeEligible(c))&&(options.type==='Alle Wortarten'||c.pos===options.type)&&freeTaskTypes(c,level,options.goal).length));if(options.count!=='Alle')cards=cards.slice(0,+options.count)}if(!cards.length){view='training';main.innerHTML=header()+`<div class="panel empty"><div class="big">☀</div><h1>Alles im Plan.</h1><p class="subtitle">${mode==='training'?trainingReturnHint(): 'Für diese Auswahl gibt es keine Vokabeln.'}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}session={mode,goal:options.goal,level,cards,normalTrainingDay,scopeLessons:mode==='free'?[...freeLessons]:null,scopePacks:mode==='free'?{...freePacks}:null,testRound:!!options.testRound,dictionaryRound:!!options.dictionaryRound,lessonRound:options.lessonRound||null,startedAt:Date.now(),queue:[],total:0,done:0,correct:0,wrong:0,earned:[],index:0};for(let c of cards){let tasks=mode==='free'?freeTaskTypes(c,level,options.goal):trainingTaskTypes(c,level);const requiredTest=tasks.map(t=>t.id);if(options.testRound)tasks=tasks.filter(t=>!testProgress().words[c.id]?.passed?.[t.id]);if(options.lessonRound)tasks=tasks.filter(t=>!lessonPreparationProgress(options.lessonRound)[c.id]?.[t.id]);for(let t of tasks){if(mode==='training'&&pfor(c).passed.includes(t.id)&&!(activeExam()&&pfor(c).due>Date.now()))continue;session.queue.push({c,t,required:options.testRound?requiredTest:tasks.map(x=>x.id),rehearsal:mode==='training'&&!!activeExam()&&pfor(c).due>Date.now()})}}session.queue=(mode==='training'||options.testRound||options.lessonRound||options.dictionaryRound)?orderTrainingQueue(session.queue):orderGrammarForms(E.mixQueue(session.queue));session.total=session.queue.length;if(!session.total){session=null;view='training';main.innerHTML=header()+`<div class="panel empty"><h1>Alles im Plan.</h1><p class="subtitle">${trainingReturnHint()}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}view='quiz';quiz()}
+function start(mode,options={}){document.querySelectorAll('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===(mode==='training'?'training':options.dictionaryRound?'library':'free')));let cards,level,normalTrainingDay;if(mode==='training'){const exam=activeExam();if(exam){cards=examTrainingSelection(options.examExtra===true);level=examLevel(exam)}else{const plan=normalTrainingForDisplay();cards=plan.cards;level=state.level;normalTrainingDay=plan.day;if(cards.length&&plan.portion.newWordIds==null){plan.portion.newWordIds=plan.additions.map(c=>c.id);save()}}}else{level=Math.max(...freeLessons,...(options.cardIds||[]).map(id=>CARDS.find(c=>c.id===id)?.lesson||1));cards=shuffle((options.cards||CARDS).filter(c=>(options.cardIds?options.cardIds.includes(c.id):freeEligible(c))&&(options.type==='Alle Wortarten'||c.pos===options.type)&&freeTaskTypes(c,level,options.goal).length));if(options.count!=='Alle')cards=cards.slice(0,+options.count)}if(!cards.length){view='training';main.innerHTML=header()+`<div class="panel empty"><div class="big">☀</div><h1>Alles im Plan.</h1><p class="subtitle">${mode==='training'?trainingReturnHint(): 'Für diese Auswahl gibt es keine Vokabeln.'}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}session={mode,goal:options.goal,level,cards,normalTrainingDay,scopeLessons:mode==='free'?[...freeLessons]:null,scopePacks:mode==='free'?{...freePacks}:null,testRound:!!options.testRound,dictionaryRound:!!options.dictionaryRound,lessonRound:options.lessonRound||null,startedAt:Date.now(),queue:[],total:0,done:0,correct:0,wrong:0,earned:[],index:0};for(let c of cards){let tasks=mode==='free'?freeTaskTypes(c,level,options.goal):trainingTaskTypes(c,level);const requiredTest=tasks.map(t=>t.id);if(options.testRound)tasks=tasks.filter(t=>!testProgress().words[c.id]?.passed?.[t.id]);if(options.lessonRound)tasks=tasks.filter(t=>!lessonPreparationProgress(options.lessonRound)[c.id]?.[t.id]);for(let t of tasks){if(mode==='training'&&pfor(c).passed.includes(t.id)&&!examRehearsal(c))continue;session.queue.push({c,t,required:options.testRound?requiredTest:tasks.map(x=>x.id),rehearsal:mode==='training'&&examRehearsal(c)})}}session.queue=(mode==='training'||options.testRound||options.lessonRound||options.dictionaryRound)?orderTrainingQueue(session.queue):orderGrammarForms(E.mixQueue(session.queue));session.total=session.queue.length;if(!session.total){session=null;view='training';main.innerHTML=header()+`<div class="panel empty"><h1>Alles im Plan.</h1><p class="subtitle">${trainingReturnHint()}</p><button class="btn" id="go-home">Zur Übersicht</button></div>`;document.querySelector('#go-home').onclick=()=>navigate('home');return}view='quiz';quiz()}
 function packHelpContent(){return `<div class="pack-help-content"><div class="pack-book" role="img" aria-label="Vereinfachte Buchansicht: Die kleine Zahl links neben einem Wortblock zeigt die Päckchennummer."><span class="book-heading">Lernwörter · Beispiel</span><div class="book-pack"><span class="book-pack-number">1</span><div><b>Mercurius</b><b>parvus</b><b>contentus</b><span>… weitere Lernwörter</span></div></div><div class="book-pack"><span class="book-pack-number">2</span><div><b>puer</b><b>quis?</b><span>… weitere Lernwörter</span></div></div></div><div><p>Schau im Buch bei <strong>„Lernwörter“</strong>: Links neben jedem Wortblock steht eine kleine Zahl. Das ist die Päckchennummer – hier gelb umkreist.</p><p>Ein Päckchen enthält meist <strong>7–8 Vokabeln</strong>. So kannst du kleine Portionen lernen. Die Wörter stehen in der Reihenfolge, in der sie im Lektionstext vorkommen.</p><p>„Päckchen 1 bis 3“ nimmt die Päckchen 1, 2 und 3 dazu.</p></div></div>`}
 function showPackHelp(){showOverviewHelp('Was ist ein Päckchen? Wo finde ich die Nummer?',packHelpContent())}
 function showLevelHelp(){showOverviewHelp('Was bedeutet Lernstand?',`<div class="pack-help-content level-help-content"><div class="level-book" role="img" aria-label="Vereinfachte Buchseite: Oben links steht die große Lektionsnummer 5 in einem roten Feld. Ein gelber Kreis hebt sie hervor."><div class="level-book-top"><span class="level-book-number">5</span><span class="level-book-banner">GRAMMATIK ENTDECKEN</span></div><div class="level-book-page"><strong>Schulunterricht</strong><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span><div class="level-book-paragraph"><b>A</b><div><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span></div></div><div class="level-book-paragraph"><b>B</b><div><span class="level-book-line long"></span><span class="level-book-line"></span><span class="level-book-line short"></span></div></div><img src="vokabelbilder/c1110.webp" alt="" aria-hidden="true"><small>Vereinfachtes Beispiel</small></div></div><div><p>Welche Lektion besprecht ihr gerade im Lateinunterricht? Genau diese Lektion wählst du hier aus.</p><p><strong>Die Lektionsnummer findest du oben links auf der Buchseite.</strong> Hier ist die große <strong>5</strong> gelb umkreist.</p><p>Seid ihr zum Beispiel bei <strong>Lektion 5</strong>, stellst du <strong>„Bis Lektion 5“</strong> ein. Dann berücksichtigt dein tägliches Training die Wörter bis zu dieser Lektion.</p><p><strong>Startet ihr im Unterricht mit einer neuen Lektion?</strong> Denk daran, deine Auswahl hier anzupassen. So passt dein Training immer zu eurem Unterricht.</p><p>Bei „Päckchen“ kannst du genauer auswählen, wie weit ihr in der aktuellen Lektion schon seid.</p></div></div>`)}
@@ -2619,16 +2619,20 @@ function activeExam(now=Date.now()){let p=state.exam;return p&&p.date>examDay(no
 function examBaseCards(p){return CARDS.filter(c=>c.packs.some(x=>p.lessons.includes(x.lesson)&&x.number<=Number(p.packs[x.lesson]||lastPack(x.lesson))))}
 function examCards(p=activeExam()){if(!p)return [];let added=new Set(p.include||[]),removed=new Set(p.exclude||[]),base=new Set(examBaseCards(p).map(c=>c.id));return CARDS.filter(c=>!removed.has(c.id)&&(base.has(c.id)||added.has(c.id)))}
 function examLevel(p){return Math.max(1,...p.lessons,...examCards(p).map(c=>c.lesson))}
+const EXAM_TARGET_STAGE=4;
+function examReviewInterval(stage){return stage>=3?3:stage>=2?2:1;}
+// Leave time after the final introduction for the Bronze, Silver and Gold review intervals.
+function examStudyDays(days){return Math.max(1,days-(1+2+3));}
 // BEGIN REPETITION SCHEDULE
 // One readiness rule for exam selection and the displayed next repetition.
 function examReviewReady(c,plan,now=Date.now()){
  const h=plan.history?.[c.id]||{},p=pfor(c),today=examDay(now);
- if(!p.reviews&&!h.firstSeen)return false;
+ if(today>=plan.date||(!p.reviews&&!h.firstSeen))return false;
  if(h.failedAt&&h.failedAt>=(h.correctAt||0))return examDay(h.failedAt)<today;
  if(h.lastDay===today&&!h.pending)return false;
  if(p.due<=now)return true;
  if(h.pending)return true;
- const days=examOrdinal(plan.date)-examOrdinal(today),spacing=days<=3?1:p.stage>=3?3:p.stage>=2?2:1,last=h.correctAt||plan.createdAt;
+ const days=examOrdinal(plan.date)-examOrdinal(today),spacing=days<=3?1:examReviewInterval(p.stage),last=h.correctAt||plan.createdAt;
  return examOrdinal(today)-examOrdinal(examDay(last))>=spacing;
 }
 function repetitionDayStart(day,offset=0){const d=new Date(day+'T00:00:00');d.setDate(d.getDate()+offset);return d.getTime();}
@@ -2645,7 +2649,7 @@ function nextRepetitionAt(c,context=repetitionContext()){
  const h=plan.history?.[c.id]||{};
  if(!p.reviews&&!h.firstSeen)return raw;
  if(examReviewReady(c,plan,now))return now;
- const lastDay=examDay(h.correctAt||plan.createdAt),spacing=p.stage>=3?3:p.stage>=2?2:1;
+ const lastDay=examDay(h.correctAt||plan.createdAt),spacing=examReviewInterval(p.stage);
  // Readiness can change only at a stored due time or local calendar boundary.
  // Near the exam (last three days), the spacing shortens to one day.
  const candidates=[raw,repetitionDayStart(examDay(now),1),repetitionDayStart(lastDay,spacing),Math.max(repetitionDayStart(lastDay,1),repetitionDayStart(plan.date,-3))];
@@ -2661,11 +2665,11 @@ function repetitionLabel(c,context=repetitionContext()){
 function nextTrainingAt(now=Date.now()){
  const context=repetitionContext(now),exam=context.plan,normal=context.normal;
  const level=exam?examLevel(exam):state.level,scope=exam?[...new Map([...examCards(exam),...eligible()].map(c=>[c.id,c])).values()]:eligible(),dates=[];
- const tomorrow=repetitionDayStart(examDay(now),1),budget=exam?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):Infinity;
+ const tomorrow=repetitionDayStart(examDay(now),1);
  for(const c of scope){
   if(!pfor(c).reviews&&!exam?.history?.[c.id]?.firstSeen)continue;
   const at=nextRepetitionAt(c,context),cost=trainingTaskTypes(c,level).length;
-  if(cost&&at>now&&(at>=tomorrow||cost<=budget))dates.push(at);
+  if(cost&&at>now)dates.push(at);
  }
  const deferred=exam?examTrainingSelection(true).length:normal.fresh.length;
  if(deferred&&(!exam||examDay(tomorrow)<exam.date))dates.push(tomorrow);
@@ -2676,55 +2680,45 @@ function trainingCompletionTitle(now=Date.now()){
 }
 
 // END REPETITION SCHEDULE
-function examStats(p=activeExam()){
+function examStats(p=activeExam(),now=Date.now()){
  if(!p)return null;
- let cards=examCards(p);settleCompletedTrainingRounds(cards,examLevel(p));let today=examDay(),days=Math.max(1,examOrdinal(p.date)-examOrdinal(today)),buffer=Math.min(3,Math.floor((days-1)/3)),learningDays=Math.max(1,days-buffer),history=p.history||{};
- let fresh=cards.filter(c=>!pfor(c).reviews&&!history[c.id]?.firstSeen),startedToday=cards.filter(c=>history[c.id]?.introduced&&history[c.id]?.firstSeen===today).length;
- let quota=Math.ceil((fresh.length+startedToday)/learningDays),newToday=Math.max(0,quota-startedToday);
- let safe=cards.filter(c=>pfor(c).stage>=2&&(!history[c.id]?.failedAt||history[c.id].correctAt>history[c.id].failedAt)).length;
- let reviews=cards.filter(c=>examReviewReady(c,p));
- return {cards,fresh,days,buffer,learningDays,quota,newToday,reviews,safe,startedToday};
+ const cards=examCards(p);
+ settleCompletedTrainingRounds(cards,examLevel(p));
+ const today=examDay(now),days=examDaysLeft(p,now),learningDays=examStudyDays(days),history=p.history||{};
+ const fresh=cards.filter(c=>!pfor(c).reviews&&!history[c.id]?.firstSeen),startedToday=cards.filter(c=>history[c.id]?.introduced&&history[c.id]?.firstSeen===today).length;
+ const quota=Math.ceil((fresh.length+startedToday)/learningDays),newToday=Math.max(0,quota-startedToday);
+ const reviews=cards.filter(c=>examReviewReady(c,p,now));
+ const atRisk=cards.filter(c=>{
+  const stage=pfor(c).stage;
+  if(stage>=EXAM_TARGET_STAGE)return false;
+  const h=history[c.id];
+  const waiting=(h?.failedAt&&examDay(h.failedAt)===today&&h.failedAt>=(h.correctAt||0))||
+   (h?.lastDay===today&&!h.pending);
+  return EXAM_TARGET_STAGE-stage>days-(waiting?1:0);
+ }).length;
+ return {cards,fresh,days,learningDays,quota,newToday,reviews,startedToday,atRisk};
 }
-const EXAM_TRAINING_TASK_LIMIT=40;
 const EXAM_EXTRA_HEADING='Deine Tagesrunde ist geschafft!';
 const EXAM_EXTRA_COPY='Wenn du noch für die Klassenarbeit üben möchtest, steht eine freiwillige Zusatzrunde bereit.';
-function takeTrainingPortion(cards,level,budget){
- const selected=[];
- for(const card of cards){
-  const cost=pendingTrainingTasks(card,level).length;
-  if(!cost)continue;
-  if(cost>budget)break;
-  selected.push(card);
-  budget-=cost;
- }
- return selected;
-}
-function trainingTasksToday(){
- const activity=state.activity?.[examDay()];
- return Math.max(0,(Number(activity?.training)||0)-(Number(activity?.trainingRetries)||0));
-}
 function examTrainingSelection(extra=false){
  const plan=activeExam();
  if(!plan)return null;
  const stats=examStats(plan),level=examLevel(plan);
  const reviews=stats.reviews.sort((a,b)=>pfor(a).stage-pfor(b).stage||
   (plan.history?.[a.id]?.correctAt||0)-(plan.history?.[b.id]?.correctAt||0));
- const candidates=[...stats.fresh.slice(0,extra?undefined:stats.newToday),...reviews];
- return takeTrainingPortion(candidates,level,extra?EXAM_TRAINING_TASK_LIMIT:Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()));
+ const candidates=[...stats.fresh.slice(0,extra?Math.max(1,stats.quota):stats.newToday),...reviews];
+ return candidates.filter(card=>pendingTrainingTasks(card,level).length);
 }
 function examExtraMarkup(required,cards){
  const exam=activeExam();
  if(!exam)return '';
  const stats=examStats(exam);
- if(required.length){
-  const scheduledNew=required.filter(card=>!pfor(card).reviews&&!exam.history?.[card.id]?.firstSeen).length;
-  return stats.newToday>scheduledNew?'<p class="note">Ein Teil der neuen Prüfungswörter passt heute nicht in die Tagesportion. Danach kannst du freiwillig weiterüben.</p>':'';
- }
- if(!cards.length)return '';
+ const warning=stats.atRisk?'<p class="note">Für '+stats.atRisk+(stats.atRisk===1?' Wort reicht':' Wörter reichen')+' die verbleibenden Lerntage voraussichtlich nicht mehr für „Sehr sicher“. Übe diese Wörter trotzdem weiter.</p>':'';
+ if(required.length||!cards.length)return warning;
  const tasks=trainingTaskCount(cards,examLevel(exam));
  const fresh=stats.fresh.length;
  const coverage=fresh?' '+fresh+(fresh===1?' Prüfungswort ist noch ungeübt.':' Prüfungswörter sind noch ungeübt.'):'';
- return '<p class="note">Prüfungsstoff ist noch offen.'+coverage+'</p><button type="button" class="btn secondary" id="exam-extra-start">Freiwillige Zusatzrunde · '+tasks+' Aufgaben</button>';
+ return warning+'<p class="note">Prüfungsstoff ist noch offen.'+coverage+'</p><button type="button" class="btn secondary" id="exam-extra-start">Freiwillige Zusatzrunde · '+tasks+' Aufgaben</button>';
 }
 function trainingTaskTypes(c,level){const recallOnly=pfor(c).stage>=3;return E.tasks(c,level).filter(t=>!['class','missing'].includes(t.id)&&!(recallOnly&&t.id==='choice'))}
 function settleCompletedTrainingRounds(cards,level){
@@ -2738,7 +2732,8 @@ function settleCompletedTrainingRounds(cards,level){
  }
  if(changed)save();
 }
-function pendingTrainingTasks(c,level){return trainingTaskTypes(c,level).filter(t=>!pfor(c).passed.includes(t.id)||(activeExam()&&pfor(c).due>Date.now()))}
+function examRehearsal(c){const progress=pfor(c);return !!activeExam()&&progress.stage>=EXAM_TARGET_STAGE&&progress.due>Date.now();}
+function pendingTrainingTasks(c,level){return trainingTaskTypes(c,level).filter(t=>!pfor(c).passed.includes(t.id)||examRehearsal(c))}
 function trainingTaskCount(cards,level){return cards.reduce((sum,c)=>sum+pendingTrainingTasks(c,level).length,0)}
 function examTileCopy(){let s=examStats(),cards=examTrainingSelection()||[],newCount=cards.filter(c=>!pfor(c).reviews).length;return s?`<strong>Klassenarbeit am ${new Date(activeExam().date+'T12:00:00').toLocaleDateString('de-DE')}</strong><br>${cards.length?`Nächste Runde: ${newCount} neue Wörter und ${cards.length-newCount} Wiederholungen · <strong>${trainingTaskCount(cards,examLevel(activeExam()))} Aufgaben</strong>.`:`Deine Portion ist geschafft. <strong>${trainingReturnHint()}</strong>`}`:''}
 
@@ -2858,7 +2853,7 @@ function examWordAdjustments(plan){
 function renderPlanSummary(kind){
  const isTest=kind==='test',p=isTest?state.testPlan:activeExam();if(!p)return isTest?renderTestPlan():renderExamPlan();
  const cards=isTest?testCards(p):examCards(p),round=isTest?testRoundPlan():null,title=isTest?'Dein Vokabeltest':'Deine Klassenarbeit';
- const summary=header()+`${isTest?'<button class="back" id="plan-summary-back">← Freies Üben</button><h1>'+title+'</h1>':''}<section class="panel plan-overview ${isTest?'':'exam-plan-summary'}">${isTest?'<div class="plan-overview-heading"><h2>Dein Plan steht!</h2><button class="btn secondary" type="button" id="plan-summary-edit">Bearbeiten</button></div>':''}${isTest?'<p class="plan-date">'+(p.date?'Am <strong>'+new Date(p.date+'T12:00:00').toLocaleDateString('de-DE')+'</strong>':'Ohne festes Testdatum – du übst in deinem Tempo.')+'</p>':''}<h3>Das kommt dran</h3><ul class="plan-scope-list">${planScopeSummary(p,isTest)}</ul>${!isTest?'<div class="exam-word-adjustments">'+examWordAdjustments(p)+'</div>':''}${isTest?'<p><strong>'+cards.length+' Wörter</strong> insgesamt</p>':'<div class="exam-word-total"><strong>'+cards.length+'</strong><span>Wörter für deine Klassenarbeit</span></div>'}${isTest&&(p.include?.length||p.exclude?.length)?'<p class="note">Einzelne Wörter angepasst: '+(p.include?.length||0)+' hinzugefügt · '+(p.exclude?.length||0)+' entfernt.</p>':''}${isTest?'<p id="test-summary-round">'+testRoundCopy(round)+'</p>':'<p class="exam-overview-note">Wir teilen deine Vokabeln bis zur Klassenarbeit in kleine Tagesportionen ein. Auch Wiederholungen planen wir für dich ein.</p>'}<div class="plan-summary-actions">${isTest?'<button class="btn" type="button" id="plan-summary-start" '+(!round.tasks?'disabled':'')+'>Übung starten</button>':''}${isTest&&round.started&&!round.tasks&&testRoundPlan(true).tasks?'<button class="btn secondary" type="button" id="plan-summary-extra">Noch eine Runde üben</button>':''}${!isTest?'<button class="btn secondary" type="button" id="plan-summary-edit">Bearbeiten</button><button class="btn ghost" type="button" id="plan-summary-end">Plan beenden</button>':''}</div></section>`;
+ const summary=header()+`${isTest?'<button class="back" id="plan-summary-back">← Freies Üben</button><h1>'+title+'</h1>':''}<section class="panel plan-overview ${isTest?'':'exam-plan-summary'}">${isTest?'<div class="plan-overview-heading"><h2>Dein Plan steht!</h2><button class="btn secondary" type="button" id="plan-summary-edit">Bearbeiten</button></div>':''}${isTest?'<p class="plan-date">'+(p.date?'Am <strong>'+new Date(p.date+'T12:00:00').toLocaleDateString('de-DE')+'</strong>':'Ohne festes Testdatum – du übst in deinem Tempo.')+'</p>':''}<h3>Das kommt dran</h3><ul class="plan-scope-list">${planScopeSummary(p,isTest)}</ul>${!isTest?'<div class="exam-word-adjustments">'+examWordAdjustments(p)+'</div>':''}${isTest?'<p><strong>'+cards.length+' Wörter</strong> insgesamt</p>':'<div class="exam-word-total"><strong>'+cards.length+'</strong><span>Wörter für deine Klassenarbeit</span></div>'}${isTest&&(p.include?.length||p.exclude?.length)?'<p class="note">Einzelne Wörter angepasst: '+(p.include?.length||0)+' hinzugefügt · '+(p.exclude?.length||0)+' entfernt.</p>':''}${isTest?'<p id="test-summary-round">'+testRoundCopy(round)+'</p>':'<p class="exam-overview-note">Wir verteilen neue Wörter und Wiederholungen bis zur Klassenarbeit. Das Ziel ist „Sehr sicher“. Wenn du einen Tag auslässt, planen wir die offenen Wörter für die verbleibenden Tage neu.</p>'}<div class="plan-summary-actions">${isTest?'<button class="btn" type="button" id="plan-summary-start" '+(!round.tasks?'disabled':'')+'>Übung starten</button>':''}${isTest&&round.started&&!round.tasks&&testRoundPlan(true).tasks?'<button class="btn secondary" type="button" id="plan-summary-extra">Noch eine Runde üben</button>':''}${!isTest?'<button class="btn secondary" type="button" id="plan-summary-edit">Bearbeiten</button><button class="btn ghost" type="button" id="plan-summary-end">Plan beenden</button>':''}</div></section>`;
  main.innerHTML=isTest?summary:examTrainingFrame(summary);if(!isTest)bindTrainingExamFrame();
  document.querySelector('#plan-summary-edit').onclick=()=>isTest?renderTestPlan():renderExamPlan();
  if(isTest)document.querySelector('#plan-summary-back').onclick=()=>{freeGoal=null;freeOverview()};
@@ -3015,7 +3010,7 @@ function trainingReturnHint(){
 function dailyTrainingCopy(){const p=dailyTrainingPlan();return p.cards.length?`Für deine nächste Runde: <strong>${p.newCount} neue Wörter</strong>${p.reviewCount?' und <strong>'+p.reviewCount+' Wiederholungen</strong>':''} · <strong>${trainingTaskCount(p.cards,state.level)} Aufgaben</strong>.<br>Neue Wörter werden automatisch auf die nächsten Tage verteilt.`:`Deine Portion ist geschafft. ${trainingReturnHint()}`}
 
 function plannedTrainingRows(count,now=Date.now()){
- const context=repetitionContext(now),exam=context.plan,normal=context.normal,stats=exam?examStats(exam):null;
+ const context=repetitionContext(now),exam=context.plan,normal=context.normal,stats=exam?examStats(exam,now):null;
  const today=examDay(now),level=exam?examLevel(exam):state.level,scope=exam?stats.cards:eligible();
  const rows=Array.from({length:count},(_,i)=>{
   const at=repetitionDayStart(today,i);
@@ -3024,9 +3019,19 @@ function plannedTrainingRows(count,now=Date.now()){
  const fresh=(exam?stats.fresh:normal.fresh).filter(c=>trainingTaskTypes(c,level).length);
  const costs=new Map(scope.map(c=>[c.id,trainingTaskTypes(c,level).length]));
  const reviewDates=new Map(scope.filter(c=>costs.get(c.id)&&(pfor(c).reviews||exam?.history?.[c.id]?.firstSeen)).map(c=>[c.id,nextRepetitionAt(c,context)]));
+ const examStages=new Map();
+ function projectExamReview(card,day){
+  const stage=(examStages.get(card.id)??pfor(card).stage)+1;
+  examStages.set(card.id,stage);
+  if(stage>=EXAM_TARGET_STAGE)return;
+  const next=repetitionDayStart(day,1);
+  const shortened=Math.max(next,repetitionDayStart(exam.date,-3));
+  const due=Math.min(repetitionDayStart(day,examReviewInterval(stage)),shortened);
+  if(examDay(due)<exam.date)reviewDates.set(card.id,due);
+ }
  for(const [i,row] of rows.entries()){
   const nextDay=repetitionDayStart(row.day,1);
-  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/Math.max(1,examOrdinal(exam.date)-examOrdinal(row.day)-stats.buffer))):(i===0?(normal.portion.finishedOn?0:normal.remaining):fresh.length>150?12:10);
+  const quota=exam?(i===0?stats.newToday:Math.ceil(fresh.length/examStudyDays(examOrdinal(exam.date)-examOrdinal(row.day)))):(i===0?(normal.portion.finishedOn?0:normal.remaining):fresh.length>150?12:10);
   const reviews=scope.filter(c=>reviewDates.get(c.id)<nextDay).sort((a,b)=>{
    const atA=reviewDates.get(a.id),atB=reviewDates.get(b.id);
    if(exam)return (i===0?Number(atA>now)-Number(atB>now):0)||pfor(a).stage-pfor(b).stage||
@@ -3035,18 +3040,19 @@ function plannedTrainingRows(count,now=Date.now()){
   });
   const additions=!exam&&i===0?normal.additions:fresh.slice(0,quota);
   const cards=exam?[...additions,...reviews]:[...reviews,...additions];
-  let budget=exam?(i===0?Math.max(0,EXAM_TRAINING_TASK_LIMIT-trainingTasksToday()):EXAM_TRAINING_TASK_LIMIT):Infinity;
   for(const card of cards){
    const reviewing=reviewDates.has(card.id);
    const cost=i===0&&(!reviewing||reviewDates.get(card.id)<=now)?pendingTrainingTasks(card,level).length:costs.get(card.id);
    if(!cost)continue;
-   if(cost>budget)break;
-   budget-=cost;
-   if(reviewing){row.reviews.add(card.id);reviewDates.delete(card.id);}
+   if(reviewing){
+    row.reviews.add(card.id);reviewDates.delete(card.id);
+    if(exam)projectExamReview(card,row.day);
+   }
    else{
     row.fresh.push(card);
     fresh.splice(fresh.indexOf(card),1);
-    if(rows[i+1])reviewDates.set(card.id,rows[i+1].at);
+    if(exam)projectExamReview(card,row.day);
+    else if(rows[i+1])reviewDates.set(card.id,rows[i+1].at);
    }
   }
   row.newCount=row.fresh.length;
