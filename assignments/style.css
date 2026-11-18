@@ -78,7 +78,7 @@ main{max-width:1380px;padding-top:54px}.page-head{margin-bottom:38px;align-items
  background: #e2e9f0;
 }
 .feedback-avatar-teacher { object-fit: contain; background: #fff2c8; }
-.feedback-message strong { display: block; font-size: 12px; line-height: 1.5; }
+.feedback-message > div > strong { display: block; font-size: 12px; line-height: 1.5; }
 .check-feedback .feedback-message p,
 .feedback-message .feedback-comment-form textarea {
  margin: 4px 0 0;
