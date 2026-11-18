@@ -595,9 +595,9 @@ function taskCard(t,isNext=false) {
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
  return `<article class="task-row checklist-row${next?' task-next':''}">
+  ${next?'<span class="task-next-label">Als Nächstes</span>':''}
   ${finished?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
-   ${next?'<span class="task-next-label">Als Nächstes</span>':''}
    <strong>${resources.reference}</strong>
    ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
    ${editable?resources.otherLinks:''}

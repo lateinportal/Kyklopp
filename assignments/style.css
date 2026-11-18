@@ -551,9 +551,10 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .task-card-list.quiet-panel,.task-card-list.teacher-list{display:grid;gap:16px;padding:0;background:transparent;border:0;border-radius:0}
 .task-card-list>.task-row,.task-card-list.teacher-list>.teacher-item{margin:0;padding:26px 28px;background:#fff;border:1px solid var(--line);border-radius:17px;min-width:0}
 .task-card-list>.task-row:first-child{border-top:1px solid var(--line)}
-.task-card-list>.task-row.task-next{background:#f1f7ff;border-color:#a9c9eb}
+.task-card-list>.task-row.task-next{position:relative;padding-top:48px;background:#f1f7ff;border-color:#a9c9eb}
 .task-next-label{display:inline-block;padding:3px 8px;border-radius:999px;background:#deedfc;color:#1a548a;font-size:11px;font-weight:650;line-height:1.4}
-.check-title>.task-next-label{display:table;margin-bottom:6px}
+.task-next>.task-next-label{position:absolute;top:15px;right:28px}
+@media(max-width:700px){.task-next>.task-next-label{right:20px}}
 .task-card-list>.quiet-empty{background:#fff;border:1px solid var(--line);border-radius:17px;padding:36px 28px}
 @media(max-width:700px){.task-card-list.quiet-panel,.task-card-list.teacher-list{gap:14px}.task-card-list>.task-row,.task-card-list.teacher-list>.teacher-item{padding:22px 20px}.task-card-list>.quiet-empty{padding:28px 20px}}
 .assignment-page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px}
