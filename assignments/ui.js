@@ -217,6 +217,7 @@ function render(){
  });
  $$('[data-delete-task]').forEach(b=>b.onclick=()=>deleteTask(b.dataset.deleteTask));
  $$('[data-edit-task]').forEach(b=>b.onclick=()=>newTask(taskBy(b.dataset.editTask)));
+ $$('[data-priority-task]').forEach(b=>b.onclick=()=>toggleTaskPriority(b.dataset.priorityTask));
  if(student)animateWallet();scheduleGuards();queueMicrotask(reportHeight);
 }
 const grades = [['1',3],['2',2.5],['3',2],['4',1.5],['5',1],['6',0.5]];
@@ -246,6 +247,27 @@ const isFinished = task => task.status==='approved' && task.studentReview==='com
 function taskSection(task) {
  if(isFinished(task))return 'done';
  return ['open','missing','revise'].includes(task.status)?'tasks':'submissions';
+}
+function sortOpenTasks(tasks){
+ const date=task=>/^\d{4}-\d{2}-\d{2}$/.test(task.due??'')?task.due:'9999-12-31';
+ // Legacy assignments have no timestamp and are stored in creation order.
+ return tasks.sort((a,b)=>Number(b.prioritized===true)-Number(a.prioritized===true)||
+  date(a).localeCompare(date(b))||(a.createdAt??0)-(b.createdAt??0));
+}
+async function toggleTaskPriority(id){
+ const task=taskBy(id);
+ if(role!=='teacher'||!task||taskSection(task)!=='tasks')return;
+ const pin=task.prioritized!==true;
+ const next={...state,tasks:state.tasks.map(item=>{
+  if(item.profile!==task.profile||item.deletedAt||(!item.prioritized&&item.id!==id))return item;
+  const {prioritized,...rest}=item;
+  return pin&&item.id===id?{...rest,prioritized:true}:rest;
+ })};
+ await persist(next);
+ state=next;
+ render();
+ $$('[data-priority-task]').find(button=>button.dataset.priorityTask===id)?.focus({preventScroll:true});
+ toast(pin?'Auftrag vorgezogen.':'Priorität aufgehoben.');
 }
 
 function questionHistory(task) {
@@ -550,7 +572,8 @@ function teacherDiscussion(task){
  return '<div class="teacher-discussion-toggle">'+discussionToggle(task,messages.length)+'</div>'+
   '<div class="feedback-thread check-feedback teacher-discussion" id="feedback-thread-'+esc(task.id)+'" hidden>'+conversationMarkup(task,messages)+'</div>';
 }
-function taskCard(t) {
+function taskCard(t,isNext=false) {
+ const next=isNext===true;
  const finished=isFinished(t);
  const canComment=t.status==='approved'&&!finished;
  const canComplete=canComment&&t.studentReview!=='question';
@@ -571,9 +594,10 @@ function taskCard(t) {
  const status = {open:'Offen',submitted:'Wartet auf Rückmeldung',approved:isFinished(t)?(t.feedback?.trim()?'Feedback':''):t.studentReview==='question'?'Rückfrage offen':'Korrigiert!',revise:'Bitte überarbeiten',missing:'Abgabe fehlt · Bitte über Discord schicken'}[t.status];
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
- return `<article class="task-row checklist-row">
+ return `<article class="task-row checklist-row${next?' task-next':''}">
   ${finished?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
+   ${next?'<span class="task-next-label">Als Nächstes</span>':''}
    <strong>${resources.reference}</strong>
    ${editable&&instruction?'<small class="check-instruction">'+instruction+'</small>':''}
    ${editable?resources.otherLinks:''}
@@ -719,13 +743,13 @@ function completedTasks(tasks) {
 }
 
 function studentPage(){
- const p=who(profile),tasks=myTasks(profile),active=tasks.filter(t=>!isFinished(t)),todo=active.filter(t=>taskSection(t)==='tasks'),feedbackTasks=active.filter(t=>taskSection(t)==='submissions').sort(compareFeedbackTasks),done=completedTasks(tasks);
+ const p=who(profile),tasks=myTasks(profile),active=tasks.filter(t=>!isFinished(t)),todo=sortOpenTasks(active.filter(t=>taskSection(t)==='tasks')),feedbackTasks=active.filter(t=>taskSection(t)==='submissions').sort(compareFeedbackTasks),done=completedTasks(tasks);
  if(studentSection==='denare')return denarePage();
  if(studentSection==='rewards')return studentBack(rewardsReturnSection)+'<header class="page-head"><div><h1>Belohnungen</h1><p class="quiet-subtitle">Mit deinen verdienten Denaren kannst du dir eine Belohnung aussuchen.</p></div>'+wallet()+'</header><div class="reward-grid">'+rewardCard(rewardChoices.voucher,'voucher')+rewardCard(rewardChoices.park,'park')+rewardCard(specialReward(profile),'special')+'</div><p class="quiet-foot">Sprich die Belohnung zuerst mit deinen Eltern ab. Danach kannst du sie bei deiner Lehrkraft anfragen.</p>';
  const overview=studentSection==='top',shown=overview?todo.slice(0,2):todo;
  const counts={tasks:unreadTasks(todo),feedback:unreadTasks([...feedbackTasks,...done])};
  const tabs='<div class="management-tabs student-task-tabs" role="tablist" aria-label="Aufträge und Rückmeldungen">'+[['tasks','Aufträge'],['feedback','Rückmeldungen']].map(([id,label])=>'<button type="button" role="tab" id="student-task-tab-'+id+'" aria-controls="student-task-panel" aria-selected="'+(studentTaskTab===id)+'" tabindex="'+(studentTaskTab===id?'0':'-1')+'" data-student-task-tab="'+id+'">'+label+unreadBadge(counts[id],id)+'</button>').join('')+'</div>';
- const pending='<section class="quiet-panel task-card-list" id="tasks" aria-label="Aufträge">'+(overview&&todo.length>shown.length?'<div class="quiet-panel-heading"><button class="link" data-target="tasks">Alle Aufträge →</button></div>':'')+(shown.length?shown.map(taskCard).join(''):'<div class="quiet-empty">Heute ist noch nichts offen.</div>')+'</section>';
+ const pending='<section class="quiet-panel task-card-list" id="tasks" aria-label="Aufträge">'+(overview&&todo.length>shown.length?'<div class="quiet-panel-heading"><button class="link" data-target="tasks">Alle Aufträge →</button></div>':'')+(shown.length?shown.map((task,index)=>taskCard(task,index===0)).join(''):'<div class="quiet-empty">Heute ist noch nichts offen.</div>')+'</section>';
  const feedback='<section class="quiet-panel waiting-panel task-card-list" aria-label="Rückmeldungen">'+(feedbackTasks.length?feedbackTasks.map(taskCard).join(''):'<div class="quiet-empty">Zurzeit gibt es keine offenen Rückmeldungen.</div>')+'</section>'+(done.length?'<details class="quiet-history"><summary>Abgeschlossen · '+done.length+' Aufträge</summary><div class="quiet-panel task-card-list" id="completed-task-rows">'+done.map(taskCard).join('')+'</div>'+'</details>':'');
  return '<header class="page-head assignment-page-head"><h1>'+(overview?'Hallo, '+esc(p.name)+'!':'Aufträge')+'</h1>'+wallet(true)+'<p class="quiet-subtitle">Bearbeite die Aufgaben vor, während und nach der Nachhilfestunde. Reiche deine Lösungen über Discord ein, erhalte „Denare“ <span class="instruction-symbol">('+icon('denar')+')</span> und schalte dir Belohnungen <span class="instruction-symbol">('+icon('gift')+')</span> frei!</p></header>'+tabs+'<div id="student-task-panel" role="tabpanel" aria-labelledby="student-task-tab-'+studentTaskTab+'">'+(studentTaskTab==='feedback'?feedback:pending)+'</div>';
 
@@ -763,6 +787,7 @@ async function submitTask(id) {
  if (role!=='student' || !task || task.profile !== profile || !['open','revise','missing'].includes(task.status)) return;
  task.submittedAt=new Date().toISOString();
  task.status = 'submitted';
+ delete task.prioritized;
  await save();
  render();
  toast('Als über Discord abgegeben markiert.');
@@ -888,8 +913,10 @@ function managementTaskCard(t){
     const review=hasReview?'Rückmeldung bearbeiten':'Rückmeldung geben';
     const status={open:'Noch zu erledigen',submitted:'Bereit für Rückmeldung',approved:isFinished(t)?'Abgeschlossen · Rückmeldung gelesen':t.studentReview==='question'?'Rückfrage offen':'Korrigiert · Rückmeldung gegeben',revise:'Bitte überarbeiten · Rückmeldung gegeben',missing:'Abgabe fehlt'}[t.status]||t.status;
     const tone=t.status==='submitted'||t.studentReview==='question'?'yellow':['revise','missing'].includes(t.status)?'red':t.status==='approved'?'green':'';
-    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span><h3>${resources.reference}</h3>${resources.description.replaceAll('<br>','').trim()?'<p>'+resources.description+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)+resources.facts}</div>${submissionLabel(t)}${resources.otherLinks}</div>
+    const actionable=taskSection(t)==='tasks',pinned=actionable&&t.prioritized===true;
+    return `<article class="teacher-item"><div><span class="badge ${tone?'check-status-'+tone:'open'}">${esc(status)}</span>${pinned?' <span class="task-next-label">Vorgezogen</span>':''}<h3>${resources.reference}</h3>${resources.description.replaceAll('<br>','').trim()?'<p>'+resources.description+'</p>':''}<div class="check-facts">${isFinished(t)?'':durationLabel(t)+deadlineLabel(t)}${taskDenareLabel(t)+resources.facts}</div>${submissionLabel(t)}${resources.otherLinks}</div>
      <div class="review-actions"><button class="btn secondary" data-edit-task="${esc(t.id)}">Aufgabe bearbeiten</button>
+     ${actionable?'<button type="button" class="btn secondary" data-priority-task="'+esc(t.id)+'">'+(pinned?'Priorität aufheben':'Als Nächstes anzeigen')+'</button>':''}
      ${hasReview||t.status==='submitted'?'<button class="btn'+(t.status==='submitted'?'':' secondary')+'" data-review="'+esc(t.id)+'">'+review+'</button>':''}${t.studentReview==='question'?'<button class="btn" data-answer-question="'+esc(t.id)+'">Rückfrage beantworten</button>':''}<button type="button" class="btn secondary task-delete-button" data-delete-task="${esc(t.id)}">Auftrag löschen</button></div>${teacherDiscussion(t)}</article>`;
 
 }
@@ -909,6 +936,7 @@ function studentManagementPage(p){
  let content;
  if(['tasks','submissions','done'].includes(managementTab)){
   const filtered=managementTab==='done'?completedTasks(tasks):tasks.filter(task=>taskSection(task)===managementTab);
+  if(managementTab==='tasks')sortOpenTasks(filtered);
   if(managementTab==='submissions'){
    const needsResponse=task=>task.status==='submitted'||task.studentReview==='question';
    filtered.sort((a,b)=>Number(needsResponse(b))-Number(needsResponse(a)));
@@ -1038,7 +1066,7 @@ function newTask(task=null){
   const changes={reference,description:(data.description??'').trim(),links:[],due,plannedMinutes,points,attachments:[...attachments]};
   const createdAt=Date.now();
   const updated=task?{...task,...changes,...(task.status==='approved'?{awardedPoints:awarded}:{})}:null;
-  const newTasks=owners.map((owner,index)=>({id:crypto.randomUUID(),profile:owner,...changes,status:'open'}));
+  const newTasks=owners.map((owner,index)=>({id:crypto.randomUUID(),profile:owner,createdAt,...changes,status:'open'}));
   const next={...state,tasks:task?state.tasks.map(item=>item.id===task.id?updated:item):[...state.tasks,...newTasks]};
   try{await persist(next);}
   catch(error){recover(error);return;}
