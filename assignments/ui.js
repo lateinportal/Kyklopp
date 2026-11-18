@@ -44,19 +44,30 @@ const who=id=>profiles.find(p=>p.id===id),taskBy=id=>state.tasks.find(t=>t.id===
 const earned=id=>allMyTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n+(t.awardedPoints??t.points),0)+(state.bonuses??[]).filter(entry=>entry.profile===id).reduce((sum,entry)=>sum+entry.amount,0);
 const reserved=id=>state.purchases.filter(p=>p.profile===id).reduce((n,p)=>n+p.cost,0),available=id=>earned(id)-reserved(id);
 // This code is inserted into the shared UI build after the authenticated context is loaded.
-let pollTimer;
+let pollTimer,polling=false;
 function rememberWallet(){try{localStorage.setItem(KEY,JSON.stringify(state.walletSnapshots??{}));}catch{}}
-async function persist(next){
+async function persist(next,rebase){
  document.querySelector('#main').setAttribute('aria-busy','true');
  document.body.classList.add('hub-saving');
  try{
-  const snapshot=await api.save(next);
+  const snapshot=await api.save(next,rebase);
   Object.assign(next,JSON.parse(JSON.stringify(snapshot.state)));
   profiles=snapshot.profiles;
   rememberWallet();
  }finally{document.querySelector('#main').setAttribute('aria-busy','false');document.body.classList.remove('hub-saving');}
 }
 async function save(){await persist(state);}
+async function saveSubmission(id){
+ const submittedAt=state.tasks.find(task=>task.id===id).submittedAt;
+ await persist(state,snapshot=>{
+  const task=snapshot.state.tasks.find(item=>item.id===id&&item.profile===snapshot.userId&&!item.deletedAt);
+  if(task?.status==='submitted'||task?.status==='approved')return snapshot.state;
+  if(!task||taskSection(task)!=='tasks')throw new Error('Dieser Auftrag steht nicht mehr zur Abgabe bereit.');
+  const submitted={...task,status:'submitted',submittedAt};
+  delete submitted.prioritized;
+  return {...snapshot.state,tasks:snapshot.state.tasks.map(item=>item.id===id?submitted:item)};
+ });
+}
 function recover(error){
  const wallets=state.walletSnapshots;
  state={...JSON.parse(JSON.stringify(api.context.state)),walletSnapshots:wallets};
@@ -80,17 +91,20 @@ function guardHandlers(){
 }
 function scheduleGuards(){queueMicrotask(guardHandlers);}
 async function poll(){
+ if(polling)return;
+ polling=true;
+ clearTimeout(pollTimer);
  try{
   if(!document.hidden&&!api.working&&!document.querySelector('#modal').open&&!document.activeElement?.matches('input,textarea,select')){
    const revision=api.context.revision,people=JSON.stringify(api.context.profiles);
    const snapshot=await api.load();
-   if(snapshot.revision!==revision||JSON.stringify(snapshot.profiles)!==people){
+   if(!api.working&&(snapshot.revision!==revision||JSON.stringify(snapshot.profiles)!==people)){
     const wallets=state.walletSnapshots;
     state={...JSON.parse(JSON.stringify(snapshot.state)),walletSnapshots:wallets};profiles=snapshot.profiles;render();
    }
   }
  }catch{ /* The last confirmed state remains visible while disconnected. */ }
- finally{pollTimer=setTimeout(poll,30000);}
+ finally{polling=false;pollTimer=setTimeout(poll,30000);}
 }
 function reportModal(){
  if(window.parent!==window)window.parent.postMessage({type:'kyklopp-hub-modal',open:document.querySelector('#modal').open},location.origin);
@@ -100,7 +114,10 @@ function reportHeight(){
 }
 window.addEventListener('beforeunload',()=>clearTimeout(pollTimer));
 window.addEventListener('online',()=>{clearTimeout(pollTimer);poll();});
+window.addEventListener('focus',()=>{if(context.teacher)return poll();});
+document.addEventListener?.('visibilitychange',()=>{if(context.teacher&&!document.hidden)poll();});
 window.addEventListener('click',event=>{
+ if(context.teacher&&event.target.closest('[data-target="reviews"],[data-management-tab="submissions"],[data-open-submissions="true"]'))poll();
  if(window.parent!==window&&event.target.closest('[data-target],[data-student-back],[data-teacher-denare-back],[data-denare-history]'))window.parent.postMessage({type:'kyklopp-hub-top'},location.origin);
 },true);
 if(window.ResizeObserver)new ResizeObserver(reportHeight).observe(document.querySelector('#main'));
@@ -788,9 +805,7 @@ async function submitTask(id) {
  task.submittedAt=new Date().toISOString();
  task.status = 'submitted';
  delete task.prioritized;
- await save();
- render();
- toast('Als über Discord abgegeben markiert.');
+ return saveSubmission(id).then(()=>{render();toast('Als über Discord abgegeben markiert.');});
 }
 
 function buyReward(id){

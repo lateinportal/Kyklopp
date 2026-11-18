@@ -11,7 +11,9 @@
   return 'Die Änderung konnte nicht bestätigt werden. Bitte prüfe die Verbindung und versuche es erneut.';
  }
  async function request(path,options={}){return transport.request(path,options);}
- function accept(snapshot){context=snapshot;
+ function accept(snapshot){
+  if(context?.userId===snapshot.userId&&Number(snapshot.revision)<Number(context.revision))return context;
+  context=snapshot;
   if(window.parent!==window){try{window.parent.KykloppLearningAssignments?.remember(snapshot);}catch{}}
   return snapshot;
  }
@@ -43,17 +45,22 @@
    return context;
   }catch(error){throw new Error(error.status?message(error):error.message);}
  }
- async function save(value){
+ async function save(value,rebase){
   if(working)throw new Error('Bitte warte, bis die aktuelle Änderung gespeichert ist.');
   working=true;
   try{
    if(pending){await load();throw new Error('Die vorherige Änderung wurde abgeglichen. Bitte prüfe den aktuellen Stand.');}
-   const state=wire(value);
-   if(JSON.stringify(state)===JSON.stringify(wire(context.state)))return context;
-   pending={p_state:state,p_revision:context.revision,p_request_id:crypto.randomUUID()};
-   localStorage.setItem(storageKey(),JSON.stringify(pending));
-   await reconcile();
-   return context;
+   for(let attempt=0;attempt<2;attempt++){
+    const state=wire(value);
+    if(JSON.stringify(state)===JSON.stringify(wire(context.state)))return context;
+    pending={p_state:state,p_revision:context.revision,p_request_id:crypto.randomUUID()};
+    localStorage.setItem(storageKey(),JSON.stringify(pending));
+    try{await reconcile();return context;}
+    catch(error){
+     if(error.status!==409||!rebase||attempt!==0)throw error;
+     value=rebase(await load());
+    }
+   }
   }catch(error){
    if(!pending){try{await load();}catch{}}
    throw new Error(error.status?message(error):error.message);
