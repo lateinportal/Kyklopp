@@ -5,6 +5,7 @@
  const publicKey='sb_publishable_7LjyA4sSKa9LvffU4tuSBg_5-e61e3i';
  const token=location.hash.slice(1),writer=crypto.randomUUID();
  const assets=new URL('.',document.currentScript.src);
+ const buildVersion=new URL(document.currentScript.src).searchParams.get('v');
  const linkBase=new URL('../u/',assets).href;
  const $=id=>document.getElementById(id);
  const journalKey='kyklopp-personal-draft-'+token;
@@ -102,7 +103,9 @@
  function loadFrame(){
   adapter=null;
   const frame=$('exercise');frame.hidden=false;
-  frame.src=new URL('exercise.html',assets).href;
+  const source=new URL('exercise.html',assets);
+  if(buildVersion)source.searchParams.set('v',buildVersion);
+  frame.src=source.href;
  }
  function storage(){
   const readonly=snapshot.role!=='student'||blocked||!claimed;
