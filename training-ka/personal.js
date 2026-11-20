@@ -12,6 +12,7 @@
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
  let activeDialog=null,previousOverflow='',previousGutter='';
+ let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embeddedModal=false,framePlaceholder=null;
  const status=text=>$('status').textContent=text;
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
@@ -100,9 +101,24 @@
    row.append(text,input,button);$('link-fields').append(row);
   }
  }
- function loadFrame(){
+ async function loadFrame(){
   adapter=null;
   const frame=$('exercise');frame.hidden=false;
+  frame.title=snapshot.template?.title||'Persönliche Übungen';
+  if(snapshot.template?.kind==='html'){
+   try{
+    const {prepareEmbeddedHTML}=await import(new URL('embed.js?v='+(buildVersion||'1'),assets));
+    templateDocument??=await rpc('document',{p_token:token});
+    embedChannel=crypto.randomUUID();
+    embedSettingsDirty=false;
+    frame.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    frame.removeAttribute('src');
+    frame.srcdoc=prepareEmbeddedHTML(templateDocument.html,{channel:embedChannel,role:snapshot.role,
+     writable:snapshot.role==='student'&&claimed&&!blocked,settings:snapshot.settings,run:memory});
+   }catch(error){status('Die Übung konnte nicht geöffnet werden.');showNotice(error.message);}
+   return;
+  }
+  frame.removeAttribute('sandbox');frame.removeAttribute('srcdoc');embedChannel=null;
   const source=new URL('exercise.html',assets);
   if(buildVersion)source.searchParams.set('v',buildVersion);
   frame.src=source.href;
@@ -185,6 +201,41 @@
   attach(api){adapter=api;if(!this.canWrite())api.lock();},
   height(value){if(Number.isFinite(value))$('exercise').style.height=Math.max(800,value+20)+'px';}
  };
+ function postEmbed(type,payload={}){
+  $('exercise').contentWindow?.postMessage({kykloppExercise:embedChannel,type,...payload},'*');
+ }
+ function embeddedOverlay(open){
+  const frame=$('exercise');
+  if(open&&!embeddedModal){
+   embeddedModal=true;framePlaceholder=document.createElement('div');
+   framePlaceholder.style.height=frame.getBoundingClientRect().height+'px';frame.before(framePlaceholder);
+   frame.style.cssText+=';position:fixed;inset:0;z-index:1000;height:100dvh';
+   document.body.style.overflow='hidden';
+  }else if(!open&&embeddedModal){
+   embeddedModal=false;framePlaceholder.remove();framePlaceholder=null;
+   frame.style.position='';frame.style.inset='';frame.style.zIndex='';frame.style.height='800px';
+   document.body.style.overflow='';
+  }
+ }
+ window.addEventListener('message',async event=>{
+  const message=event.data,frame=$('exercise');
+  if(!embedChannel||event.source!==frame.contentWindow||message?.kykloppExercise!==embedChannel)return;
+  if(message.type==='storage'&&snapshot.role==='student'&&claimed&&!blocked){
+   if(!message.run||typeof message.run!=='object'||Array.isArray(message.run))return;
+   memory={...message.run};modified();
+  }
+  if(message.type==='settings'){
+   const saved=await saveSettings(message.settings);
+   postEmbed('settings-result',{id:message.id,saved});
+  }
+  if(message.type==='height'&&!embeddedModal)window.KAPersonal.height(message.height);
+  if(message.type==='modal')embeddedOverlay(message.open===true);
+  if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
+  if(message.type==='ready'){
+   adapter={applySettings:settings=>postEmbed('settings-update',{settings}),
+    settingsDirty:()=>embedSettingsDirty,lock:()=>postEmbed('lock')};
+  }
+ });
  async function teacherToken(){
   const key='kyklopp-teacher-session',auth=JSON.parse(localStorage.getItem(key)||'null');
   if(!auth?.access_token)throw new Error('Lehreranmeldung erforderlich.');
@@ -211,7 +262,7 @@
     const copy=document.createElement('div'),title=document.createElement('h3'),note=document.createElement('p'),button=document.createElement('button');
     title.textContent=item.title;
     const lessons=(item.settings.lessons||[]).join(', ');
-    note.textContent='Lektionen '+lessons+' · '+(item.started?'Bearbeitung begonnen':'Noch nicht bearbeitet');
+    note.textContent=(item.templateTitle||'Lateintraining')+(lessons?' · Lektionen '+lessons:'')+' · '+(item.started?'Bearbeitung begonnen':'Noch nicht bearbeitet');
     button.type='button';button.textContent='Öffnen und Links anzeigen';
     button.onclick=async()=>{
      button.disabled=true;
@@ -227,29 +278,60 @@
    $('login-note').hidden=false;
   }
  }
+ async function loadLibrary(selected){
+  const items=await rpc('templates',{},await teacherToken());
+  const selector=$('training-template');
+  selector.replaceChildren();$('template-list').replaceChildren();
+  for(const item of items){
+   selector.add(new Option(item.title,item.id));
+   const row=document.createElement('article');row.className='training-entry';
+   const heading=document.createElement('h3'),button=document.createElement('button');
+   heading.textContent=item.title;button.type='button';button.textContent='Für neuen Zugang auswählen';
+   button.onclick=()=>{selector.value=item.id;$('training-title').value=item.title;$('create').scrollIntoView({behavior:'smooth'});};
+   row.append(heading,button);$('template-list').append(row);
+  }
+  if(selected)selector.value=selected;
+  selector.onchange=()=>{$('training-title').value=selector.selectedOptions[0]?.textContent||'';};
+ }
  async function boot(){
   if(!token){
    $('title').textContent='Persönliche Übungen';
-   $('create').hidden=false;status('Fünf Übungen mit einem eigenen Bearbeitungsstand');
+   $('create').hidden=false;status('Übungsvorlagen und persönliche Zugänge');
+   $('library').hidden=false;
    $('create-form').onsubmit=async event=>{
     event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;
     try{
      const accessToken=await teacherToken();
-     const links=await rpc('create',{p_title:$('training-title').value.trim()},accessToken);
+     const links=await rpc('create_for_template',{p_title:$('training-title').value.trim(),p_template:$('training-template').value},accessToken);
      location.href=linkBase+'#'+links.adminToken;
     }catch(error){
      $('login-note').hidden=false;
      status(error.message.includes('function')?'Bitte zuerst das SQL-Update für persönliche Übungen in Supabase ausführen.':error.message);
     }finally{button.disabled=false;}
    };
+   $('publish-form').onsubmit=async event=>{
+    event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;
+    try{
+     const file=$('template-file').files[0];
+     if(!file||file.size>6000000)throw new Error('Bitte wähle eine HTML-Datei mit höchstens 6 MB aus.');
+     const html=await file.text();
+     const {prepareEmbeddedHTML}=await import(new URL('embed.js?v='+(buildVersion||'1'),assets));
+     prepareEmbeddedHTML(html,{channel:'validation',role:'view',writable:false,settings:{},run:{}});
+     const item=await rpc('publish',{p_title:$('template-title').value.trim(),p_html:html},await teacherToken());
+     await loadLibrary(item.id);$('training-title').value=item.title;
+     event.target.reset();$('library-status').textContent='Vorlage hinzugefügt. Du kannst jetzt persönliche Zugänge dafür erstellen.';
+    }catch(error){$('library-status').textContent=error.message;}
+    finally{button.disabled=false;}
+   };
    await loadTrainings();
+   try{await loadLibrary();}catch{$('library-status').textContent='Bitte als Lehrer anmelden und das Update für die Übungsbibliothek in Supabase ausführen.';}
    return;
   }
   if(!valid.test(token))throw new Error('Dieser persönliche Link ist ungültig.');
   snapshot=await rpc('snapshot',{p_token:token});memory={...snapshot.run};
   document.body.dataset.trainingRole=snapshot.role;
   $('title').textContent=snapshot.title;document.title=snapshot.title;
-  $('mode').textContent={admin:'Verwaltung · Einstellungen und Bearbeitungsstand',student:'Schüler · fünf Übungen',view:'Ansicht · Bearbeitungsstand'}[snapshot.role];
+  $('mode').textContent={admin:'Verwaltung · Einstellungen und Bearbeitungsstand',student:'Schüler',view:'Ansicht · Bearbeitungsstand'}[snapshot.role];
   renderLinks();
   if(snapshot.role==='admin'){
    const back=document.createElement('a');back.href=new URL('index.html',assets).href;
@@ -301,6 +383,9 @@
  window.visualViewport?.addEventListener('resize',positionDialog);
  window.visualViewport?.addEventListener('scroll',positionDialog);
  if(token)window.addEventListener('hashchange',()=>location.reload());
- else window.addEventListener('focus',loadTrainings);
+ else window.addEventListener('focus',async()=>{
+  await loadTrainings();
+  try{await loadLibrary($('training-template').value);}catch{}
+ });
  boot().catch(error=>{status('Die Übung konnte nicht geladen werden.');showNotice(error.message);});
 })();

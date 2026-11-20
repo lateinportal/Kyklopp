@@ -1,0 +1,129 @@
+// Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
+export function embeddedExercise(config){
+ const channel=config.channel;
+ const values=Object.assign(Object.create(null),config.run);
+ const listeners=new Set(),requests=new Map();
+ let locked=!config.writable,settings=config.settings,timer;
+ const send=(type,payload={})=>parent.postMessage({kykloppExercise:channel,type,...payload},'*');
+ const storage={
+  get length(){return Object.keys(values).length;},
+  key:index=>Object.keys(values)[index]??null,
+  getItem:key=>values[key]??null,
+  setItem(key,value){
+   if(locked)return;
+   if(values[key]===String(value))return;
+   values[key]=String(value);queue();
+  },
+  removeItem(key){if(locked)return;delete values[key];queue();},
+  clear(){if(locked)return;for(const key of Object.keys(values))delete values[key];queue();}
+ };
+ function queue(){
+  clearTimeout(timer);timer=setTimeout(()=>send('storage',{run:{...values}}),100);
+ }
+ Object.defineProperty(window,'localStorage',{value:storage,configurable:false});
+ window.KykloppExercise={
+  role:config.role,
+  get readOnly(){return locked;},
+  get settings(){return structuredClone(settings);},
+  get state(){try{return JSON.parse(values['kyklopp-exercise-state']||'{}');}catch{return {};}},
+  saveState(state){storage.setItem('kyklopp-exercise-state',JSON.stringify(state));},
+  saveSettings(next){
+   if(config.role==='view')return Promise.resolve(false);
+   const id=crypto.randomUUID();
+   return new Promise(resolve=>{requests.set(id,{resolve,next});send('settings',{settings:next,id});});
+  },
+  onSettingsChange(listener){listeners.add(listener);return ()=>listeners.delete(listener);}
+ };
+ function protect(){
+  if(!locked)return;
+  for(const node of document.querySelectorAll('input,textarea,select,button,[draggable]')){
+   const canConfigure=config.role!=='view'&&node.closest('[data-kyklopp-settings],#settings');
+   const navigation=node.matches('[data-kyklopp-navigation],#overview,[data-main]');
+   if(canConfigure||navigation)continue;
+   if('disabled' in node)node.disabled=true;
+   if(node.hasAttribute('draggable'))node.draggable=false;
+  }
+ }
+ window.addEventListener('message',event=>{
+  if(event.source!==parent||event.data?.kykloppExercise!==channel)return;
+  const message=event.data;
+  if(message.type==='settings-result'){
+   const request=requests.get(message.id);if(!request)return;
+   if(message.saved){settings=request.next;send('settings-dirty',{dirty:false});}
+   request.resolve(message.saved);requests.delete(message.id);
+  }
+  if(message.type==='settings-update'){
+   settings=message.settings;
+   for(const listener of listeners)listener(structuredClone(settings));
+  }
+  if(message.type==='lock'){locked=true;protect();}
+ });
+ function report(){
+  const height=Math.max(...[...document.body.children].filter(node=>!['SCRIPT','STYLE'].includes(node.tagName))
+   .map(node=>node.getBoundingClientRect().bottom+scrollY+16),300);
+  send('height',{height});
+  send('modal',{open:Boolean(document.querySelector('dialog[open]'))});
+  protect();
+ }
+ document.addEventListener('DOMContentLoaded',()=>{
+  for(const type of ['input','change'])document.addEventListener(type,event=>{
+   if(event.target.closest('[data-kyklopp-settings],#settings'))send('settings-dirty',{dirty:true});
+  },true);
+  new MutationObserver(report).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});
+  new ResizeObserver(report).observe(document.body);
+  window.addEventListener('resize',report);
+  report();send('ready');
+ });
+}
+
+export function prepareEmbeddedHTML(html,config){
+ const doc=new DOMParser().parseFromString(html,'text/html');
+ const originalScripts=[...doc.scripts];
+ if(!originalScripts.some(script=>/\b(?:localStorage|KykloppExercise)\b/.test(script.textContent))){
+  throw new Error('Diese HTML-Datei speichert ihren Bearbeitungsstand noch nicht. Bitte zuerst die Speicherung für diese Übung ergänzen.');
+ }
+ if(doc.querySelector('script[src],link[rel="stylesheet"][href]:not([href^="data:"])')){
+  throw new Error('Diese HTML-Datei lädt Skripte oder Stylesheets aus weiteren Dateien. Bitte zuerst als eigenständige HTML-Datei zusammenfassen.');
+ }
+ const meta=doc.createElement('meta');meta.httpEquiv='Content-Security-Policy';
+ meta.content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
+ doc.head.prepend(meta);
+ const bootstrap=doc.createElement('script');
+ bootstrap.textContent='('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
+ doc.head.insertBefore(bootstrap,meta.nextSibling);
+ for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
+ if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
+  const adapter=doc.createElement('script');adapter.textContent='('+legacySettings.toString()+')();';doc.body.append(adapter);
+ }
+ return '<!doctype html>\n'+doc.documentElement.outerHTML;
+}
+
+// Adapter for standalone versions of the original five-exercise worksheet.
+function legacySettings(){
+ const api=window.KykloppExercise;
+ function apply(config){
+  if(!Array.isArray(config.lessons))return;
+  const attempted=[...drafts.values()].some(draft=>draft.tries>0||draft.score>0||draft.historyRows?.length||
+   draft.fields?.some(([value,checked,id])=>checked||id&&String(value).trim())||
+   draft.marks?.flat(Infinity).some(value=>value!==null&&value!==undefined)||
+   draft.cardPlaces?.some(value=>value!==null&&value!==undefined));
+  const previous=JSON.stringify(runSettings);
+  selectedLessons=new Set(config.lessons);packSelection=config.packs===null?null:new Set(config.packs||[]);
+  pickedVocab.clear();for(const id of config.extras||[])if(sheet[id])pickedVocab.add(id);
+  committedSettings=settingsSnapshot();filters();renderPickedVocab();updateSettingsSave();
+  if(!attempted&&previous!==JSON.stringify(committedSettings)){
+   const overview=viewingOverview;runHistory=runHistory.filter(item=>item.id!==runMeta?.id);
+   runMeta=null;drafts.clear();runSettings=committedSettings;hideOverview();t=0;start();
+   if(overview)showOverview(true);saveSession();
+  }
+ }
+ apply(api.settings);
+ if(api.readOnly)showOverview(true);
+ api.onSettingsChange(apply);
+ const button=document.getElementById('save-settings'),original=button.onclick;
+ button.onclick=async event=>{
+  if(!selectedLessons.size)return original(event);
+  if(!await api.saveSettings(settingsSnapshot()))return;
+  const config=settingsSnapshot();original(event);apply(config);
+ };
+}
