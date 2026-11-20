@@ -551,10 +551,20 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 .task-card-list.quiet-panel,.task-card-list.teacher-list{display:grid;gap:16px;padding:0;background:transparent;border:0;border-radius:0}
 .task-card-list>.task-row,.task-card-list.teacher-list>.teacher-item{margin:0;padding:26px 28px;background:#fff;border:1px solid var(--line);border-radius:17px;min-width:0}
 .task-card-list>.task-row:first-child{border-top:1px solid var(--line)}
-.task-card-list>.task-row.task-next{position:relative;padding-top:48px;background:#f1f7ff;border-color:#a9c9eb}
+.task-card-list>.task-row.task-next{position:relative;background:#f1f7ff;border-color:#a9c9eb}
 .task-next-label{display:inline-block;padding:3px 8px;border-radius:999px;background:#deedfc;color:#1a548a;font-size:11px;font-weight:650;line-height:1.4}
-.task-next>.task-next-label{position:absolute;top:15px;right:28px}
-@media(max-width:700px){.task-next>.task-next-label{right:20px}}
+.task-next-hint{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@property --task-beam-angle{syntax:"<angle>";initial-value:0deg;inherits:false}
+.task-next::before{
+ content:"";position:absolute;inset:-1px;border-radius:inherit;padding:2px;pointer-events:none;
+ background:conic-gradient(from var(--task-beam-angle,0deg),transparent 0deg,transparent 285deg,#b5d9ff 315deg,#2675ce 345deg,transparent 360deg);
+ -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ -webkit-mask-composite:xor;mask-composite:exclude;
+ animation:task-next-beam 6s linear infinite;
+}
+@keyframes task-next-beam{to{--task-beam-angle:360deg}}
+@media(prefers-reduced-motion:reduce){.task-next::before{animation:none;--task-beam-angle:45deg}}
 .task-card-list>.quiet-empty{background:#fff;border:1px solid var(--line);border-radius:17px;padding:36px 28px}
 @media(max-width:700px){.task-card-list.quiet-panel,.task-card-list.teacher-list{gap:14px}.task-card-list>.task-row,.task-card-list.teacher-list>.teacher-item{padding:22px 20px}.task-card-list>.quiet-empty{padding:28px 20px}}
 .assignment-page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 18px}

@@ -429,6 +429,9 @@ function webAddress(value) {
 }
 function siteFavicon(href){
  const host=new URL(href).hostname;
+ if(host.toLowerCase()==='lateinportal.github.io'){
+  return '<span class="site-favicon has-favicon" aria-hidden="true"><img src="../vokabelbilder/favicon/kloppo-gelb-32.png" width="16" height="16" alt=""></span>';
+ }
  const source='https://www.google.com/s2/favicons?domain='+encodeURIComponent(host)+'&sz=32';
  return '<span class="site-favicon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m10 14 4-4M8 16l-1 1a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m0 2 1-1a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(2 0)"/></svg><img data-site-favicon src="'+esc(source)+'" width="16" height="16" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt=""></span>';
 }
@@ -612,7 +615,7 @@ function taskCard(t,isNext=false) {
  const labelTone = {missing:'red',revise:'red',submitted:'yellow'}[t.status]
   || (t.status==='approved'&&!isFinished(t)&&t.studentReview!=='question'?'green':'');
  return `<article class="task-row checklist-row${next?' task-next':''}">
-  ${next?'<span class="task-next-label">Als Nächstes</span>':''}
+  ${next?'<span class="task-next-hint">Als Nächstes</span>':''}
   ${finished?'<span class="check-done" role="img" aria-label="Vollständig erledigt"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m3 8 3.3 3.3L13 4.7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>':`<label class="check-submit"><input type="checkbox" data-check-task="${esc(t.id)}" ${editable?'':'checked disabled'} aria-label="${esc(t.reference)} über Discord abgegeben"></label>`}
   <div class="check-title">
    <strong>${resources.reference}</strong>
