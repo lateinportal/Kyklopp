@@ -795,6 +795,9 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 .history-clear{display:inline-flex;width:auto;gap:6px;padding:4px 8px;font-size:13px;white-space:nowrap;border-radius:0}.history-clear>span:last-child{font-size:20px}
 
 .video-help-links{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:22px 0 12px}.video-help-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:min(100%,320px);min-height:44px;box-sizing:border-box;padding:10px 16px;background:#fff;border:1px solid #dce1e6;border-radius:5px;box-shadow:0 1px 3px #0002;color:#596572;font:inherit;font-size:15px;line-height:1.4;text-decoration:none;cursor:pointer}.video-help-link:hover{background:#f7f8fa;text-decoration:none}.video-help-link:focus-visible{outline:3px solid #6b9ee1;outline-offset:2px}.video-help-link img{width:20px;height:20px;object-fit:contain;flex:none}
+
+.finish-dialog{inset:auto;left:50%;top:var(--personal-dialog-top,50%);margin:0;transform:translate(-50%,-50%);max-height:var(--personal-dialog-height,calc(100dvh - 48px))}
+.finish-panel{max-height:var(--personal-dialog-height,calc(100dvh - 48px))}
 </style>
 <main><div class="shell"><div class="top"><div id="navigation" class="nav" aria-label="Fortschritt"></div><button type="button" id="overview" class="plain" aria-controls="card">Übersicht ☰</button></div><article id="card" aria-label="Übung"></article><aside id="settings" hidden><div class="settings-heading"><h2>Einstellungen</h2><button type="button" class="plain" id="save-settings" disabled>Einstellungen speichern</button></div><p class="muted" id="settings-note" role="status">Gespeicherte Einstellungen gelten für den nächsten Durchlauf.</p><div class="filters"><fieldset><legend>Lektionen</legend><div id="lesson" class="filter-choices"></div></fieldset><fieldset id="pack-field" hidden><legend id="pack-title">Päckchen</legend><div id="pack" class="filter-choices"></div></fieldset></div><details class="vocab-picker"><summary>Vokabeln ergänzen</summary><form id="vocab-search-form">
 <label class="sr-only" for="vocab-search">Roma-A-Vokabel suchen</label>
@@ -1686,6 +1689,7 @@ function celebrationData(){
     assets:[{id:'kyklopp',w:600,h:400,u:'',p:kykloppArt.perfect,e:1}],layers:[...confetti,mascot]};
 }
 function closeFinish(){
+  online.closeDialog();
   if(finishAnimation){finishAnimation.destroy();finishAnimation=null}
   const dialog=$('finish-dialog');
   if(dialog?.open)dialog.close();
@@ -1709,6 +1713,7 @@ function showFinish(){
     pressedBackdrop=false;
   };
   dialog.oncancel=e=>{e.preventDefault();review()};
+  online.prepareDialog(dialog);
   dialog.showModal();
   if(good&&window.lottie&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
     try {
@@ -2764,7 +2769,7 @@ function restoreSession(){
     viewingOverview=true;
     goTo(saved.index);
     if(saved.overview)showOverview();
-    else if(saved.popup&&locked&&round[pos])showFinish();
+    else if(saved.popup&&locked&&round[pos]&&online.canWrite())showFinish();
     return true;
   }catch{
     drafts.clear();viewingOverview=false;t=0;runSettings=null;
@@ -2825,6 +2830,7 @@ online.attach({
  lock:protectSharedView
 });
 const sharedObserver=new MutationObserver(()=>{
+ online.syncDialog();
  protectSharedView();
  updateSharedHeight();
 });

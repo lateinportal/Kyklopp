@@ -10,6 +10,7 @@
  const journalKey='kyklopp-personal-draft-'+token;
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
+ let activeDialog=null,previousOverflow='',previousGutter='';
  const status=text=>$('status').textContent=text;
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
@@ -111,6 +112,30 @@
    removeItem(key){if(readonly)return;delete memory[key];modified();}
   };
  }
+ function positionDialog(){
+  if(!activeDialog)return;
+  const viewport=window.visualViewport;
+  const height=viewport?.height||window.innerHeight;
+  const top=(viewport?.offsetTop||0)+height/2-$('exercise').getBoundingClientRect().top;
+  activeDialog.style.setProperty('--personal-dialog-top',top+'px');
+  activeDialog.style.setProperty('--personal-dialog-height',Math.max(180,height-48)+'px');
+ }
+ function closeDialog(){
+  if(!activeDialog)return;
+  activeDialog=null;
+  document.documentElement.style.overflow=previousOverflow;
+  document.documentElement.style.scrollbarGutter=previousGutter;
+ }
+ function prepareDialog(dialog){
+  if(!activeDialog){
+   previousOverflow=document.documentElement.style.overflow;
+   previousGutter=document.documentElement.style.scrollbarGutter;
+   document.documentElement.style.overflow='hidden';
+   document.documentElement.style.scrollbarGutter='stable';
+  }
+  activeDialog=dialog;positionDialog();
+  dialog.addEventListener('close',closeDialog,{once:true});
+ }
  async function claim(takeover=false){
   const result=await rpc('claim',{p_token:token,p_writer:writer,p_takeover:takeover});
   claimed=result.claimed;
@@ -149,7 +174,8 @@
   finally{polling=false;}
  }
  window.KAPersonal={
-  storage,saveSettings,
+  storage,saveSettings,prepareDialog,closeDialog,
+  syncDialog(){if(activeDialog&&(!activeDialog.isConnected||!activeDialog.open))closeDialog();},
   initialSettings:()=>structuredClone(snapshot.settings),
   role:()=>snapshot.role,
   canWrite:()=>snapshot.role==='student'&&claimed&&!blocked,
@@ -267,6 +293,9 @@
  };
  window.addEventListener('beforeunload',event=>{if(dirty||saving){event.preventDefault();event.returnValue='';}});
  window.addEventListener('online',()=>{if(dirty)flush();refresh();});
+ window.addEventListener('resize',positionDialog);
+ window.visualViewport?.addEventListener('resize',positionDialog);
+ window.visualViewport?.addEventListener('scroll',positionDialog);
  if(token)window.addEventListener('hashchange',()=>location.reload());
  else window.addEventListener('focus',loadTrainings);
  boot().catch(error=>{status('Die Übung konnte nicht geladen werden.');showNotice(error.message);});
