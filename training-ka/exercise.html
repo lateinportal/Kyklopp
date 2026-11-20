@@ -2625,7 +2625,7 @@ function updateSettingsSave(){
  $('save-settings').disabled=!dirty;
  $('save-settings').classList.toggle('primary',dirty);
  $('save-settings').classList.toggle('plain',!dirty);
- $('settings-note').textContent=dirty?'Einstellungen geändert. Klicke auf „Einstellungen speichern“.':'Gespeicherte Einstellungen gelten für den nächsten Durchlauf.';
+ $('settings-note').textContent=dirty?'Einstellungen geändert. Klicke auf „Einstellungen speichern“.':(hasSharedAnswers()?'Gespeicherte Einstellungen gelten für den nächsten Durchlauf.':'Gespeicherte Einstellungen gelten direkt für deine erste Runde.');
 }
 function persistFilterChange(){updateSettingsSave();saveSession()}
 $('lesson').onchange=e=>{
@@ -2786,10 +2786,10 @@ $('run-history-status').onclick=e=>{if(e.target.closest('[data-history-undo]'))u
 $('save-settings').onclick=async()=>{
  if(!selectedLessons.size){$('settings-note').textContent='Wähle mindestens eine Lektion aus.';return}
  if(!await online.saveSettings(settingsSnapshot()))return;
- committedSettings=settingsSnapshot();
+ applyOnlineSettings(settingsSnapshot());
  try{localStorage.setItem('latein-roma-extras-v1',JSON.stringify(committedSettings.extras))}catch{}
  saveSession();updateSettingsSave();
- $('settings-note').textContent='Einstellungen gespeichert. Sie gelten für den nächsten Durchlauf. Dein aktueller Fortschritt bleibt erhalten.';
+ $('settings-note').textContent=hasSharedAnswers()?'Einstellungen gespeichert. Sie gelten für den nächsten Durchlauf. Dein aktueller Fortschritt bleibt erhalten.':'Einstellungen gespeichert. Deine erste Runde verwendet diese Auswahl.';
 };
 card.addEventListener('input',saveSession);
 card.addEventListener('change',saveSession);
@@ -2805,13 +2805,34 @@ const restored=restoreSession();
 committedSettings=settingsSnapshot();
 renderPickedVocab();filters();updateSettingsSave();renderRunHistory();
 if(!restored)start();
+function hasSharedAnswers(){
+ return [...drafts.values()].some(draft=>
+  draft.tries>0||draft.score>0||draft.historyRows?.length||
+  draft.fields?.some(([value,checked,id])=>checked||id&&String(value).trim())||
+  draft.marks?.flat(Infinity).some(value=>value!==null&&value!==undefined)||
+  draft.cardPlaces?.some(value=>value!==null&&value!==undefined)
+ );
+}
 function applyOnlineSettings(config){
+ if(online.canWrite()&&!viewingOverview)saveDraft();
+ const untouched=!hasSharedAnswers(),previous=JSON.stringify(runSettings);
  selectedLessons=new Set(config.lessons);
  packSelection=config.packs===null?null:new Set(config.packs||[]);
  pickedVocab.clear();
  for(const id of config.extras||[])if(sheet[id])pickedVocab.add(id);
  committedSettings=settingsSnapshot();
  filters();renderPickedVocab();updateSettingsSave();
+ if(untouched&&previous!==JSON.stringify(committedSettings)){
+  const overview=viewingOverview;
+  runHistory=runHistory.filter(item=>item.id!==runMeta?.id);
+  runMeta=null;
+  drafts.clear();
+  runSettings=committedSettings;
+  hideOverview();t=0;start();
+  if(overview)showOverview(true);
+  persistRunHistory();saveSession();
+  $('settings-note').textContent='Einstellungen gespeichert. Deine erste Runde verwendet diese Auswahl.';
+ }
 }
 applyOnlineSettings(online.initialSettings());
 const reading=online.role()!=='student';

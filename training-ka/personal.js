@@ -75,7 +75,7 @@
   try{
    const result=await rpc('settings',{p_token:token,p_revision:snapshot.settingsRevision,p_settings:settings});
    snapshot.settings=result.settings;snapshot.settingsRevision=result.settingsRevision;
-   status('Einstellungen gespeichert · gelten für den nächsten Durchlauf');
+   status('Einstellungen gespeichert');
    return true;
   }catch(error){
    showNotice(error.status===409?'Die Einstellungen wurden inzwischen auf einem anderen Gerät geändert. Lade zuerst den aktuellen Online-Stand. Deine laufende Runde bleibt erhalten.':'Die Einstellungen konnten nicht gespeichert werden. Versuche es bei bestehender Verbindung erneut.',['reload']);
