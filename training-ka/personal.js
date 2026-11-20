@@ -247,6 +247,7 @@
   }
   if(!valid.test(token))throw new Error('Dieser persönliche Link ist ungültig.');
   snapshot=await rpc('snapshot',{p_token:token});memory={...snapshot.run};
+  document.body.dataset.trainingRole=snapshot.role;
   $('title').textContent=snapshot.title;document.title=snapshot.title;
   $('mode').textContent={admin:'Verwaltung · Einstellungen und Bearbeitungsstand',student:'Schüler · fünf Übungen',view:'Ansicht · Bearbeitungsstand'}[snapshot.role];
   renderLinks();

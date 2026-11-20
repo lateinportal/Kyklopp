@@ -27,3 +27,6 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 #exercise{display:block;border:0;width:100%;min-height:800px;background:#fafafa}
 [hidden]{display:none!important}
 @media(max-width:600px){.training-header,main{padding:14px} .training-header h1{font-size:21px}.link-row{grid-template-columns:1fr}.link-row button{justify-self:start}}
+body[data-training-role="student"] #mode,body[data-training-role="student"] #status{display:none}
+body[data-training-role="student"] .training-header{padding-top:28px;padding-bottom:0}
+body[data-training-role="student"] main{padding-top:0}

@@ -798,6 +798,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 
 .finish-dialog{inset:auto;left:50%;top:var(--personal-dialog-top,50%);margin:0;transform:translate(-50%,-50%);max-height:var(--personal-dialog-height,calc(100dvh - 48px))}
 .finish-panel{max-height:var(--personal-dialog-height,calc(100dvh - 48px))}
+html[data-personal-role="student"] main{margin-top:12px}
 </style>
 <main><div class="shell"><div class="top"><div id="navigation" class="nav" aria-label="Fortschritt"></div><button type="button" id="overview" class="plain" aria-controls="card">Übersicht ☰</button></div><article id="card" aria-label="Übung"></article><aside id="settings" hidden><div class="settings-heading"><h2>Einstellungen</h2><button type="button" class="plain" id="save-settings" disabled>Einstellungen speichern</button></div><p class="muted" id="settings-note" role="status">Gespeicherte Einstellungen gelten für den nächsten Durchlauf.</p><div class="filters"><fieldset><legend>Lektionen</legend><div id="lesson" class="filter-choices"></div></fieldset><fieldset id="pack-field" hidden><legend id="pack-title">Päckchen</legend><div id="pack" class="filter-choices"></div></fieldset></div><details class="vocab-picker"><summary>Vokabeln ergänzen</summary><form id="vocab-search-form">
 <label class="sr-only" for="vocab-search">Roma-A-Vokabel suchen</label>
@@ -808,6 +809,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 (()=>{
 const online=window.parent.KAPersonal;
 if(!online)throw Error("Bitte über den persönlichen Link öffnen.");
+document.documentElement.dataset.personalRole=online.role();
 const localStorage=online.storage();
 
 const $=id=>document.getElementById(id);
