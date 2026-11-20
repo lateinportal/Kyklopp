@@ -86,7 +86,7 @@
   $('links').hidden=snapshot.role!=='admin';
   if(snapshot.role!=='admin')return;
   $('links').open=true;
-  const tokens=[['Verwaltung',snapshot.adminToken||token],['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · mitverfolgen',snapshot.viewToken]];
+  const tokens=[['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · für Eltern oder Lehrer zum mitverfolgen',snapshot.viewToken]];
   $('link-fields').replaceChildren();
   for(const [label,value] of tokens){
    const row=document.createElement('div');row.className='link-row';
