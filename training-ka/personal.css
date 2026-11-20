@@ -1,5 +1,5 @@
 *{box-sizing:border-box}
-body{margin:0;background:#f6f8fa;color:#233b50;font:15px/1.6 system-ui,sans-serif}
+body{margin:0;background:#fafafa;color:#233b50;font:15px/1.6 system-ui,sans-serif}
 .training-header,main{max-width:1120px;margin:auto;padding:16px 24px}
 .training-header h1{font-size:24px;line-height:1.3;margin:0 0 4px}
 .training-header p{margin:4px 0;color:#526b80}
@@ -24,6 +24,6 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .training-entry button{flex-shrink:0}
 @media(max-width:600px){.training-entry{align-items:flex-start;flex-direction:column}}
 #notice{border-color:#d0aa4c;background:#fffbed}
-#exercise{display:block;border:0;width:100%;min-height:800px;background:#fff}
+#exercise{display:block;border:0;width:100%;min-height:800px;background:#fafafa}
 [hidden]{display:none!important}
 @media(max-width:600px){.training-header,main{padding:14px} .training-header h1{font-size:21px}.link-row{grid-template-columns:1fr}.link-row button{justify-self:start}}
