@@ -17,6 +17,12 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .link-row label{grid-column:1/-1;margin:0}
 .link-row input{font-size:12px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
+.training-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-top:1px solid #dce5ed}
+.training-entry:first-child{border-top:0}
+.training-entry h3{margin:0;font-size:16px;overflow-wrap:anywhere}
+.training-entry p{margin:4px 0;color:#526b80;font-size:13px}
+.training-entry button{flex-shrink:0}
+@media(max-width:600px){.training-entry{align-items:flex-start;flex-direction:column}}
 #notice{border-color:#d0aa4c;background:#fffbed}
 #exercise{display:block;border:0;width:100%;min-height:800px;background:#fff}
 [hidden]{display:none!important}

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="referrer" content="no-referrer">
+ <title>Persönliches Lateintraining</title>
+ <link rel="stylesheet" href="../training-ka/personal.css">
+ <script src="../training-ka/personal.js" defer></script>
+</head>
+<body>
+ <header class="training-header">
+  <h1 id="title">Persönliches Lateintraining</h1>
+  <p id="mode"></p>
+  <p id="status" role="status" aria-live="polite">Wird geladen …</p>
+ </header>
+ <main>
+  <section id="create" hidden>
+   <h2>Übung erstellen</h2>
+   <p>Erstelle einen persönlichen Zugang zu den fünf Übungen. Danach kannst du die Lektionen und Päckchen auswählen.</p>
+   <form id="create-form">
+    <label for="training-title">Titel</label>
+    <input id="training-title" maxlength="120" required value="Lateintraining für die Klassenarbeit">
+    <button type="submit">Persönliche Links erstellen</button>
+   </form>
+   <p id="login-note" hidden>Melde dich zuerst in der <a href="../assignments/lehrer.html" target="_blank" rel="noopener">Lehrerverwaltung</a> an. Kehre danach hierher zurück.</p>
+  </section>
+  <section id="existing" hidden>
+   <h2>Bereits erstellte Übungen</h2>
+   <p id="list-status" role="status"></p>
+   <div id="training-list"></div>
+  </section>
+  <details id="links" hidden>
+   <summary>Persönliche Links</summary>
+   <p>Speichere den Verwaltungslink für dich. Den Schülerlink kannst du im Auftrag hinterlegen.</p>
+   <div id="link-fields"></div>
+  </details>
+  <section id="notice" hidden>
+   <p id="notice-text"></p>
+   <div class="actions">
+    <button id="reload" type="button" hidden>Online-Stand laden</button>
+    <button id="takeover" type="button" hidden>Hier weiterarbeiten</button>
+    <button id="export" type="button" hidden>Lokalen Stand sichern</button>
+    <button id="retry" type="button" hidden>Erneut speichern</button>
+   </div>
+  </section>
+  <iframe id="exercise" title="Fünf persönliche Lateinübungen" hidden></iframe>
+ </main>
+</body>
+</html>

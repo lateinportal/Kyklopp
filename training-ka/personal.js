@@ -4,12 +4,14 @@
  const project='https://nxdnxqukjxrrpjljmsxn.supabase.co';
  const publicKey='sb_publishable_7LjyA4sSKa9LvffU4tuSBg_5-e61e3i';
  const token=location.hash.slice(1),writer=crypto.randomUUID();
+ const assets=new URL('.',document.currentScript.src);
+ const linkBase=new URL('../u/',assets).href;
  const $=id=>document.getElementById(id);
  const journalKey='kyklopp-personal-draft-'+token;
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
  const status=text=>$('status').textContent=text;
- const valid=/^[0-9a-f]{64}$/;
+ const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
   try{
@@ -83,13 +85,13 @@
   $('links').hidden=snapshot.role!=='admin';
   if(snapshot.role!=='admin')return;
   $('links').open=true;
-  const tokens=[['Verwaltung',token],['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · mitverfolgen',snapshot.viewToken]];
+  const tokens=[['Verwaltung',snapshot.adminToken||token],['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · mitverfolgen',snapshot.viewToken]];
   $('link-fields').replaceChildren();
   for(const [label,value] of tokens){
    const row=document.createElement('div');row.className='link-row';
    const text=document.createElement('label'),input=document.createElement('input'),button=document.createElement('button');
    const id='link-'+value.slice(0,8);input.id=id;text.htmlFor=id;text.textContent=label;
-   input.readOnly=true;input.value=location.origin+location.pathname+'#'+value;
+   input.readOnly=true;input.value=linkBase+'#'+value;
    button.type='button';button.textContent='Kopieren';
    button.onclick=async()=>{try{await navigator.clipboard.writeText(input.value);button.textContent='Kopiert';}
     catch{input.focus();input.select();button.textContent='Link markieren';}};
@@ -99,7 +101,7 @@
  function loadFrame(){
   adapter=null;
   const frame=$('exercise');frame.hidden=false;
-  frame.src='exercise.html';
+  frame.src=new URL('exercise.html',assets).href;
  }
  function storage(){
   const readonly=snapshot.role!=='student'||blocked||!claimed;
@@ -167,20 +169,51 @@
   })().finally(()=>teacherRefresh=null);
   return teacherRefresh;
  }
+ async function loadTrainings(){
+  $('existing').hidden=false;$('list-status').textContent='Übungen werden geladen …';
+  try{
+   const access=await teacherToken();
+   const items=await rpc('list',{},access);
+   $('training-list').replaceChildren();
+   $('login-note').hidden=true;
+   $('list-status').textContent=items.length?'':'Es wurden noch keine persönlichen Übungen erstellt.';
+   for(const item of items){
+    const row=document.createElement('article');row.className='training-entry';
+    const copy=document.createElement('div'),title=document.createElement('h3'),note=document.createElement('p'),button=document.createElement('button');
+    title.textContent=item.title;
+    const lessons=(item.settings.lessons||[]).join(', ');
+    note.textContent='Lektionen '+lessons+' · '+(item.started?'Bearbeitung begonnen':'Noch nicht bearbeitet');
+    button.type='button';button.textContent='Öffnen und Links anzeigen';
+    button.onclick=async()=>{
+     button.disabled=true;
+     try{
+      const result=await rpc('open',{p_id:item.id},await teacherToken());
+      location.href=linkBase+'#'+result.adminToken;
+     }catch{status('Die Übung konnte nicht geöffnet werden. Bitte erneut versuchen.');button.disabled=false;}
+    };
+    copy.append(title,note);row.append(copy,button);$('training-list').append(row);
+   }
+  }catch{
+   $('list-status').textContent='Melde dich in der Lehrerverwaltung an, um deine erstellten Übungen zu öffnen.';
+   $('login-note').hidden=false;
+  }
+ }
  async function boot(){
   if(!token){
+   $('title').textContent='Persönliche Übungen';
    $('create').hidden=false;status('Fünf Übungen mit einem eigenen Bearbeitungsstand');
    $('create-form').onsubmit=async event=>{
     event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;
     try{
      const accessToken=await teacherToken();
      const links=await rpc('create',{p_title:$('training-title').value.trim()},accessToken);
-     location.hash=links.adminToken;location.reload();
+     location.href=linkBase+'#'+links.adminToken;
     }catch(error){
      $('login-note').hidden=false;
      status(error.message.includes('function')?'Bitte zuerst das SQL-Update für persönliche Übungen in Supabase ausführen.':error.message);
     }finally{button.disabled=false;}
    };
+   await loadTrainings();
    return;
   }
   if(!valid.test(token))throw new Error('Dieser persönliche Link ist ungültig.');
@@ -188,6 +221,10 @@
   $('title').textContent=snapshot.title;document.title=snapshot.title;
   $('mode').textContent={admin:'Verwaltung · Einstellungen und Bearbeitungsstand',student:'Schüler · fünf Übungen',view:'Ansicht · Bearbeitungsstand'}[snapshot.role];
   renderLinks();
+  if(snapshot.role==='admin'){
+   const back=document.createElement('a');back.href=new URL('index.html',assets).href;
+   back.textContent='← Alle persönlichen Übungen';$('mode').before(back);
+  }
   if(snapshot.role==='student'){
    let journal;try{journal=JSON.parse(localStorage.getItem(journalKey)||'null');}catch{}
    if(journal&&JSON.stringify(journal.run)!==JSON.stringify(memory)){
@@ -231,5 +268,6 @@
  window.addEventListener('beforeunload',event=>{if(dirty||saving){event.preventDefault();event.returnValue='';}});
  window.addEventListener('online',()=>{if(dirty)flush();refresh();});
  if(token)window.addEventListener('hashchange',()=>location.reload());
+ else window.addEventListener('focus',loadTrainings);
  boot().catch(error=>{status('Die Übung konnte nicht geladen werden.');showNotice(error.message);});
 })();
