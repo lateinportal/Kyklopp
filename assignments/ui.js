@@ -66,7 +66,8 @@ function renderPersonalTraining(){
    const doc=frame.contentDocument;
    if(!doc?.body)return;
    const style=doc.createElement('style');
-   style.textContent='body{background:transparent} .training-header,body>main{max-width:none;padding-left:0;padding-right:0} .training-header{padding-top:0}';
+   // Contain the last card's margin so it contributes to the measured height.
+   style.textContent='body{background:transparent;display:flow-root} .training-header,body>main{max-width:none;padding-left:0;padding-right:0} .training-header{padding-top:0}';
    const library=!frame.contentWindow.location.hash;
    heading.hidden=!library;
    if(library)style.textContent+=' .training-header{display:none} body>main{padding-top:0;padding-bottom:0}';
