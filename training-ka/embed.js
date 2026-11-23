@@ -93,6 +93,10 @@ export function prepareEmbeddedHTML(html,config){
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
+  doc.documentElement.dataset.kykloppWorksheet='';
+  const layout=doc.createElement('style');
+  layout.textContent='html[data-kyklopp-worksheet] body>main{padding-left:0;padding-right:0;max-width:none;margin-left:0;margin-right:0}';
+  doc.head.append(layout);
   const adapter=doc.createElement('script');adapter.textContent='('+legacySettings.toString()+')();';doc.body.append(adapter);
  }
  return '<!doctype html>\n'+doc.documentElement.outerHTML;
