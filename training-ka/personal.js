@@ -298,15 +298,10 @@
   const items=await rpc('templates',{},await teacherToken());
   const selector=$('training-template');
   const selection=selected??selector.value;
-  selector.replaceChildren();$('template-list').replaceChildren();
+  selector.replaceChildren();
   const placeholder=new Option('Auswählen','',true,true);placeholder.disabled=true;selector.add(placeholder);
   for(const item of items){
    selector.add(new Option(item.title,item.id));
-   const row=document.createElement('article');row.className='training-entry';
-   const heading=document.createElement('h3'),button=document.createElement('button');
-   heading.textContent=item.title;button.type='button';button.textContent='Für neuen Zugang auswählen';
-   button.onclick=()=>{selector.value=item.id;$('create').scrollIntoView({behavior:'smooth'});};
-   row.append(heading,button);$('template-list').append(row);
   }
   selector.value=items.some(item=>item.id===selection)?selection:'';
  }
