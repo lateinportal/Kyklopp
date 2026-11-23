@@ -788,6 +788,9 @@ body[data-mode="student"] #toast { bottom: 20px; }
 body[data-mode="teacher"] > main { max-width: 1440px; margin: auto; padding: 30px; }
 .teacher-navigation { display: flex; gap: 8px; padding: 0 30px; max-width: 1440px; margin: auto; overflow-x: auto; }
 .teacher-navigation button { white-space: nowrap; }
+#personal-training-panel{max-width:1440px;margin:auto;padding:30px}
+#personal-training-panel>iframe{display:block;width:100%;height:900px;border:0}
+@media(max-width:700px){#personal-training-panel{padding:22px 16px}}
 .hub-loading, .hub-error { padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 15px; }
 .teacher-login { max-width: 480px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid var(--line); border-radius: 18px; }
 .teacher-login form { display: grid; gap: 14px; }

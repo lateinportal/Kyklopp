@@ -9,7 +9,7 @@ try{context=await api.connect();}catch(error){
 'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],KEY='kyklopp-hub-ui-'+context.userId;
 let profiles=context.profiles;
-const paths={comment:'<path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8l-5 4V5a1 1 0 0 1 1-1Zm3 5h10m-10 4h7"/>',denar:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/>',home:'<path d="m3 10 9-7 9 7v10H7V10m3 10v-7h4v7"/>',book:'<path d="M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v14c-4-1-6 0-9 2-3-2-5-3-9-2z"/>',gift:'<path d="M3 9h18v4H3zm2 4v8h14v-8M12 9v12M12 9C3 9 5 1 9 4l3 5c9 0 7-8 3-5z"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',people:'<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/>',plus:'<path d="M12 4v16M4 12h16"/>',ticket:'<path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 6v3m0 2v2m0 2v3"/>',landscape:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="2"/><path d="m3 18 6-6 4 4 3-3 5 5"/>'};
+const paths={laptop:'<rect x="4" y="3" width="16" height="13" rx="2"/><path d="M4 16 2 21h20l-2-5M9 21h6"/>',comment:'<path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H8l-5 4V5a1 1 0 0 1 1-1Zm3 5h10m-10 4h7"/>',denar:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/>',home:'<path d="m3 10 9-7 9 7v10H7V10m3 10v-7h4v7"/>',book:'<path d="M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v14c-4-1-6 0-9 2-3-2-5-3-9-2z"/>',gift:'<path d="M3 9h18v4H3zm2 4v8h14v-8M12 9v12M12 9C3 9 5 1 9 4l3 5c9 0 7-8 3-5z"/>',check:'<path d="m5 12 4 4L19 6"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',people:'<circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/>',plus:'<path d="M12 4v16M4 12h16"/>',ticket:'<path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM15 6v3m0 2v2m0 2v3"/>',landscape:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="2"/><path d="m3 18 6-6 4 4 3-3 5 5"/>'};
 const icon=name=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[name]||paths.book)+'</svg>';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const coin=(large=false)=>'<span class="coin'+(large?' large':'')+'" aria-hidden="true">D</span>';
@@ -45,6 +45,35 @@ const earned=id=>allMyTasks(id).filter(t=>t.status==='approved').reduce((n,t)=>n
 const reserved=id=>state.purchases.filter(p=>p.profile===id).reduce((n,p)=>n+p.cost,0),available=id=>earned(id)-reserved(id);
 // This code is inserted into the shared UI build after the authenticated context is loaded.
 let pollTimer,polling=false;
+function renderPersonalTraining(){
+ const active=role==='teacher'&&teacherSection==='personal';
+ let panel=document.getElementById('personal-training-panel');
+ if(active&&!panel){
+  panel=document.createElement('section');
+  panel.id='personal-training-panel';
+  panel.setAttribute('aria-label','Persönliche Übungen');
+  const frame=document.createElement('iframe');
+  frame.title='Persönliche Übungen und Übungsbibliothek';
+  frame.src='../training-ka/';
+  let observer;
+  frame.addEventListener('load',()=>{
+   observer?.disconnect();
+   const doc=frame.contentDocument;
+   if(!doc?.body)return;
+   const style=doc.createElement('style');
+   style.textContent='body{background:transparent} .training-header,body>main{max-width:none;padding-left:0;padding-right:0} .training-header{padding-top:0}';
+   doc.head.append(style);
+   const resize=()=>{frame.style.height=Math.ceil(doc.body.getBoundingClientRect().height)+1+'px';};
+   observer=new ResizeObserver(resize);
+   observer.observe(doc.body);
+   resize();
+  });
+  panel.append(frame);
+  document.querySelector('#main').after(panel);
+ }
+ document.querySelector('#main').hidden=active;
+ if(panel)panel.hidden=!active;
+}
 function rememberWallet(){try{localStorage.setItem(KEY,JSON.stringify(state.walletSnapshots??{}));}catch{}}
 async function persist(next,rebase){
  document.querySelector('#main').setAttribute('aria-busy','true');
@@ -144,8 +173,8 @@ function render(){
  clearTimeout(walletTimer);
  walletAnimationVersion++;
  const student=role==='student';
- const navigation=student?[]:[['people','Schüler','students'],['book','Abgaben','reviews'],['gift','Einlösungen','requests']];
- $('#navigation').innerHTML=navigation.map(([i,text,target],idx)=>'<button class="'+(target===(student?studentSection:teacherSection)?'active':'')+'" data-target="'+target+'">'+icon(i)+'<span>'+text+'</span>'+(!student&&target==='reviews'?unreadBadge(unreadTasks(state.tasks.filter(t=>!t.deletedAt)),target):'')+'</button>').join('');$('#main').innerHTML=student?studentPage():teacherPage();
+ const navigation=student?[]:[['people','Schüler','students'],['book','Abgaben','reviews'],['gift','Einlösungen','requests'],['laptop','Persönliche Übungen','personal']];
+ $('#navigation').innerHTML=navigation.map(([i,text,target],idx)=>'<button class="'+(target===(student?studentSection:teacherSection)?'active':'')+'" data-target="'+target+'">'+icon(i)+'<span>'+text+'</span>'+(!student&&target==='reviews'?unreadBadge(unreadTasks(state.tasks.filter(t=>!t.deletedAt)),target):'')+'</button>').join('');$('#main').innerHTML=student?studentPage():teacherPage();renderPersonalTraining();
  $$('[data-target]').forEach(b=>b.onclick=()=>{if(role==='student'){if(b.dataset.target==='rewards'&&studentSection!=='rewards')rewardsReturnSection=studentSection;studentSection=b.dataset.target;}else {teacherSection=b.dataset.target;managedStudent=null;}render();window.scrollTo(0,0)});
  $('#main').onchange = async ({target}) => {
   if(role==='teacher'&&target.dataset.specialReward&&who(target.dataset.specialReward)){
@@ -974,11 +1003,12 @@ function studentManagementPage(p){
  '<section id="management-content" role="tabpanel" aria-labelledby="management-tab-'+managementTab+'">'+content+'</section>';
 }
 function teacherPage(){
+ if(teacherSection==='personal')return '';
  if(teacherSection==='denare'&&who(teacherDenareOwner)){const name=teacherDenareReturn?.managedStudent?who(teacherDenareReturn.managedStudent)?.name:'Schüler';return denarePage(teacherDenareOwner,'<button type="button" class="hub-back" data-teacher-denare-back>← '+esc(name||'Schüler')+'</button>');}
  if(teacherSection==='students'&&who(managedStudent))return studentManagementPage(who(managedStudent));
  const questions=state.tasks.filter(t=>!t.deletedAt&&(t.studentReview==='question'||(t.status!=='submitted'&&hasUnreadDiscussion(t))));
  const pending=state.tasks.filter(t=>!t.deletedAt&&t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
- const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><div class="review-actions"><a class="btn secondary" href="../training-ka/" target="_blank" rel="noopener">Persönliche Übungen</a><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></div></header>';
+ const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><div class="review-actions"><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></div></header>';
  if(teacherSection==='students')return heading+
  '<div class="denare-grant-action"><button class="btn secondary" data-deduct-denare>Denare abziehen</button><button class="btn" data-grant-denare>Denare vergeben</button></div>'+
  '<div class="student-table"><table class="students-overview"><thead><tr><th scope="col">Schüler</th><th scope="col">Aufgaben</th><th scope="col">Abgeschlossen</th><th scope="col">Abgaben</th><th scope="col">Denare</th><th scope="col">Belohnungsanfragen</th><th scope="col"><span class="student-action-label">Verwaltung</span></th></tr></thead><tbody>'+
