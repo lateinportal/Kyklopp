@@ -52,6 +52,10 @@ function renderPersonalTraining(){
   panel=document.createElement('section');
   panel.id='personal-training-panel';
   panel.setAttribute('aria-label','Persönliche Übungen');
+  const heading=document.createElement('header');
+  heading.className='page-head';
+  heading.innerHTML='<div><h1>Persönliche Übungen</h1><p class="quiet-subtitle">Übungsvorlagen und persönliche Zugänge</p></div>';
+  panel.append(heading);
   const frame=document.createElement('iframe');
   frame.title='Persönliche Übungen und Übungsbibliothek';
   frame.src='../training-ka/';
@@ -62,6 +66,9 @@ function renderPersonalTraining(){
    if(!doc?.body)return;
    const style=doc.createElement('style');
    style.textContent='body{background:transparent} .training-header,body>main{max-width:none;padding-left:0;padding-right:0} .training-header{padding-top:0}';
+   const library=!frame.contentWindow.location.hash;
+   heading.hidden=!library;
+   if(library)style.textContent+=' .training-header{display:none} body>main{padding-top:0;padding-bottom:0}';
    doc.head.append(style);
    const resize=()=>{frame.style.height=Math.ceil(doc.body.getBoundingClientRect().height)+1+'px';};
    observer=new ResizeObserver(resize);
