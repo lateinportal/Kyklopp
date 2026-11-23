@@ -58,7 +58,8 @@ function renderPersonalTraining(){
   panel.append(heading);
   const frame=document.createElement('iframe');
   frame.title='Persönliche Übungen und Übungsbibliothek';
-  frame.src='../training-ka/';
+  // Refresh the entry HTML; its scripts and styles already use content hashes.
+  frame.src='../training-ka/?v='+Date.now();
   let observer;
   frame.addEventListener('load',()=>{
    observer?.disconnect();
