@@ -263,7 +263,7 @@
     title.textContent=item.title;
     const lessons=(item.settings.lessons||[]).join(', ');
     note.textContent=(item.templateTitle||'Lateintraining')+(lessons?' · Lektionen '+lessons:'')+' · '+(item.started?'Bearbeitung begonnen':'Noch nicht bearbeitet');
-    button.type='button';button.textContent='Öffnen und Links anzeigen';
+    button.type='button';button.textContent='Öffnen';
     button.onclick=async()=>{
      button.disabled=true;
      try{
@@ -272,7 +272,7 @@
      }catch{status('Die Übung konnte nicht geöffnet werden. Bitte erneut versuchen.');button.disabled=false;}
     };
     const remove=document.createElement('button');
-    remove.type='button';remove.className='danger';remove.textContent='Löschen';
+    remove.type='button';remove.className='danger delete-access';remove.textContent='×';remove.title='Übung löschen';
     remove.setAttribute('aria-label','Übung „'+item.title+'“ löschen');
     remove.onclick=async()=>{
      if(!confirm('„'+item.title+'“ endgültig löschen? Alle zugehörigen persönlichen Links werden ungültig und der gespeicherte Bearbeitungsstand wird gelöscht.'))return;

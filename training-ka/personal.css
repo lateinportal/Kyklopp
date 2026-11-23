@@ -11,6 +11,7 @@ h2{margin-top:0}
 .setup-grid>section{min-width:0}
 @media(max-width:800px){.setup-grid{grid-template-columns:1fr;gap:0}}
 button.danger{background:#fff;color:#bc293d;border-color:#e8abb5}
+button.delete-access{width:44px;min-height:44px;padding:0;font-size:24px;line-height:1}
 button,input,select{font:inherit}
 label{display:block;margin-bottom:6px}
 input,select{width:100%;min-height:44px;border:1px solid #b7cadd;border-radius:7px;padding:9px 12px;margin-bottom:12px}
