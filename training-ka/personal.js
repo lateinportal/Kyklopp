@@ -271,7 +271,23 @@
       location.href=linkBase+'#'+result.adminToken;
      }catch{status('Die Übung konnte nicht geöffnet werden. Bitte erneut versuchen.');button.disabled=false;}
     };
-    copy.append(title,note);row.append(copy,button);$('training-list').append(row);
+    const remove=document.createElement('button');
+    remove.type='button';remove.className='danger';remove.textContent='Löschen';
+    remove.setAttribute('aria-label','Übung „'+item.title+'“ löschen');
+    remove.onclick=async()=>{
+     if(!confirm('„'+item.title+'“ endgültig löschen? Alle zugehörigen persönlichen Links werden ungültig und der gespeicherte Bearbeitungsstand wird gelöscht.'))return;
+     remove.disabled=true;button.disabled=true;
+     try{
+      await rpc('delete',{p_id:item.id},await teacherToken());
+      await loadTrainings();
+     }catch(error){
+      const message=error.message.includes('function')?'Bitte zuerst das SQL-Update für persönliche Übungen in Supabase ausführen.':error.message;
+      status(message);showNotice(message);
+      remove.disabled=false;button.disabled=false;
+     }
+    };
+    const actions=document.createElement('div');actions.className='actions';actions.append(button,remove);
+    copy.append(title,note);row.append(copy,actions);$('training-list').append(row);
    }
   }catch{
    $('list-status').textContent='Melde dich in der Lehrerverwaltung an, um deine erstellten Übungen zu öffnen.';
@@ -281,17 +297,18 @@
  async function loadLibrary(selected){
   const items=await rpc('templates',{},await teacherToken());
   const selector=$('training-template');
+  const selection=selected??selector.value;
   selector.replaceChildren();$('template-list').replaceChildren();
+  const placeholder=new Option('Auswählen','',true,true);placeholder.disabled=true;selector.add(placeholder);
   for(const item of items){
    selector.add(new Option(item.title,item.id));
    const row=document.createElement('article');row.className='training-entry';
    const heading=document.createElement('h3'),button=document.createElement('button');
    heading.textContent=item.title;button.type='button';button.textContent='Für neuen Zugang auswählen';
-   button.onclick=()=>{selector.value=item.id;$('training-title').value=item.title;$('create').scrollIntoView({behavior:'smooth'});};
+   button.onclick=()=>{selector.value=item.id;$('create').scrollIntoView({behavior:'smooth'});};
    row.append(heading,button);$('template-list').append(row);
   }
-  if(selected)selector.value=selected;
-  selector.onchange=()=>{$('training-title').value=selector.selectedOptions[0]?.textContent||'';};
+  selector.value=items.some(item=>item.id===selection)?selection:'';
  }
  async function boot(){
   if(!token){
@@ -318,7 +335,7 @@
      const {prepareEmbeddedHTML}=await import(new URL('embed.js?v='+(buildVersion||'1'),assets));
      prepareEmbeddedHTML(html,{channel:'validation',role:'view',writable:false,settings:{},run:{}});
      const item=await rpc('publish',{p_title:$('template-title').value.trim(),p_html:html},await teacherToken());
-     await loadLibrary(item.id);$('training-title').value=item.title;
+     await loadLibrary();
      event.target.reset();$('library-status').textContent='Vorlage hinzugefügt. Du kannst jetzt persönliche Zugänge dafür erstellen.';
     }catch(error){$('library-status').textContent=error.message;}
     finally{button.disabled=false;}

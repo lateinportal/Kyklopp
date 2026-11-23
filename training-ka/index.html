@@ -6,8 +6,8 @@
  <meta name="referrer" content="no-referrer">
  <title>Persönliches Lateintraining</title>
  <link rel="icon" type="image/x-icon" href="favicon.ico">
- <link rel="stylesheet" href="personal.css?v=4f02e1ec37bc">
- <script src="personal.js?v=4f02e1ec37bc" defer></script>
+ <link rel="stylesheet" href="personal.css?v=9a6b8ee8f292">
+ <script src="personal.js?v=9a6b8ee8f292" defer></script>
 </head>
 <body>
  <header class="training-header">
@@ -16,6 +16,7 @@
   <p id="status" role="status" aria-live="polite">Wird geladen …</p>
  </header>
  <main>
+  <div class="setup-grid">
   <section id="create" hidden>
    <h2>Persönlichen Zugang erstellen</h2>
    <p>Wähle eine Übungsvorlage aus. Jeder Zugang erhält eigene Einstellungen und Bearbeitungsstände.</p>
@@ -23,7 +24,7 @@
     <label for="training-template">Übungsvorlage</label>
     <select id="training-template" required></select>
     <label for="training-title">Titel</label>
-    <input id="training-title" maxlength="120" required value="Lateintraining für die Klassenarbeit">
+    <input id="training-title" maxlength="120" required>
     <button type="submit">Persönliche Links erstellen</button>
    </form>
    <p id="login-note" hidden>Melde dich zuerst in der <a href="../assignments/lehrer.html" target="_blank" rel="noopener">Lehrerverwaltung</a> an. Kehre danach hierher zurück.</p>
@@ -42,6 +43,7 @@
    <p id="library-status" role="status"></p>
    <div id="template-list"></div>
   </section>
+  </div>
   <section id="existing" hidden>
    <h2>Bereits erstellte Übungen</h2>
    <p id="list-status" role="status"></p>
