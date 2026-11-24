@@ -9,7 +9,7 @@
  const linkBase=new URL('../u/',assets).href;
  const $=id=>document.getElementById(id);
  const journalKey='kyklopp-personal-draft-'+token;
- let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false;
+ let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false,pendingAnswers=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
  let activeDialog=null,previousOverflow='',previousGutter='';
  let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false,framePlaceholder=null;
@@ -29,7 +29,7 @@
  }
  function showNotice(text,actions=[]){
   $('notice').hidden=false;$('notice-text').textContent=text;
-  for(const id of ['reload','takeover','export','retry'])$(id).hidden=!actions.includes(id);
+  for(const id of ['reload','takeover','export','retry','refresh-answers'])$(id).hidden=!actions.includes(id);
  }
  function cache(){
   if(snapshot?.role!=='student')return;
@@ -188,9 +188,16 @@
    if(snapshot.role!=='student'&&remote.revision>snapshot.revision){
     if(adapter?.settingsDirty())status('Neue Antworten verfügbar · zuerst Einstellungen speichern');
     else{
-     snapshot=remote;memory={...remote.run};
-     if(!adapter?.applyRun?.(memory))await loadFrame();
-     status('Bearbeitungsstand aktualisiert');
+     const nextRun={...remote.run};
+     if(adapter?.applyRun?.(nextRun)){
+      snapshot=remote;memory=nextRun;
+      if(pendingAnswers){$('notice').hidden=true;pendingAnswers=false;}
+      status('Bearbeitungsstand aktualisiert');
+     }else{
+      pendingAnswers=true;
+      showNotice('Neue Antworten sind verfügbar. Diese Übung unterstützt noch keine direkte Aktualisierung. Deine geöffnete Aufgabe bleibt stehen. Über „Antworten laden“ kannst du die Übung mit dem aktuellen Stand neu öffnen.',['refresh-answers']);
+      status('Neue Antworten verfügbar');
+     }
     }
    }
   }catch{if(snapshot.role!=='student')status('Verbindung unterbrochen · letzter geladener Stand');}
@@ -391,6 +398,14 @@
   }catch{status('Übernahme fehlgeschlagen. Bitte erneut versuchen.');}
  };
  $('retry').onclick=()=>{clearTimeout(timer);flush();};
+ $('refresh-answers').onclick=async()=>{
+  if(snapshot.role==='student'||adapter?.settingsDirty())return;
+  try{
+   snapshot=await rpc('snapshot',{p_token:token});memory={...snapshot.run};
+   pendingAnswers=false;$('notice').hidden=true;
+   await loadFrame();status('Bearbeitungsstand aktualisiert');
+  }catch{status('Antworten konnten nicht geladen werden');}
+ };
  $('export').onclick=()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify({title:snapshot.title,revision:snapshot.revision,run:memory},null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download='Lateintraining-Sicherung.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
