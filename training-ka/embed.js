@@ -2,7 +2,7 @@
 export function embeddedExercise(config){
  const channel=config.channel;
  const values=Object.assign(Object.create(null),config.run);
- const listeners=new Set(),requests=new Map();
+ const listeners=new Set(),stateListeners=new Set(),requests=new Map();
  let locked=!config.writable,settings=config.settings,timer;
  const send=(type,payload={})=>parent.postMessage({kykloppExercise:channel,type,...payload},'*');
  const storage={
@@ -32,7 +32,8 @@ export function embeddedExercise(config){
    const id=crypto.randomUUID();
    return new Promise(resolve=>{requests.set(id,{resolve,next});send('settings',{settings:next,id});});
   },
-  onSettingsChange(listener){listeners.add(listener);return ()=>listeners.delete(listener);}
+  onSettingsChange(listener){listeners.add(listener);return ()=>listeners.delete(listener);},
+  onStateChange(listener){stateListeners.add(listener);send('live-support');return ()=>stateListeners.delete(listener);}
  };
  function protect(){
   if(!locked)return;
@@ -57,6 +58,12 @@ export function embeddedExercise(config){
    for(const listener of listeners)listener(structuredClone(settings));
   }
   if(message.type==='lock'){locked=true;protect();}
+  if(message.type==='run-update'&&locked&&message.run&&typeof message.run==='object'){
+   for(const key of Object.keys(values))delete values[key];
+   Object.assign(values,message.run);
+   for(const listener of stateListeners)listener(structuredClone(values));
+   report();
+  }
  });
  function report(){
   const height=Math.max(...[...document.body.children].filter(node=>!['SCRIPT','STYLE'].includes(node.tagName))
@@ -78,7 +85,9 @@ export function embeddedExercise(config){
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
- return source.replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
+ return source.replace('function restoreSession(){','function restoreSession(incoming){')
+ .replace("const saved=JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');","const saved=incoming||JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');")
+ .replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
       const previous=fieldResults.find(result=>result.id===id);
       if(previous&&['missing','unverified'].includes(previous.result)){
         const filled=Boolean(input.value.trim());
@@ -89,6 +98,32 @@ export function improveWorksheetFeedback(source){
       return;
     }`).replace('.field-badge[data-result="unverified"]{background:#66717e}',
      '.field-badge[data-result="unverified"]{background:#0755b2}');
+}
+
+// Repaint remote answers while keeping the observer's independent task and scroll position.
+export function applyWorksheetRun(run){
+ const saved=JSON.parse(run[exerciseStorageKey]||'null');
+ if(!saved||!Array.isArray(saved.states))return false;
+ const selected=t,overview=viewingOverview,scrollX=window.scrollX,scrollY=window.scrollY;
+ const previous=drafts.get(selected);
+ if(previous&&!saved.states.some(([index])=>index===selected)&&saved.runMeta?.id===runMeta?.id){
+  saved.states.push([selected,{...previous,verifiedNominal:[...previous.verifiedNominal]}]);
+ }
+ // Answer snapshots may still contain older settings while the student receives an update.
+ saved.settings=settingsSnapshot();
+ saved.index=selected;saved.overview=overview;saved.popup=false;
+ const scrollToStart=scrollToExerciseStart;
+ scrollToExerciseStart=()=>{};
+ try{
+  drafts.clear();
+  const restored=restoreSession(saved);
+  if(restored){
+   runHistory=JSON.parse(run[runHistoryStorageKey]||'[]');
+   if(viewingOverview)renderRunHistory();
+   window.scrollTo(scrollX,scrollY);
+  }
+  return restored;
+ }finally{scrollToExerciseStart=scrollToStart;}
 }
 
 export function prepareEmbeddedHTML(html,config){
@@ -114,7 +149,7 @@ export function prepareEmbeddedHTML(html,config){
   const layout=doc.createElement('style');
   layout.textContent='html[data-kyklopp-worksheet] body>main{padding-left:0;padding-right:0;max-width:none;margin-left:0;margin-right:0}';
   doc.head.append(layout);
-  const adapter=doc.createElement('script');adapter.textContent='('+legacySettings.toString()+')();';doc.body.append(adapter);
+  const adapter=doc.createElement('script');adapter.textContent=applyWorksheetRun.toString()+'\n('+legacySettings.toString()+')();';doc.body.append(adapter);
  }
  return '<!doctype html>\n'+doc.documentElement.outerHTML;
 }
@@ -141,6 +176,7 @@ function legacySettings(){
  apply(api.settings);
  if(api.readOnly)showOverview(true);
  api.onSettingsChange(apply);
+ api.onStateChange(run=>{applyWorksheetRun(run);});
  const button=document.getElementById('save-settings'),original=button.onclick;
  button.onclick=async event=>{
   if(!selectedLessons.size)return original(event);

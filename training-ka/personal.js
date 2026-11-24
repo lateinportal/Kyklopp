@@ -12,7 +12,7 @@
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
  let activeDialog=null,previousOverflow='',previousGutter='';
- let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embeddedModal=false,framePlaceholder=null;
+ let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false,framePlaceholder=null;
  const status=text=>$('status').textContent=text;
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
@@ -110,7 +110,7 @@
     const {prepareEmbeddedHTML}=await import(new URL('embed.js?v='+(buildVersion||'1'),assets));
     templateDocument??=await rpc('document',{p_token:token});
     embedChannel=crypto.randomUUID();
-    embedSettingsDirty=false;
+    embedSettingsDirty=false;embedLive=false;
     frame.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
     frame.removeAttribute('src');
     frame.srcdoc=prepareEmbeddedHTML(templateDocument.html,{channel:embedChannel,role:snapshot.role,
@@ -187,7 +187,11 @@
    }
    if(snapshot.role!=='student'&&remote.revision>snapshot.revision){
     if(adapter?.settingsDirty())status('Neue Antworten verfügbar · zuerst Einstellungen speichern');
-    else{snapshot=remote;memory={...remote.run};loadFrame();status('Bearbeitungsstand aktualisiert');}
+    else{
+     snapshot=remote;memory={...remote.run};
+     if(!adapter?.applyRun?.(memory))await loadFrame();
+     status('Bearbeitungsstand aktualisiert');
+    }
    }
   }catch{if(snapshot.role!=='student')status('Verbindung unterbrochen · letzter geladener Stand');}
   finally{polling=false;}
@@ -231,8 +235,10 @@
   if(message.type==='height'&&!embeddedModal)window.KAPersonal.height(message.height);
   if(message.type==='modal')embeddedOverlay(message.open===true);
   if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
+  if(message.type==='live-support')embedLive=true;
   if(message.type==='ready'){
-   adapter={applySettings:settings=>postEmbed('settings-update',{settings}),
+   adapter={applyRun:run=>{if(!embedLive)return false;postEmbed('run-update',{run});return true;},
+    applySettings:settings=>postEmbed('settings-update',{settings}),
     settingsDirty:()=>embedSettingsDirty,lock:()=>postEmbed('lock')};
   }
  });
@@ -361,7 +367,7 @@
   loadFrame();
   if(!blocked&&!dirty)status(snapshot.revision?'Gespeicherter Stand geladen':'Bereit');
   if(dirty)flush();
-  setInterval(refresh,7000);
+  setInterval(refresh,snapshot.role==='student'?7000:2000);
  }
  $('reload').onclick=async()=>{
   if(dirty||pendingRequest){

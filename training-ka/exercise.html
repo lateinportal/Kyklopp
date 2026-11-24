@@ -2736,9 +2736,9 @@ function saveSession(){
     $('settings-note').textContent='Dieser Browser kann den Stand hier nicht speichern.';
   }
 }
-function restoreSession(){
+function restoreSession(incoming){
   try{
-    const saved=JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');
+    const saved=incoming||JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');
     if(!saved||!Number.isInteger(saved.index)||saved.index<0||saved.index>5||!Array.isArray(saved.states))return false;
     if(saved.settings&&Array.isArray(saved.settings.lessons)){
       selectedLessons=new Set(saved.settings.lessons.filter(lesson=>lesson!=='PDF-Vorlagen'));
@@ -2815,6 +2815,30 @@ const restored=restoreSession();
 committedSettings=settingsSnapshot();
 renderPickedVocab();filters();updateSettingsSave();renderRunHistory();
 if(!restored)start();
+function applyWorksheetRun(run){
+ const saved=JSON.parse(run[exerciseStorageKey]||'null');
+ if(!saved||!Array.isArray(saved.states))return false;
+ const selected=t,overview=viewingOverview,scrollX=window.scrollX,scrollY=window.scrollY;
+ const previous=drafts.get(selected);
+ if(previous&&!saved.states.some(([index])=>index===selected)&&saved.runMeta?.id===runMeta?.id){
+  saved.states.push([selected,{...previous,verifiedNominal:[...previous.verifiedNominal]}]);
+ }
+ // Answer snapshots may still contain older settings while the student receives an update.
+ saved.settings=settingsSnapshot();
+ saved.index=selected;saved.overview=overview;saved.popup=false;
+ const scrollToStart=scrollToExerciseStart;
+ scrollToExerciseStart=()=>{};
+ try{
+  drafts.clear();
+  const restored=restoreSession(saved);
+  if(restored){
+   runHistory=JSON.parse(run[runHistoryStorageKey]||'[]');
+   if(viewingOverview)renderRunHistory();
+   window.scrollTo(scrollX,scrollY);
+  }
+  return restored;
+ }finally{scrollToExerciseStart=scrollToStart;}
+}
 function hasSharedAnswers(){
  return [...drafts.values()].some(draft=>
   draft.tries>0||draft.score>0||draft.historyRows?.length||
@@ -2858,6 +2882,7 @@ function protectSharedView(){
  }
 }
 online.attach({
+ applyRun:run=>{const applied=applyWorksheetRun(run);protectSharedView();updateSharedHeight();return applied;},
  applySettings:applyOnlineSettings,
  settingsDirty:()=>JSON.stringify(settingsSnapshot())!==JSON.stringify(committedSettings),
  lock:protectSharedView
