@@ -310,7 +310,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 #vocab-status:empty{display:none}
 .settings-heading{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;margin-bottom:6px}
 .settings-heading h2{margin:0}
-.field-badge[data-result="unverified"]{background:#66717e}
+.field-badge[data-result="unverified"]{background:#0755b2}
 :root{--solved-green:#96ce00;--warning-yellow:#ffcc00}
 .result-progress .circle,.result-progress .circle:hover{background:transparent;color:#34383d;border:3px solid #a0a0a0;font-size:18px;font-weight:400}
 .result-progress .circle.solved,.result-progress .circle.solved:hover{border-color:var(--solved-green)}
@@ -2144,7 +2144,16 @@ function scheduleLiveCheck(e){
       invalidateNominalRow(id);
       return;
     }
-    if(!verifiedNominal.has(id))return;
+    if(!verifiedNominal.has(id)){
+      const previous=fieldResults.find(result=>result.id===id);
+      if(previous&&['missing','unverified'].includes(previous.result)){
+        const filled=Boolean(input.value.trim());
+        previous.result=filled?'unverified':'missing';
+        previous.hint=filled?'Noch nicht geprüft. Klicke auf „Überprüfen“, um die Eingabe zu bewerten.':'';
+        clearFieldResults();paintFieldResults();
+      }
+      return;
+    }
   }
   liveFields.add(id);
   if(badge.hidden){

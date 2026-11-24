@@ -76,6 +76,21 @@ export function embeddedExercise(config){
  });
 }
 
+// Shared by the built-in worksheet build and existing uploaded worksheet templates.
+export function improveWorksheetFeedback(source){
+ return source.replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
+      const previous=fieldResults.find(result=>result.id===id);
+      if(previous&&['missing','unverified'].includes(previous.result)){
+        const filled=Boolean(input.value.trim());
+        previous.result=filled?'unverified':'missing';
+        previous.hint=filled?'Noch nicht geprüft. Klicke auf „Überprüfen“, um die Eingabe zu bewerten.':'';
+        clearFieldResults();paintFieldResults();
+      }
+      return;
+    }`).replace('.field-badge[data-result="unverified"]{background:#66717e}',
+     '.field-badge[data-result="unverified"]{background:#0755b2}');
+}
+
 export function prepareEmbeddedHTML(html,config){
  const doc=new DOMParser().parseFromString(html,'text/html');
  const originalScripts=[...doc.scripts];
@@ -93,6 +108,8 @@ export function prepareEmbeddedHTML(html,config){
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
+  for(const script of originalScripts)script.textContent=improveWorksheetFeedback(script.textContent);
+  for(const style of doc.querySelectorAll('style'))style.textContent=improveWorksheetFeedback(style.textContent);
   doc.documentElement.dataset.kykloppWorksheet='';
   const layout=doc.createElement('style');
   layout.textContent='html[data-kyklopp-worksheet] body>main{padding-left:0;padding-right:0;max-width:none;margin-left:0;margin-right:0}';
