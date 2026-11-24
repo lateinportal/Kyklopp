@@ -209,12 +209,42 @@
   initialSettings:()=>structuredClone(snapshot.settings),
   role:()=>snapshot.role,
   canWrite:()=>snapshot.role==='student'&&claimed&&!blocked,
-  attach(api){adapter=api;if(!this.canWrite())api.lock();},
+  attach(api){adapter=api;if(!this.canWrite())api.lock();scheduleViewport();},
   height(value){if(Number.isFinite(value))$('exercise').style.height=Math.max(800,value+20)+'px';}
  };
  function postEmbed(type,payload={}){
   $('exercise').contentWindow?.postMessage({kykloppExercise:embedChannel,type,...payload},'*');
  }
+ // Convert the outer visible screen into an inset inside the tall exercise iframe.
+ function updateExerciseViewport(){
+  const frame=$('exercise');if(frame.hidden)return;
+  let current=window,offset=0;
+  try{
+   while(current!==current.parent){offset+=current.frameElement.getBoundingClientRect().top;current=current.parent;}
+  }catch{ /* Use the nearest accessible viewport when embedded on another origin. */ }
+  const viewport=current.visualViewport;
+  const height=viewport?.height||current.innerHeight,top=viewport?.offsetTop||0;
+  const bottom=top+height-offset-frame.getBoundingClientRect().top;
+  const metrics={inset:Math.max(0,frame.clientHeight-Math.max(0,Math.min(frame.clientHeight,bottom))),gap:Math.max(12,Math.min(56,height*.06))};
+  adapter?.viewport?.(metrics);
+ }
+ let viewportFrame;
+ function scheduleViewport(){
+  if(viewportFrame)return;
+  viewportFrame=requestAnimationFrame(()=>{viewportFrame=null;updateExerciseViewport();});
+ }
+ let viewportWindow=window;
+ try{
+  for(;;){
+   viewportWindow.addEventListener('scroll',scheduleViewport,{passive:true,capture:true});
+   viewportWindow.addEventListener('resize',scheduleViewport);
+   viewportWindow.visualViewport?.addEventListener('resize',scheduleViewport);
+   viewportWindow.visualViewport?.addEventListener('scroll',scheduleViewport);
+   if(viewportWindow===viewportWindow.parent)break;
+   viewportWindow=viewportWindow.parent;
+  }
+ }catch{}
+ new ResizeObserver(scheduleViewport).observe($('exercise'));
  function embeddedOverlay(open){
   const frame=$('exercise');
   if(open&&!embeddedModal){
@@ -244,9 +274,11 @@
   if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
   if(message.type==='live-support')embedLive=true;
   if(message.type==='ready'){
-   adapter={applyRun:run=>{if(!embedLive)return false;postEmbed('run-update',{run});return true;},
+   adapter={viewport:metrics=>postEmbed('viewport',metrics),
+    applyRun:run=>{if(!embedLive)return false;postEmbed('run-update',{run});return true;},
     applySettings:settings=>postEmbed('settings-update',{settings}),
     settingsDirty:()=>embedSettingsDirty,lock:()=>postEmbed('lock')};
+   scheduleViewport();
   }
  });
  async function teacherToken(){

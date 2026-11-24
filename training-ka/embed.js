@@ -58,6 +58,10 @@ export function embeddedExercise(config){
    for(const listener of listeners)listener(structuredClone(settings));
   }
   if(message.type==='lock'){locked=true;protect();}
+  if(message.type==='viewport'){
+   document.documentElement.style.setProperty('--kyklopp-bottom-inset',message.inset+'px');
+   document.documentElement.style.setProperty('--kyklopp-toolbar-gap',message.gap+'px');
+  }
   if(message.type==='run-update'&&locked&&message.run&&typeof message.run==='object'){
    for(const key of Object.keys(values))delete values[key];
    Object.assign(values,message.run);
@@ -85,7 +89,11 @@ export function embeddedExercise(config){
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
- return source.replace('function restoreSession(){','function restoreSession(incoming){')
+ return source.replace('bottom:clamp(12px,6vh,56px);z-index:3;display:grid',
+   'bottom:calc(var(--kyklopp-bottom-inset,0px) + var(--kyklopp-toolbar-gap,clamp(12px,6vh,56px)));z-index:3;display:grid')
+ .replace('.aci-toolbar{position:sticky;bottom:12px;',
+   '.aci-toolbar{position:sticky;bottom:calc(var(--kyklopp-bottom-inset,0px) + 12px);')
+ .replace('function restoreSession(){','function restoreSession(incoming){')
  .replace("const saved=JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');","const saved=incoming||JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');")
  .replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
       const previous=fieldResults.find(result=>result.id===id);

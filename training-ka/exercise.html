@@ -255,7 +255,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 .card-slot{position:absolute;inset:0;border:0;border-radius:0;background:transparent;padding:0}
 .card-slot:focus-visible{outline-offset:-3px}
 .has-selection .card-slot:not(:disabled):hover{background:#fff4d8}
-.card-bank{position:sticky;bottom:clamp(12px,6vh,56px);z-index:3;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,110px));gap:8px;background:rgba(65,65,65,.88);border-radius:4px;padding:10px;margin:42px 0 0;min-height:57px}
+.card-bank{position:sticky;bottom:calc(var(--kyklopp-bottom-inset,0px) + var(--kyklopp-toolbar-gap,clamp(12px,6vh,56px)));z-index:3;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,110px));gap:8px;background:rgba(65,65,65,.88);border-radius:4px;padding:10px;margin:42px 0 0;min-height:57px}
 .card-home{height:46px;min-width:0;display:grid}
 .card-home.empty{border:1px dashed #aaa;background:transparent}
 .card-token{touch-action:none;user-select:none;cursor:grab;color:#343434;padding:5px 8px;overflow-wrap:anywhere;font-size:15px}
@@ -324,7 +324,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 .aci-words{font:inherit;line-height:1.9;user-select:none}
 .aci-word{border:0;border-radius:0;background:transparent;padding:0 1px;font:inherit;color:inherit;cursor:pointer;touch-action:pan-y}
 .aci-bracketed{text-decoration:none}
-.aci-toolbar{position:sticky;bottom:12px;z-index:3;padding:14px 14px 0;background:rgba(65,65,65,.88);border-radius:4px;color:white;margin-top:20px}
+.aci-toolbar{position:sticky;bottom:calc(var(--kyklopp-bottom-inset,0px) + 12px);z-index:3;padding:14px 14px 0;background:rgba(65,65,65,.88);border-radius:4px;color:white;margin-top:20px}
 .aci-tools{display:flex;align-items:end;gap:25px;height:70px;overflow:hidden;padding-left:8px}
 .highlighter{position:relative;width:35px;height:54px;border:0;background:none;padding:0;flex:none}
 .pen-body{position:absolute;z-index:2;bottom:-10px;left:0;width:35px;height:35px;background:var(--ink);border-top:4px solid #333;transform:skewY(-6deg)}
@@ -2882,6 +2882,10 @@ function protectSharedView(){
  }
 }
 online.attach({
+ viewport:({inset,gap})=>{
+  document.documentElement.style.setProperty('--kyklopp-bottom-inset',inset+'px');
+  document.documentElement.style.setProperty('--kyklopp-toolbar-gap',gap+'px');
+ },
  applyRun:run=>{const applied=applyWorksheetRun(run);protectSharedView();updateSharedHeight();return applied;},
  applySettings:applyOnlineSettings,
  settingsDirty:()=>JSON.stringify(settingsSnapshot())!==JSON.stringify(committedSettings),
