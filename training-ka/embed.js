@@ -89,7 +89,9 @@ export function embeddedExercise(config){
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
- return source.replace('bottom:clamp(12px,6vh,56px);z-index:3;display:grid',
+ return source.replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
+   'liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);')
+ .replace('bottom:clamp(12px,6vh,56px);z-index:3;display:grid',
    'bottom:calc(var(--kyklopp-bottom-inset,0px) + var(--kyklopp-toolbar-gap,clamp(12px,6vh,56px)));z-index:3;display:grid')
  .replace('.aci-toolbar{position:sticky;bottom:12px;',
    '.aci-toolbar{position:sticky;bottom:calc(var(--kyklopp-bottom-inset,0px) + 12px);')

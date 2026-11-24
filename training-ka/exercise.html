@@ -2164,7 +2164,7 @@ function scheduleLiveCheck(e){
   badge.setAttribute('aria-label','Wird geprüft');
   badge.title='Wird geprüft';
   stopLiveCheck();
-  liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);
+  liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);
 }
 card.addEventListener('input',scheduleLiveCheck);
 card.addEventListener('change',scheduleLiveCheck);
