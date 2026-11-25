@@ -252,12 +252,24 @@
   }catch{if(snapshot.role!=='student')status('Verbindung unterbrochen · letzter geladener Stand');}
   finally{polling=false;}
  }
+ function keepInputVisible(rect){
+  if(!rect||!Number.isFinite(rect.top)||!Number.isFinite(rect.bottom)||activeDialog||embeddedModal)return;
+  let frame=$('exercise'),current=window,top=rect.top,bottom=rect.bottom;
+  try{for(;;){
+   const bounds=frame.getBoundingClientRect();top+=bounds.top;bottom+=bounds.top;
+   const viewport=current.visualViewport,visibleTop=(viewport?.offsetTop||0)+20;
+   const visibleBottom=(viewport?.offsetTop||0)+(viewport?.height||current.innerHeight)-24;
+   const delta=top<visibleTop?top-visibleTop:bottom>visibleBottom?Math.min(bottom-visibleBottom,top-visibleTop):0;
+   if(Math.abs(delta)>2){current.scrollBy({top:delta,left:0,behavior:'instant'});top-=delta;bottom-=delta;}
+   if(current===current.parent)break;frame=current.frameElement;if(!frame)break;current=current.parent;
+  }}catch{}
+ }
  function scrollExerciseTop(){
   let current=window;
   try{for(;;){current.scrollTo({top:0,left:0,behavior:'instant'});if(current===current.parent)break;current=current.parent;}}catch{}
  }
  window.KAPersonal={
-  scrollToStart:scrollExerciseTop,
+  scrollToStart:scrollExerciseTop,inputVisibility:keepInputVisible,
   storage,saveSettings,prepareDialog,closeDialog,showTools:showToolDock,
   syncDialog(){if(activeDialog&&(!activeDialog.isConnected||!activeDialog.open))closeDialog();},
   initialSettings:()=>structuredClone(snapshot.settings),
@@ -274,6 +286,7 @@
  function updateExerciseViewport(){
   toolDock?.position();
   positionDialog();
+  if(embedChannel)$('exercise').contentWindow?.postMessage({type:'kyklopp-focus-viewport'},'*');
  }
  let viewportFrame;
  function scheduleViewport(){
@@ -313,6 +326,7 @@
   if(message.type==='modal')embeddedOverlay(message.open===true);
   if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
   if(message.type==='tools')showToolDock(message.tools);
+  if(message.type==='input-visibility')keepInputVisible(message.rect);
   if(message.type==='scroll-top')scrollExerciseTop();
   if(message.type==='live-support')embedLive=true;
   if(message.type==='ready'){

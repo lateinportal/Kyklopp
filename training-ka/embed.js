@@ -1,7 +1,24 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=756331c00410';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=756331c00410';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=5abb897d1985';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=5abb897d1985';
+export function installInputVisibility(send){
+ if(!navigator.maxTouchPoints)return;
+ let timer;
+ const report=()=>{
+  const field=document.activeElement;
+  if(!field?.matches('textarea,input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),[contenteditable=true]'))return;
+  const rect=field.getBoundingClientRect();
+  send({top:rect.top,bottom:rect.bottom});
+ };
+ const schedule=()=>{requestAnimationFrame(report);clearTimeout(timer);timer=setTimeout(report,400);};
+ document.addEventListener('focusin',schedule);
+ document.addEventListener('input',schedule);
+ window.addEventListener('resize',schedule);
+ window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='kyklopp-focus-viewport')schedule();});
+}
+
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
+ installInputVisibility(rect=>parent.postMessage({kykloppExercise:config.channel,type:"input-visibility",rect},"*"));
  const channel=config.channel;
  const values=Object.assign(Object.create(null),config.run);
  const listeners=new Set(),stateListeners=new Set(),toolListeners=new Set(),requests=new Map();
@@ -160,7 +177,7 @@ export function prepareEmbeddedHTML(html,config){
  meta.content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
  doc.head.prepend(meta);
  const bootstrap=doc.createElement('script');
- bootstrap.textContent='('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
+ bootstrap.textContent=installInputVisibility.toString()+'\n('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){

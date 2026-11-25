@@ -2817,6 +2817,21 @@ const restored=restoreSession();
 committedSettings=settingsSnapshot();
 renderPickedVocab();filters();updateSettingsSave();renderRunHistory();
 if(!restored)start();
+function installInputVisibility(send){
+ if(!navigator.maxTouchPoints)return;
+ let timer;
+ const report=()=>{
+  const field=document.activeElement;
+  if(!field?.matches('textarea,input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]),[contenteditable=true]'))return;
+  const rect=field.getBoundingClientRect();
+  send({top:rect.top,bottom:rect.bottom});
+ };
+ const schedule=()=>{requestAnimationFrame(report);clearTimeout(timer);timer=setTimeout(report,400);};
+ document.addEventListener('focusin',schedule);
+ document.addEventListener('input',schedule);
+ window.addEventListener('resize',schedule);
+ window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='kyklopp-focus-viewport')schedule();});
+}
 function installWorksheetTouchActions(){
  const selector='button[data-action="repeat-exercise"],button[data-action="continue-exercise"],button[data-action="overview-task"],button[data-action="confirm-repeat"],button[data-action="cancel-repeat"]';
  let press=null,suppressUntil=0;
@@ -2909,6 +2924,7 @@ function applyWorksheetRun(run){
   return restored;
  }finally{scrollToExerciseStart=scrollToStart;}
 }
+installInputVisibility(rect=>online.inputVisibility(rect));
 installWorksheetTouchActions();
 function hasSharedAnswers(){
  return [...drafts.values()].some(draft=>
