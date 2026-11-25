@@ -784,7 +784,8 @@ body[data-mode="student"] #main { padding: 4px 2px 35px; }
 body[data-mode="student"] #toast { bottom: 20px; }
 .teacher-header { display: flex; align-items: center; gap: 20px; max-width: 1440px; margin: auto; padding: 24px 30px; }
 .teacher-header img { width: 170px; height: auto; }
-.teacher-header #teacher-logout { margin-left: auto; }
+.teacher-header #teacher-logout { margin-left:auto; border:0; border-radius:0; background:transparent; box-shadow:none; color:var(--muted,#64748b); padding:8px 0; min-height:0; font:inherit; font-weight:400; cursor:pointer; }
+.teacher-header #teacher-logout:hover,.teacher-header #teacher-logout:focus-visible { color:#c6283d; background:transparent; box-shadow:none; }
 body[data-mode="teacher"] > main { max-width: 1440px; margin: auto; padding: 30px; }
 .teacher-navigation { display: flex; gap: 8px; padding: 0 30px; max-width: 1440px; margin: auto; overflow-x: auto; }
 .teacher-navigation button { white-space: nowrap; }
