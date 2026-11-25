@@ -1,8 +1,21 @@
-// Generate equivalent clause orders for the two identified L28 sentences only.
+// Generate equivalent wording and clause orders for identified L28 sentences only.
 // These candidates are transient, so stored rounds do not grow or lose answers.
 export function kykloppFreiarbeitVariants(variants,value){
  if(!Array.isArray(variants)||!variants.length)return variants;
  const first=variants[0],text=String(value||'');
+ if(first.includes('großartigen Mann')&&first.includes('Liebe beunruhigt')){
+  const expanded=new Set(variants);
+  for(const variant of variants){
+   const subjects=[variant];
+   if(/^(Als|Während) sie /u.test(variant))subjects.push(variant.replace(/^(Als|Während) sie /u,'$1 diese '));
+   for(const subject of subjects){
+    expanded.add(subject);
+    expanded.add(subject.replace(/beunruhigt/gu,'ergriffen'));
+    expanded.add(subject.replace(/beunruhigt/gu,'bewegt'));
+   }
+  }
+  return [...expanded];
+ }
  let kind='',shape='';
  if(/Hunger.*Durst/.test(first)&&first.includes('Speisen')&&first.includes('Polyphem')&&/^wir\s+nahm/iu.test(text)){
   kind='food';
