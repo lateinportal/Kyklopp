@@ -1,5 +1,5 @@
-import {installWorksheetToolDock} from './dock.js?v=58b8dd52ab65';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=58b8dd52ab65';
+import {installWorksheetToolDock} from './dock.js?v=bb57b2da4440';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=bb57b2da4440';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;

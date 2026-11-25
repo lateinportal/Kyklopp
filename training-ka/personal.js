@@ -14,6 +14,7 @@
  let activeDialog=null,modalSurfaces=[];
  let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false;
  let toolDock=null,toolData=null,dockLoading=null;
+ let trainingListFingerprint=null,trainingListRequest=0,openingTraining=false;
  async function showToolDock(data){
   if(data){
    if(!['aci','bank'].includes(data.kind)||typeof data.html!=='string'||typeof data.css!=='string'||data.html.length+data.css.length>200000||!['left','top','width','height'].every(key=>Number.isFinite(data[key])))return;
@@ -330,13 +331,20 @@
   return teacherRefresh;
  }
  async function loadTrainings(){
-  $('existing').hidden=false;$('list-status').textContent='Übungen werden geladen …';
+  const request=++trainingListRequest;
+  $('existing').hidden=false;
+  if(trainingListFingerprint===null)$('list-status').textContent='Übungen werden geladen …';
   try{
    const access=await teacherToken();
    const items=await rpc('list',{},access);
-   $('training-list').replaceChildren();
+   if(request!==trainingListRequest||openingTraining)return;
    $('login-note').hidden=true;
    $('list-status').textContent=items.length?'':'Es wurden noch keine persönlichen Übungen erstellt.';
+   $('list-status').hidden=items.length>0;
+   const fingerprint=JSON.stringify(items);
+   if(fingerprint===trainingListFingerprint)return;
+   trainingListFingerprint=fingerprint;
+   $('training-list').replaceChildren();
    for(const item of items){
     const row=document.createElement('article');row.className='training-entry';
     const copy=document.createElement('div'),title=document.createElement('h3'),note=document.createElement('p'),button=document.createElement('button');
@@ -345,11 +353,12 @@
     note.textContent=(item.templateTitle||'Lateintraining')+(lessons?' · Lektionen '+lessons:'')+' · '+(item.started?'Bearbeitung begonnen':'Noch nicht bearbeitet');
     button.type='button';button.textContent='Öffnen';
     button.onclick=async()=>{
-     button.disabled=true;
+     if(openingTraining)return;
+     openingTraining=true;button.disabled=true;
      try{
       const result=await rpc('open',{p_id:item.id},await teacherToken());
       location.href=linkBase+'#'+result.adminToken;
-     }catch{status('Die Übung konnte nicht geöffnet werden. Bitte erneut versuchen.');button.disabled=false;}
+     }catch{openingTraining=false;status('Die Übung konnte nicht geöffnet werden. Bitte erneut versuchen.');button.disabled=false;}
     };
     const remove=document.createElement('button');
     remove.type='button';remove.className='danger delete-access';remove.textContent='×';remove.title='Übung löschen';
@@ -370,6 +379,8 @@
     copy.append(title,note);row.append(copy,actions);$('training-list').append(row);
    }
   }catch{
+   if(request!==trainingListRequest||openingTraining)return;
+   $('list-status').hidden=false;
    $('list-status').textContent='Melde dich in der Lehrerverwaltung an, um deine erstellten Übungen zu öffnen.';
    $('login-note').hidden=false;
   }
@@ -482,8 +493,11 @@
  window.addEventListener('resize',positionDialog);
  window.visualViewport?.addEventListener('resize',positionDialog);
  window.visualViewport?.addEventListener('scroll',positionDialog);
+ // Focusing an embedded window happens during pointerdown; rebuilding its list
+ // there moves/removes the pressed button before the click can be delivered.
  if(token)window.addEventListener('hashchange',()=>location.reload());
- else window.addEventListener('focus',async()=>{
+ else document.addEventListener('visibilitychange',async()=>{
+  if(document.hidden||openingTraining)return;
   await loadTrainings();
   try{await loadLibrary($('training-template').value);}catch{}
  });
