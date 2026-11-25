@@ -1,5 +1,5 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=f28c7852327c';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=f28c7852327c';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=91bd9632c4c5';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=91bd9632c4c5';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -10,10 +10,13 @@ export function installTabletKeyboardNavigation(){
  (document.head||document.documentElement).append(style);
  document.addEventListener('keydown',event=>{
   if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
-  const response=event.target.closest('#response');
-  if(response&&event.target.matches(textSelector)){
+  // Resolve from the current DOM focus, rather than an earlier key event target.
+  const focused=document.activeElement;
+  if(!focused||focused===document.body||focused===document.documentElement)return;
+  const response=focused.closest('#response');
+  if(response&&focused.matches(textSelector)){
    const fields=[...response.querySelectorAll(textSelector)].filter(node=>node.tabIndex>=0&&usable(node));
-   const index=fields.indexOf(event.target),next=fields[index+(event.shiftKey?-1:1)];
+   const index=fields.indexOf(focused),next=fields[index+(event.shiftKey?-1:1)];
    if(index>=0&&next){event.preventDefault();next.focus({preventScroll:true});return;}
   }
   const dialog=document.querySelector('dialog[open]'),scope=dialog||document;

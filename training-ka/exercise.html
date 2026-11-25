@@ -2828,10 +2828,13 @@ function installTabletKeyboardNavigation(){
  (document.head||document.documentElement).append(style);
  document.addEventListener('keydown',event=>{
   if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
-  const response=event.target.closest('#response');
-  if(response&&event.target.matches(textSelector)){
+  // Resolve from the current DOM focus, rather than an earlier key event target.
+  const focused=document.activeElement;
+  if(!focused||focused===document.body||focused===document.documentElement)return;
+  const response=focused.closest('#response');
+  if(response&&focused.matches(textSelector)){
    const fields=[...response.querySelectorAll(textSelector)].filter(node=>node.tabIndex>=0&&usable(node));
-   const index=fields.indexOf(event.target),next=fields[index+(event.shiftKey?-1:1)];
+   const index=fields.indexOf(focused),next=fields[index+(event.shiftKey?-1:1)];
    if(index>=0&&next){event.preventDefault();next.focus({preventScroll:true});return;}
   }
   const dialog=document.querySelector('dialog[open]'),scope=dialog||document;
