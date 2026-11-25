@@ -252,7 +252,12 @@
   }catch{if(snapshot.role!=='student')status('Verbindung unterbrochen · letzter geladener Stand');}
   finally{polling=false;}
  }
+ function scrollExerciseTop(){
+  let current=window;
+  try{for(;;){current.scrollTo({top:0,left:0,behavior:'instant'});if(current===current.parent)break;current=current.parent;}}catch{}
+ }
  window.KAPersonal={
+  scrollToStart:scrollExerciseTop,
   storage,saveSettings,prepareDialog,closeDialog,showTools:showToolDock,
   syncDialog(){if(activeDialog&&(!activeDialog.isConnected||!activeDialog.open))closeDialog();},
   initialSettings:()=>structuredClone(snapshot.settings),
@@ -308,6 +313,7 @@
   if(message.type==='modal')embeddedOverlay(message.open===true);
   if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
   if(message.type==='tools')showToolDock(message.tools);
+  if(message.type==='scroll-top')scrollExerciseTop();
   if(message.type==='live-support')embedLive=true;
   if(message.type==='ready'){
    adapter={toolAction:action=>postEmbed('tool-action',{action}),

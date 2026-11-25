@@ -2600,6 +2600,8 @@ function scrollToExerciseStart(){
  requestAnimationFrame(()=>requestAnimationFrame(()=>{
   card.querySelector('h1')?.focus({preventScroll:true});
   window.scrollTo({top:0,left:0,behavior:'instant'});
+  if(window.KykloppExercise)window.KykloppExercise.scrollToStart?.();
+  else{try{window.parent.KAPersonal?.scrollToStart?.();}catch{}}
  }));
 }
 function goTo(next){

@@ -1,5 +1,5 @@
-import {installWorksheetToolDock} from './dock.js?v=bb57b2da4440';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=bb57b2da4440';
+import {installWorksheetToolDock} from './dock.js?v=7add6e770e8a';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=7add6e770e8a';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;
@@ -36,7 +36,8 @@ export function embeddedExercise(config){
   },
   onSettingsChange(listener){listeners.add(listener);return ()=>listeners.delete(listener);},
   onStateChange(listener){stateListeners.add(listener);send('live-support');return ()=>stateListeners.delete(listener);},
-  showTools:tools=>send('tools',{tools}),onToolAction:listener=>toolListeners.add(listener)
+  showTools:tools=>send('tools',{tools}),onToolAction:listener=>toolListeners.add(listener),
+  scrollToStart:()=>send('scroll-top')
  };
  function protect(){
   if(!locked)return;
@@ -102,6 +103,9 @@ export function embeddedExercise(config){
 export function improveWorksheetFeedback(source){
  return source.replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
    'liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);')
+ .replace("window.scrollTo({top:0,left:0,behavior:'instant'});",`window.scrollTo({top:0,left:0,behavior:'instant'});
+  if(window.KykloppExercise)window.KykloppExercise.scrollToStart?.();
+  else{try{window.parent.KAPersonal?.scrollToStart?.();}catch{}}`)
  .replace('function restoreSession(){','function restoreSession(incoming){')
  .replace("const saved=JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');","const saved=incoming||JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');")
  .replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
