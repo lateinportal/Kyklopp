@@ -1,5 +1,26 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=429b5998eff8';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=429b5998eff8';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=a8bb26d08de9';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=a8bb26d08de9';
+export function installTabletKeyboardNavigation(){
+ const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+ if(!tablet)return;
+ document.addEventListener('keydown',event=>{
+  if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
+  const dialog=document.querySelector('dialog[open]'),scope=dialog||document;
+  const candidates=[...scope.querySelectorAll('input,textarea,select,button,a[href],[tabindex],[contenteditable=true]')]
+   .filter(node=>node.tabIndex>=0&&!node.matches(':disabled,input[type=hidden]')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible');
+  const fields=candidates.filter(node=>{
+   if(!node.matches('input[type=radio]')||!node.name)return true;
+   const group=candidates.filter(peer=>peer.matches('input[type=radio]')&&peer.name===node.name&&peer.form===node.form);
+   return node===(group.find(peer=>peer.checked)||group[0]);
+  }).map((node,index)=>({node,index})).sort((a,b)=>(a.node.tabIndex||Infinity)-(b.node.tabIndex||Infinity)||a.index-b.index).map(item=>item.node);
+  const current=fields.indexOf(document.activeElement);
+  if(current<0)return;
+  const next=fields[current+(event.shiftKey?-1:1)];
+  if(!next)return;
+  event.preventDefault();next.focus();
+ },false);
+}
+
 export function installInputVisibility(send){
  if(!navigator.maxTouchPoints)return;
  let timer;
@@ -18,6 +39,7 @@ export function installInputVisibility(send){
 
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
+ installTabletKeyboardNavigation();
  installInputVisibility(rect=>parent.postMessage({kykloppExercise:config.channel,type:"input-visibility",rect},"*"));
  const channel=config.channel;
  const values=Object.assign(Object.create(null),config.run);
@@ -177,7 +199,7 @@ export function prepareEmbeddedHTML(html,config){
  meta.content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
  doc.head.prepend(meta);
  const bootstrap=doc.createElement('script');
- bootstrap.textContent=installInputVisibility.toString()+'\n('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
+ bootstrap.textContent=installTabletKeyboardNavigation.toString()+'\n'+installInputVisibility.toString()+'\n('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){

@@ -2818,6 +2818,26 @@ const restored=restoreSession();
 committedSettings=settingsSnapshot();
 renderPickedVocab();filters();updateSettingsSave();renderRunHistory();
 if(!restored)start();
+function installTabletKeyboardNavigation(){
+ const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+ if(!tablet)return;
+ document.addEventListener('keydown',event=>{
+  if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
+  const dialog=document.querySelector('dialog[open]'),scope=dialog||document;
+  const candidates=[...scope.querySelectorAll('input,textarea,select,button,a[href],[tabindex],[contenteditable=true]')]
+   .filter(node=>node.tabIndex>=0&&!node.matches(':disabled,input[type=hidden]')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible');
+  const fields=candidates.filter(node=>{
+   if(!node.matches('input[type=radio]')||!node.name)return true;
+   const group=candidates.filter(peer=>peer.matches('input[type=radio]')&&peer.name===node.name&&peer.form===node.form);
+   return node===(group.find(peer=>peer.checked)||group[0]);
+  }).map((node,index)=>({node,index})).sort((a,b)=>(a.node.tabIndex||Infinity)-(b.node.tabIndex||Infinity)||a.index-b.index).map(item=>item.node);
+  const current=fields.indexOf(document.activeElement);
+  if(current<0)return;
+  const next=fields[current+(event.shiftKey?-1:1)];
+  if(!next)return;
+  event.preventDefault();next.focus();
+ },false);
+}
 function installInputVisibility(send){
  if(!navigator.maxTouchPoints)return;
  let timer;
@@ -2925,6 +2945,7 @@ function applyWorksheetRun(run){
   return restored;
  }finally{scrollToExerciseStart=scrollToStart;}
 }
+installTabletKeyboardNavigation();
 installInputVisibility(rect=>online.inputVisibility(rect));
 installWorksheetTouchActions();
 function hasSharedAnswers(){
