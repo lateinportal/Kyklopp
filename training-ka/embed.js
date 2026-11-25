@@ -1,4 +1,5 @@
-import {installWorksheetToolDock} from './dock.js?v=1a16b3679553';
+import {installWorksheetToolDock} from './dock.js?v=012890621e7e';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=012890621e7e';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;
@@ -148,7 +149,7 @@ export function prepareEmbeddedHTML(html,config){
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
-  for(const script of originalScripts)script.textContent=improveWorksheetFeedback(script.textContent);
+  for(const script of originalScripts)script.textContent=improveFreiarbeitVariants(improveWorksheetFeedback(script.textContent));
   for(const style of doc.querySelectorAll('style'))style.textContent=improveWorksheetFeedback(style.textContent);
   doc.documentElement.dataset.kykloppWorksheet='';
   const layout=doc.createElement('style');
