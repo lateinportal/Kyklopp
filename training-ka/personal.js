@@ -210,7 +210,7 @@
   role:()=>snapshot.role,
   canWrite:()=>snapshot.role==='student'&&claimed&&!blocked,
   attach(api){adapter=api;if(!this.canWrite())api.lock();scheduleViewport();},
-  height(value){if(Number.isFinite(value))$('exercise').style.height=Math.max(800,value+20)+'px';}
+  height(value){if(Number.isFinite(value))$('exercise').style.height=Math.max(800,value+20)+'px';scheduleViewport();}
  };
  function postEmbed(type,payload={}){
   $('exercise').contentWindow?.postMessage({kykloppExercise:embedChannel,type,...payload},'*');
@@ -236,10 +236,10 @@
  let viewportWindow=window;
  try{
   for(;;){
-   viewportWindow.addEventListener('scroll',scheduleViewport,{passive:true,capture:true});
+   viewportWindow.addEventListener('scroll',updateExerciseViewport,{passive:true,capture:true});
    viewportWindow.addEventListener('resize',scheduleViewport);
    viewportWindow.visualViewport?.addEventListener('resize',scheduleViewport);
-   viewportWindow.visualViewport?.addEventListener('scroll',scheduleViewport);
+   viewportWindow.visualViewport?.addEventListener('scroll',updateExerciseViewport);
    if(viewportWindow===viewportWindow.parent)break;
    viewportWindow=viewportWindow.parent;
   }

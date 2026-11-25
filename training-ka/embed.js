@@ -3,7 +3,7 @@ export function embeddedExercise(config){
  const channel=config.channel;
  const values=Object.assign(Object.create(null),config.run);
  const listeners=new Set(),stateListeners=new Set(),requests=new Map();
- let locked=!config.writable,settings=config.settings,timer;
+ let locked=!config.writable,settings=config.settings,timer,latestViewport;
  const send=(type,payload={})=>parent.postMessage({kykloppExercise:channel,type,...payload},'*');
  const storage={
   get length(){return Object.keys(values).length;},
@@ -59,8 +59,7 @@ export function embeddedExercise(config){
   }
   if(message.type==='lock'){locked=true;protect();}
   if(message.type==='viewport'){
-   document.documentElement.style.setProperty('--kyklopp-bottom-inset',message.inset+'px');
-   document.documentElement.style.setProperty('--kyklopp-toolbar-gap',message.gap+'px');
+   latestViewport=message;positionWorksheetTools(message);
   }
   if(message.type==='run-update'&&locked&&message.run&&typeof message.run==='object'){
    for(const key of Object.keys(values))delete values[key];
@@ -70,6 +69,7 @@ export function embeddedExercise(config){
   }
  });
  function report(){
+  if(latestViewport)positionWorksheetTools(latestViewport);
   const height=Math.max(...[...document.body.children].filter(node=>!['SCRIPT','STYLE'].includes(node.tagName))
    .map(node=>node.getBoundingClientRect().bottom+scrollY+16),300);
   send('height',{height});
@@ -87,14 +87,31 @@ export function embeddedExercise(config){
  });
 }
 
+// Move only the composited toolbar layer; keep its normal layout space unchanged.
+export function positionWorksheetTools({inset,gap}){
+ const bottom=window.innerHeight-inset;
+ const moves=[...document.querySelectorAll('.aci-toolbar,.card-bank')].map(toolbar=>{
+  const rect=toolbar.getBoundingClientRect(),previous=toolbar.kykloppShift||0;
+  const container=toolbar.parentElement.getBoundingClientRect();
+  const distance=toolbar.classList.contains('aci-toolbar')?12:gap;
+  const shift=Math.max(0,Math.min(rect.bottom+previous-bottom+distance,rect.top+previous-container.top));
+  return {toolbar,shift:Math.round(shift*devicePixelRatio)/devicePixelRatio};
+ });
+ for(const {toolbar,shift} of moves){
+  if(toolbar.kykloppShift===shift)continue;
+  toolbar.kykloppShift=shift;
+  toolbar.style.transform='translate3d(0,'+(-shift)+'px,0)';
+ }
+}
+
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
  return source.replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
    'liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);')
  .replace('bottom:clamp(12px,6vh,56px);z-index:3;display:grid',
-   'bottom:calc(var(--kyklopp-bottom-inset,0px) + var(--kyklopp-toolbar-gap,clamp(12px,6vh,56px)));z-index:3;display:grid')
+   'bottom:clamp(12px,6vh,56px);will-change:transform;z-index:3;display:grid')
  .replace('.aci-toolbar{position:sticky;bottom:12px;',
-   '.aci-toolbar{position:sticky;bottom:calc(var(--kyklopp-bottom-inset,0px) + 12px);')
+   '.aci-toolbar{position:sticky;bottom:12px;will-change:transform;')
  .replace('function restoreSession(){','function restoreSession(incoming){')
  .replace("const saved=JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');","const saved=incoming||JSON.parse(localStorage.getItem(exerciseStorageKey)||'null');")
  .replace('if(!verifiedNominal.has(id))return;',`if(!verifiedNominal.has(id)){
@@ -149,7 +166,7 @@ export function prepareEmbeddedHTML(html,config){
  meta.content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; img-src data: blob: https:; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
  doc.head.prepend(meta);
  const bootstrap=doc.createElement('script');
- bootstrap.textContent='('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
+ bootstrap.textContent=positionWorksheetTools.toString()+'\n('+embeddedExercise.toString()+')('+JSON.stringify(config).replace(/</g,'\\u003c')+');';
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
