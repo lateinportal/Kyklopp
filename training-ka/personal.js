@@ -11,8 +11,8 @@
  const journalKey='kyklopp-personal-draft-'+token;
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false,pendingAnswers=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
- let activeDialog=null,previousOverflow='',previousGutter='';
- let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false,framePlaceholder=null;
+ let activeDialog=null,modalSurfaces=[];
+ let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false;
  let toolDock=null,toolData=null,dockLoading=null;
  async function showToolDock(data){
   if(data){
@@ -26,8 +26,8 @@
   toolDock??=createWorksheetDock(window,$('exercise'),action=>adapter?.toolAction?.(action));
   toolDock.update(activeDialog||embeddedModal?null:toolData);
  }
- window.addEventListener('pagehide',()=>{toolDock?.destroy();toolDock=null;});
- window.addEventListener('pageshow',()=>{if(toolData)showToolDock(toolData);});
+ window.addEventListener('pagehide',()=>{toolDock?.destroy();toolDock=null;closeModalSurfaces();});
+ window.addEventListener('pageshow',()=>{if(activeDialog||embeddedModal){openModalSurfaces();positionDialog();}if(toolData)showToolDock(toolData);});
  const status=text=>$('status').textContent=text;
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
@@ -148,28 +148,58 @@
    removeItem(key){if(readonly)return;delete memory[key];modified();}
   };
  }
+ function openModalSurfaces(){
+  if(modalSurfaces.length)return;
+  let current=window,foreground=$('exercise');
+  try{
+   for(;;){
+    const doc=current.document,cover=doc.createElement('div'),style=doc.documentElement.style;
+    cover.className='personal-modal-backdrop';
+    cover.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(255,255,255,.86)';
+    cover.addEventListener('click',()=>{
+     if(activeDialog){
+      const dialog=activeDialog;
+      for(const type of ['pointerdown','pointerup','click'])if(dialog.open)dialog.dispatchEvent(new MouseEvent(type,{bubbles:true,clientX:0,clientY:0}));
+     }else postEmbed('modal-backdrop');
+    });
+    modalSurfaces.push({cover,style,overflow:style.overflow,gutter:style.scrollbarGutter,foreground,position:foreground.style.position,zIndex:foreground.style.zIndex});
+    doc.body.append(cover);
+    if(current.getComputedStyle(foreground).position==='static')foreground.style.position='relative';
+    foreground.style.zIndex='2147483001';
+    // Overlay scrollbars reserve no space; forcing a gutter would shift the page.
+    if(current.innerWidth-doc.documentElement.clientWidth>0)style.scrollbarGutter='stable';
+    style.overflow='hidden';
+    if(current===current.parent)break;
+    foreground=current.frameElement;current=current.parent;
+   }
+  }catch{ /* The local surface still works if a cross-origin ancestor is inaccessible. */ }
+ }
+ function closeModalSurfaces(){
+  for(const item of modalSurfaces){
+   item.cover.remove();item.style.overflow=item.overflow;item.style.scrollbarGutter=item.gutter;
+   item.foreground.style.position=item.position;item.foreground.style.zIndex=item.zIndex;
+  }
+  modalSurfaces=[];
+ }
  function positionDialog(){
-  if(!activeDialog)return;
-  const viewport=window.visualViewport;
-  const height=viewport?.height||window.innerHeight;
-  const top=(viewport?.offsetTop||0)+height/2-$('exercise').getBoundingClientRect().top;
-  activeDialog.style.setProperty('--personal-dialog-top',top+'px');
-  activeDialog.style.setProperty('--personal-dialog-height',Math.max(180,height-48)+'px');
+  if(!activeDialog&&!embeddedModal)return;
+  let current=window,offset=$('exercise').getBoundingClientRect().top;
+  try{while(current!==current.parent){offset+=current.frameElement.getBoundingClientRect().top;current=current.parent;}}catch{}
+  const viewport=current.visualViewport,height=viewport?.height||current.innerHeight;
+  const metrics={top:(viewport?.offsetTop||0)+height/2-offset,maxHeight:Math.max(180,height-48)};
+  if(activeDialog){
+   activeDialog.style.setProperty('--personal-dialog-top',metrics.top+'px');
+   activeDialog.style.setProperty('--personal-dialog-height',metrics.maxHeight+'px');
+  }else postEmbed('modal-position',metrics);
  }
  function closeDialog(){
   if(!activeDialog)return;
   activeDialog=null;
   toolDock?.update(toolData);
-  document.documentElement.style.overflow=previousOverflow;
-  document.documentElement.style.scrollbarGutter=previousGutter;
+  closeModalSurfaces();
  }
  function prepareDialog(dialog){
-  if(!activeDialog){
-   previousOverflow=document.documentElement.style.overflow;
-   previousGutter=document.documentElement.style.scrollbarGutter;
-   document.documentElement.style.overflow='hidden';
-   document.documentElement.style.scrollbarGutter='stable';
-  }
+  if(!activeDialog)openModalSurfaces();
   activeDialog=dialog;toolDock?.update(null);positionDialog();
   dialog.addEventListener('close',closeDialog,{once:true});
  }
@@ -237,6 +267,7 @@
  // outer document scrolls. Its browser-native sticky layer handles scrolling.
  function updateExerciseViewport(){
   toolDock?.position();
+  positionDialog();
  }
  let viewportFrame;
  function scheduleViewport(){
@@ -248,22 +279,17 @@
   for(;;){
    viewportWindow.addEventListener('resize',scheduleViewport);
    viewportWindow.visualViewport?.addEventListener('resize',scheduleViewport);
+   viewportWindow.visualViewport?.addEventListener('scroll',positionDialog);
    if(viewportWindow===viewportWindow.parent)break;
    viewportWindow=viewportWindow.parent;
   }
  }catch{}
  new ResizeObserver(scheduleViewport).observe($('exercise'));
  function embeddedOverlay(open){
-  const frame=$('exercise');
   if(open&&!embeddedModal){
-   embeddedModal=true;toolDock?.update(null);framePlaceholder=document.createElement('div');
-   framePlaceholder.style.height=frame.getBoundingClientRect().height+'px';frame.before(framePlaceholder);
-   frame.style.cssText+=';position:fixed;inset:0;z-index:1000;height:100dvh';
-   document.body.style.overflow='hidden';
+   embeddedModal=true;toolDock?.update(null);openModalSurfaces();positionDialog();
   }else if(!open&&embeddedModal){
-   embeddedModal=false;toolDock?.update(toolData);framePlaceholder.remove();framePlaceholder=null;
-   frame.style.position='';frame.style.inset='';frame.style.zIndex='';frame.style.height='800px';
-   document.body.style.overflow='';
+   embeddedModal=false;closeModalSurfaces();toolDock?.update(toolData);
   }
  }
  window.addEventListener('message',async event=>{

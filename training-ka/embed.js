@@ -1,5 +1,5 @@
-import {installWorksheetToolDock} from './dock.js?v=012890621e7e';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=012890621e7e';
+import {installWorksheetToolDock} from './dock.js?v=58b8dd52ab65';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=58b8dd52ab65';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;
@@ -62,6 +62,17 @@ export function embeddedExercise(config){
   }
   if(message.type==='lock'){locked=true;protect();}
   if(message.type==='tool-action')for(const listener of toolListeners)listener(message.action);
+  if(message.type==='modal-position'){
+   const dialog=document.querySelector('dialog[open]');
+   if(dialog){
+    Object.assign(dialog.style,{inset:'auto',left:'50%',top:message.top+'px',margin:'0',transform:'translate(-50%,-50%)',maxHeight:message.maxHeight+'px'});
+    const panel=dialog.querySelector('.finish-panel');if(panel)panel.style.maxHeight=message.maxHeight+'px';
+   }
+  }
+  if(message.type==='modal-backdrop'){
+   const dialog=document.querySelector('dialog[open]');
+   if(dialog)for(const type of ['pointerdown','pointerup','click'])if(dialog.open)dialog.dispatchEvent(new MouseEvent(type,{bubbles:true,clientX:0,clientY:0}));
+  }
   if(message.type==='run-update'&&locked&&message.run&&typeof message.run==='object'){
    for(const key of Object.keys(values))delete values[key];
    Object.assign(values,message.run);
