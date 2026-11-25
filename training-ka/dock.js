@@ -159,3 +159,29 @@ export function installWorksheetToolDock(send,canWrite){
  window.addEventListener('resize',refresh);window.addEventListener('scroll',refresh,{passive:true});
  refresh();return {refresh,action};
 }
+
+// iPad may lose the compatibility click when pointerup autosaving updates the
+// overview. Activate its navigation buttons directly and suppress ghost clicks.
+export function installWorksheetTouchActions(){
+ const selector='button[data-action="repeat-exercise"],button[data-action="continue-exercise"],button[data-action="overview-task"],button[data-action="confirm-repeat"],button[data-action="cancel-repeat"]';
+ let press=null,suppressUntil=0;
+ document.addEventListener('pointerdown',event=>{
+  suppressUntil=0;press=null;
+  const button=event.target.closest(selector);
+  if(event.pointerType==='touch'&&event.isPrimary&&button&&!button.disabled)press={button,id:event.pointerId,x:event.clientX,y:event.clientY};
+ },true);
+ document.addEventListener('pointermove',event=>{
+  if(press&&press.id===event.pointerId&&Math.hypot(event.clientX-press.x,event.clientY-press.y)>12)press=null;
+ },{capture:true,passive:true});
+ document.addEventListener('pointercancel',()=>{press=null;},true);
+ document.addEventListener('pointerup',event=>{
+  const current=press;press=null;
+  if(!current||current.id!==event.pointerId||event.target.closest(selector)!==current.button||current.button.disabled)return;
+  event.preventDefault();suppressUntil=performance.now()+700;
+  current.button.click();
+ },{capture:true,passive:false});
+ document.addEventListener('click',event=>{
+  if(event.isTrusted&&event.detail>0&&performance.now()<suppressUntil){event.preventDefault();event.stopImmediatePropagation();}
+ },true);
+ const style=document.createElement('style');style.textContent='.overview-actions button,.repeat-actions button{touch-action:manipulation}';document.head.append(style);
+}

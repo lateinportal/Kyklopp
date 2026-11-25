@@ -1,5 +1,5 @@
-import {installWorksheetToolDock} from './dock.js?v=7add6e770e8a';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=7add6e770e8a';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=756331c00410';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=756331c00410';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;
@@ -170,7 +170,7 @@ export function prepareEmbeddedHTML(html,config){
   const layout=doc.createElement('style');
   layout.textContent='html[data-kyklopp-worksheet] body>main{padding-left:0;padding-right:0;max-width:none;margin-left:0;margin-right:0}';
   doc.head.append(layout);
-  const adapter=doc.createElement('script');adapter.textContent=installWorksheetToolDock.toString()+'\n'+applyWorksheetRun.toString()+'\n('+legacySettings.toString()+')();';doc.body.append(adapter);
+  const adapter=doc.createElement('script');adapter.textContent=installWorksheetTouchActions.toString()+'\n'+installWorksheetToolDock.toString()+'\n'+applyWorksheetRun.toString()+'\n('+legacySettings.toString()+')();';doc.body.append(adapter);
  }
  return '<!doctype html>\n'+doc.documentElement.outerHTML;
 }
@@ -178,6 +178,7 @@ export function prepareEmbeddedHTML(html,config){
 // Adapter for standalone versions of the original five-exercise worksheet.
 function legacySettings(){
  const api=window.KykloppExercise;
+ installWorksheetTouchActions();
  function apply(config){
   if(!Array.isArray(config.lessons))return;
   const attempted=[...drafts.values()].some(draft=>draft.tries>0||draft.score>0||draft.historyRows?.length||
