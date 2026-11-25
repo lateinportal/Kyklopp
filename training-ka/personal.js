@@ -29,7 +29,10 @@
  }
  window.addEventListener('pagehide',()=>{toolDock?.destroy();toolDock=null;closeModalSurfaces();});
  window.addEventListener('pageshow',()=>{if(activeDialog||embeddedModal){openModalSurfaces();positionDialog();}if(toolData)showToolDock(toolData);});
- const status=text=>$('status').textContent=text;
+ const status=text=>{
+  $('status').textContent=text;
+  $('status').hidden=snapshot?.role==='admin'&&['Gespeicherter Stand geladen','Bereit','Gespeichert','Einstellungen gespeichert','Bearbeitungsstand aktualisiert'].includes(text);
+ };
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
@@ -104,7 +107,7 @@
   $('links').hidden=snapshot.role!=='admin';
   if(snapshot.role!=='admin')return;
   $('links').open=true;
-  const tokens=[['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · für Eltern oder Lehrer zum mitverfolgen',snapshot.viewToken]];
+  const tokens=[['Schüler · bearbeiten',snapshot.studentToken],['Ansicht · für Eltern oder Lehrer zum Mitverfolgen',snapshot.viewToken]];
   $('link-fields').replaceChildren();
   for(const [label,value] of tokens){
    const row=document.createElement('div');row.className='link-row';
@@ -477,7 +480,8 @@
   renderLinks();
   if(snapshot.role==='admin'){
    const back=document.createElement('a');back.href=new URL('index.html',assets).href;
-   back.textContent='← Alle persönlichen Übungen';$('mode').before(back);
+   back.textContent='← Alle persönlichen Übungen';back.className='training-back';$('title').before(back);
+   $('mode').hidden=true;$('status').hidden=true;
   }
   if(snapshot.role==='student'){
    let journal;try{journal=JSON.parse(localStorage.getItem(journalKey)||'null');}catch{}

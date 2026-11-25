@@ -818,3 +818,5 @@ body[data-mode="student"] .page-head h1{font-family:var(--hub-heading-family,'Li
 
 @media(max-width:650px){body[data-mode="student"] .assignment-page-head{display:grid;gap:12px 8px}body[data-mode="student"] .assignment-page-head>.wallet-actions{align-self:center}}
 @media(max-width:350px){body[data-mode="student"] .assignment-page-head>h1{font-size:30px}}
+
+#personal-training-panel>.page-head[hidden]{display:none}

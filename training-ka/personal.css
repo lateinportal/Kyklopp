@@ -40,3 +40,5 @@ body[data-training-role="student"] main{padding-top:0}
 .link-actions{display:flex;gap:8px;flex-wrap:wrap}
 .link-open{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:42px;padding:8px 14px;border:1px solid #216fbb;border-radius:7px;background:#216fbb;color:white;text-decoration:none}
 .link-open:focus-visible{outline:3px solid #91c5f6;outline-offset:3px}
+
+.training-back{display:inline-block;margin-bottom:12px}
