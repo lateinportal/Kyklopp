@@ -270,6 +270,7 @@
   }}catch{}
  }
  function scrollExerciseTop(){
+  if(snapshot.role!=='student')return;
   let current=window;
   try{for(;;){current.scrollTo({top:0,left:0,behavior:'instant'});if(current===current.parent)break;current=current.parent;}}catch{}
  }
