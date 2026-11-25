@@ -189,6 +189,7 @@
   const viewport=current.visualViewport,height=viewport?.height||current.innerHeight;
   const metrics={top:(viewport?.offsetTop||0)+height/2-offset,maxHeight:Math.max(180,height-48)};
   if(activeDialog){
+   Object.assign(activeDialog.style,{position:'fixed',inset:'auto',left:'50%',top:metrics.top+'px',margin:'0',transform:'translate(-50%,-50%)',maxHeight:metrics.maxHeight+'px',overflowY:'auto'});
    activeDialog.style.setProperty('--personal-dialog-top',metrics.top+'px');
    activeDialog.style.setProperty('--personal-dialog-height',metrics.maxHeight+'px');
   }else postEmbed('modal-position',metrics);

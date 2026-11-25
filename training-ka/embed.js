@@ -1,5 +1,5 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=176dc5adf9b6';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=176dc5adf9b6';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=4b9028bca8c7';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=4b9028bca8c7';
 export function installInputVisibility(send){
  if(!navigator.maxTouchPoints)return;
  let timer;

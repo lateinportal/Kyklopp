@@ -2538,7 +2538,8 @@ function requestRepeat(){
   if(pressedOutside&&outside(e))cancelRepeat();
   pressedOutside=false;
  };
- dialog.showModal();
+ online.prepareDialog(dialog);
+  dialog.showModal();
 }
 function cancelRepeat(){
  $('repeat-dialog')?.close();repeatReturnFocus?.focus();
