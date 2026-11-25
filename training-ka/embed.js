@@ -1,42 +1,31 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=91bd9632c4c5';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=91bd9632c4c5';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=bd492bd9042c';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=bd492bd9042c';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
- const textSelector='input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=url],input[type=tel],input[type=password],textarea';
- const usable=node=>!node.matches(':disabled')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible';
+ // Keep Safari's native focus and keyboard session. Never cancel Tab or call
+ // focus() here: DOM focus and Magic Keyboard focus can otherwise diverge.
  const style=document.createElement('style');
  style.textContent='#response input[type=text],#response textarea{font-size:16px!important}';
  (document.head||document.documentElement).append(style);
- document.addEventListener('keydown',event=>{
-  if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
-  // Resolve from the current DOM focus, rather than an earlier key event target.
-  const focused=document.activeElement;
-  if(!focused||focused===document.body||focused===document.documentElement)return;
-  const response=focused.closest('#response');
-  if(response&&focused.matches(textSelector)){
-   const fields=[...response.querySelectorAll(textSelector)].filter(node=>node.tabIndex>=0&&usable(node));
-   const index=fields.indexOf(focused),next=fields[index+(event.shiftKey?-1:1)];
-   if(index>=0&&next){event.preventDefault();next.focus({preventScroll:true});return;}
-  }
-  const dialog=document.querySelector('dialog[open]'),scope=dialog||document;
-  const candidates=[...scope.querySelectorAll('input,textarea,select,button,a[href],[tabindex],[contenteditable=true]')]
-   .filter(node=>node.tabIndex>=0&&!node.matches(':disabled,input[type=hidden]')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible');
-  const fields=candidates.filter(node=>{
-   if(!node.matches('input[type=radio]')||!node.name)return true;
-   const group=candidates.filter(peer=>peer.matches('input[type=radio]')&&peer.name===node.name&&peer.form===node.form);
-   return node===(group.find(peer=>peer.checked)||group[0]);
-  }).map((node,index)=>({node,index})).sort((a,b)=>(a.node.tabIndex||Infinity)-(b.node.tabIndex||Infinity)||a.index-b.index).map(item=>item.node);
-  const current=fields.indexOf(document.activeElement);
-  if(current<0)return;
-  const next=fields[current+(event.shiftKey?-1:1)];
-  if(!next)return;
-  event.preventDefault();next.focus({preventScroll:true});
- },true);
+ const update=()=>{
+  const response=document.getElementById('response');if(!response)return;
+  const fields=[...response.querySelectorAll('input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=url],input[type=tel],input[type=password],textarea')]
+   .filter(node=>!node.matches(':disabled')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible');
+  // Give the answer fields a continuous native order across table rows.
+  fields.forEach((field,index)=>{field.tabIndex=index+1;});
+  const check=document.getElementById('check');
+  if(check)check.tabIndex=fields.length?fields.length+1:0;
+ };
+ const install=()=>{update();new MutationObserver(update).observe(document.body,{childList:true,subtree:true});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 }
 
 export function installInputVisibility(send){
  if(!navigator.maxTouchPoints)return;
+ // iPad Safari handles keyboard visibility natively; do not scroll its outer
+ // frames after focus, which can disturb the active keyboard input session.
+ if(/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0))return;
  let timer;
  const report=()=>{
   const field=document.activeElement;
