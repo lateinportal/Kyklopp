@@ -282,7 +282,20 @@
   role:()=>snapshot.role,
   canWrite:()=>snapshot.role==='student'&&claimed&&!blocked,
   attach(api){adapter=api;if(!this.canWrite())api.lock();scheduleViewport();},
-  height(value){if(Number.isFinite(value))$('exercise').style.height=Math.max(800,value+20)+'px';scheduleViewport();}
+  height(value){
+   if(Number.isFinite(value)){
+    const frame=$('exercise');let minimum=800;
+    if(snapshot.role!=='student'){
+     // A shorter task must not collapse the document below the reader's viewport.
+     // Include every outer frame: the teacher page auto-sizes this wrapper too.
+     let current=window,offset=frame.getBoundingClientRect().top;
+     try{while(current!==current.parent){offset+=current.frameElement.getBoundingClientRect().top;current=current.parent;}}catch{}
+     minimum=Math.max(minimum,current.innerHeight-offset+2);
+    }
+    frame.style.height=Math.max(minimum,value+20)+'px';
+   }
+   scheduleViewport();
+  }
  };
  function postEmbed(type,payload={}){
   $('exercise').contentWindow?.postMessage({kykloppExercise:embedChannel,type,...payload},'*');
