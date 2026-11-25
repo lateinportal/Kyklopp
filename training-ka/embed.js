@@ -1,5 +1,5 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=27dad9dbc1d0';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=27dad9dbc1d0';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=429b5998eff8';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=429b5998eff8';
 export function installInputVisibility(send){
  if(!navigator.maxTouchPoints)return;
  let timer;
@@ -118,7 +118,7 @@ export function embeddedExercise(config){
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
- return source.replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
+ return source.replace("Geschrei:'Schreie'","Geschrei:'Schreie|Geschreie'").replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
    'liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);')
  .replace("window.scrollTo({top:0,left:0,behavior:'instant'});",`window.scrollTo({top:0,left:0,behavior:'instant'});
   if(window.KykloppExercise)window.KykloppExercise.scrollToStart?.();
