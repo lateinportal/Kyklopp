@@ -13,6 +13,21 @@
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
  let activeDialog=null,previousOverflow='',previousGutter='';
  let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false,framePlaceholder=null;
+ let toolDock=null,toolData=null,dockLoading=null;
+ async function showToolDock(data){
+  if(data){
+   if(!['aci','bank'].includes(data.kind)||typeof data.html!=='string'||typeof data.css!=='string'||data.html.length+data.css.length>200000||!['left','top','width','height'].every(key=>Number.isFinite(data[key])))return;
+   data={...data,...Object.fromEntries(['left','top','width','height'].map(key=>[key,Math.max(0,Math.min(100000,data[key]))]))};
+  }
+  toolData=data;
+  if(!data){toolDock?.update(null);return;}
+  dockLoading??=import(new URL('dock.js?v='+(buildVersion||'1'),assets));
+  const {createWorksheetDock}=await dockLoading;
+  toolDock??=createWorksheetDock(window,$('exercise'),action=>adapter?.toolAction?.(action));
+  toolDock.update(activeDialog||embeddedModal?null:toolData);
+ }
+ window.addEventListener('pagehide',()=>{toolDock?.destroy();toolDock=null;});
+ window.addEventListener('pageshow',()=>{if(toolData)showToolDock(toolData);});
  const status=text=>$('status').textContent=text;
  const valid=/^(?:[A-Za-z0-9_-]{22}|[0-9a-f]{64})$/;
  async function rpc(name,body,accessToken){
@@ -102,6 +117,7 @@
   }
  }
  async function loadFrame(){
+  showToolDock(null);
   adapter=null;
   const frame=$('exercise');frame.hidden=false;
   frame.title=snapshot.template?.title||'Persönliche Übungen';
@@ -142,6 +158,7 @@
  function closeDialog(){
   if(!activeDialog)return;
   activeDialog=null;
+  toolDock?.update(toolData);
   document.documentElement.style.overflow=previousOverflow;
   document.documentElement.style.scrollbarGutter=previousGutter;
  }
@@ -152,7 +169,7 @@
    document.documentElement.style.overflow='hidden';
    document.documentElement.style.scrollbarGutter='stable';
   }
-  activeDialog=dialog;positionDialog();
+  activeDialog=dialog;toolDock?.update(null);positionDialog();
   dialog.addEventListener('close',closeDialog,{once:true});
  }
  async function claim(takeover=false){
@@ -204,7 +221,7 @@
   finally{polling=false;}
  }
  window.KAPersonal={
-  storage,saveSettings,prepareDialog,closeDialog,
+  storage,saveSettings,prepareDialog,closeDialog,showTools:showToolDock,
   syncDialog(){if(activeDialog&&(!activeDialog.isConnected||!activeDialog.open))closeDialog();},
   initialSettings:()=>structuredClone(snapshot.settings),
   role:()=>snapshot.role,
@@ -215,18 +232,10 @@
  function postEmbed(type,payload={}){
   $('exercise').contentWindow?.postMessage({kykloppExercise:embedChannel,type,...payload},'*');
  }
- // Convert the outer visible screen into an inset inside the tall exercise iframe.
+ // Dock geometry only changes with content or viewport size, never while the
+ // outer document scrolls. Its browser-native sticky layer handles scrolling.
  function updateExerciseViewport(){
-  const frame=$('exercise');if(frame.hidden)return;
-  let current=window,offset=0;
-  try{
-   while(current!==current.parent){offset+=current.frameElement.getBoundingClientRect().top;current=current.parent;}
-  }catch{ /* Use the nearest accessible viewport when embedded on another origin. */ }
-  const viewport=current.visualViewport;
-  const height=viewport?.height||current.innerHeight,top=viewport?.offsetTop||0;
-  const bottom=top+height-offset-frame.getBoundingClientRect().top;
-  const metrics={inset:Math.max(0,frame.clientHeight-Math.max(0,Math.min(frame.clientHeight,bottom))),gap:Math.max(12,Math.min(56,height*.06))};
-  adapter?.viewport?.(metrics);
+  toolDock?.position();
  }
  let viewportFrame;
  function scheduleViewport(){
@@ -236,10 +245,8 @@
  let viewportWindow=window;
  try{
   for(;;){
-   viewportWindow.addEventListener('scroll',updateExerciseViewport,{passive:true,capture:true});
    viewportWindow.addEventListener('resize',scheduleViewport);
    viewportWindow.visualViewport?.addEventListener('resize',scheduleViewport);
-   viewportWindow.visualViewport?.addEventListener('scroll',updateExerciseViewport);
    if(viewportWindow===viewportWindow.parent)break;
    viewportWindow=viewportWindow.parent;
   }
@@ -248,12 +255,12 @@
  function embeddedOverlay(open){
   const frame=$('exercise');
   if(open&&!embeddedModal){
-   embeddedModal=true;framePlaceholder=document.createElement('div');
+   embeddedModal=true;toolDock?.update(null);framePlaceholder=document.createElement('div');
    framePlaceholder.style.height=frame.getBoundingClientRect().height+'px';frame.before(framePlaceholder);
    frame.style.cssText+=';position:fixed;inset:0;z-index:1000;height:100dvh';
    document.body.style.overflow='hidden';
   }else if(!open&&embeddedModal){
-   embeddedModal=false;framePlaceholder.remove();framePlaceholder=null;
+   embeddedModal=false;toolDock?.update(toolData);framePlaceholder.remove();framePlaceholder=null;
    frame.style.position='';frame.style.inset='';frame.style.zIndex='';frame.style.height='800px';
    document.body.style.overflow='';
   }
@@ -272,9 +279,10 @@
   if(message.type==='height'&&!embeddedModal)window.KAPersonal.height(message.height);
   if(message.type==='modal')embeddedOverlay(message.open===true);
   if(message.type==='settings-dirty')embedSettingsDirty=message.dirty===true;
+  if(message.type==='tools')showToolDock(message.tools);
   if(message.type==='live-support')embedLive=true;
   if(message.type==='ready'){
-   adapter={viewport:metrics=>postEmbed('viewport',metrics),
+   adapter={toolAction:action=>postEmbed('tool-action',{action}),
     applyRun:run=>{if(!embedLive)return false;postEmbed('run-update',{run});return true;},
     applySettings:settings=>postEmbed('settings-update',{settings}),
     settingsDirty:()=>embedSettingsDirty,lock:()=>postEmbed('lock')};

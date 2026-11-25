@@ -255,7 +255,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 .card-slot{position:absolute;inset:0;border:0;border-radius:0;background:transparent;padding:0}
 .card-slot:focus-visible{outline-offset:-3px}
 .has-selection .card-slot:not(:disabled):hover{background:#fff4d8}
-.card-bank{position:sticky;bottom:clamp(12px,6vh,56px);will-change:transform;z-index:3;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,110px));gap:8px;background:rgba(65,65,65,.88);border-radius:4px;padding:10px;margin:42px 0 0;min-height:57px}
+.card-bank{position:sticky;bottom:clamp(12px,6vh,56px);z-index:3;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,110px));gap:8px;background:rgba(65,65,65,.88);border-radius:4px;padding:10px;margin:42px 0 0;min-height:57px}
 .card-home{height:46px;min-width:0;display:grid}
 .card-home.empty{border:1px dashed #aaa;background:transparent}
 .card-token{touch-action:none;user-select:none;cursor:grab;color:#343434;padding:5px 8px;overflow-wrap:anywhere;font-size:15px}
@@ -324,7 +324,7 @@ input[type=text]:disabled,textarea:disabled{opacity:1;-webkit-text-fill-color:#0
 .aci-words{font:inherit;line-height:1.9;user-select:none}
 .aci-word{border:0;border-radius:0;background:transparent;padding:0 1px;font:inherit;color:inherit;cursor:pointer;touch-action:pan-y}
 .aci-bracketed{text-decoration:none}
-.aci-toolbar{position:sticky;bottom:12px;will-change:transform;z-index:3;padding:14px 14px 0;background:rgba(65,65,65,.88);border-radius:4px;color:white;margin-top:20px}
+.aci-toolbar{position:sticky;bottom:12px;z-index:3;padding:14px 14px 0;background:rgba(65,65,65,.88);border-radius:4px;color:white;margin-top:20px}
 .aci-tools{display:flex;align-items:end;gap:25px;height:70px;overflow:hidden;padding-left:8px}
 .highlighter{position:relative;width:35px;height:54px;border:0;background:none;padding:0;flex:none}
 .pen-body{position:absolute;z-index:2;bottom:-10px;left:0;width:35px;height:35px;background:var(--ink);border-top:4px solid #333;transform:skewY(-6deg)}
@@ -2815,20 +2815,50 @@ const restored=restoreSession();
 committedSettings=settingsSnapshot();
 renderPickedVocab();filters();updateSettingsSave();renderRunHistory();
 if(!restored)start();
-function positionWorksheetTools({inset,gap}){
- const bottom=window.innerHeight-inset;
- const moves=[...document.querySelectorAll('.aci-toolbar,.card-bank')].map(toolbar=>{
-  const rect=toolbar.getBoundingClientRect(),previous=toolbar.kykloppShift||0;
-  const container=toolbar.parentElement.getBoundingClientRect();
-  const distance=toolbar.classList.contains('aci-toolbar')?12:gap;
-  const shift=Math.max(0,Math.min(rect.bottom+previous-bottom+distance,rect.top+previous-container.top));
-  return {toolbar,shift:Math.round(shift*devicePixelRatio)/devicePixelRatio};
- });
- for(const {toolbar,shift} of moves){
-  if(toolbar.kykloppShift===shift)continue;
-  toolbar.kykloppShift=shift;
-  toolbar.style.transform='translate3d(0,'+(-shift)+'px,0)';
+function installWorksheetToolDock(send,canWrite){
+ let active=null,previous='',dockBounds=null;
+ if(typeof boardTargetAt==='function'){
+  const original=boardTargetAt;
+  boardTargetAt=(x,y)=>{
+   const bank=document.querySelector('.card-bank');
+   if(bank&&dockBounds&&x>=dockBounds.left&&x<=dockBounds.right&&y>=dockBounds.top&&y<=dockBounds.bottom)return {element:bank,place:null};
+   return original(x,y);
+  };
  }
+ let css='';
+ const relevant=/\.(?:aci-toolbar|aci-tools|highlighter|marker-|pen-|bracket-tool|eraser-tool|card-bank|card-token|card-home|has-selection)/;
+ function collect(rules){let result='';for(const rule of rules){if(rule.selectorText&&relevant.test(rule.selectorText))result+=rule.cssText;else if(rule.cssRules){const nested=collect(rule.cssRules);if(nested)result+=rule.cssText.slice(0,rule.cssText.indexOf('{')+1)+nested+'}';}}return result;}
+ for(const sheet of document.styleSheets){try{css+=collect(sheet.cssRules);}catch{}}
+ function refresh(){
+  const toolbar=document.querySelector('.aci-toolbar,.card-bank');
+  if(!toolbar){if(active)send(null);active=null;previous='';dockBounds=null;return;}
+  active=toolbar;toolbar.style.transform='none';toolbar.style.visibility='hidden';
+  const clone=toolbar.cloneNode(true);clone.style.removeProperty('visibility');clone.style.removeProperty('transform');
+  const container=toolbar.parentElement.getBoundingClientRect(),rect=toolbar.getBoundingClientRect();
+  const data={kind:toolbar.classList.contains('aci-toolbar')?'aci':'bank',html:clone.outerHTML,css,
+   left:rect.left,top:container.top,width:rect.width,height:container.height};
+  const serialized=JSON.stringify(data);
+  if(serialized!==previous){previous=serialized;send(data);}
+ }
+ function action(value){
+  if(value.type==='bounds'){dockBounds=value.rect;return;}
+  if(!canWrite())return;
+  const toolbar=document.querySelector('.aci-toolbar,.card-bank');if(!toolbar)return;
+  if(value.type==='click'){
+   const number=Number(value.marker??value.token??value.home);
+   if(!Number.isInteger(number)||number<0)return;
+   const attr=value.marker!==undefined?'data-marker':value.token!==undefined?'data-board-token':'data-home-index';
+   const selector='['+attr+'="'+number+'"]';
+   toolbar.querySelector(selector)?.click();
+  }else if(value.type==='drop'&&Number.isInteger(value.token)){
+   const target=document.elementFromPoint(value.x,value.y)?.closest('[data-board-drop]');
+   if(target)finishBoardMove(value.token,Number(target.dataset.boardDrop),false);
+  }
+  saveSession();refresh();
+ }
+ new MutationObserver(refresh).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['aria-pressed','class','disabled']});
+ window.addEventListener('resize',refresh);window.addEventListener('scroll',refresh,{passive:true});
+ refresh();return {refresh,action};
 }
 function applyWorksheetRun(run){
  const saved=JSON.parse(run[exerciseStorageKey]||'null');
@@ -2896,8 +2926,9 @@ function protectSharedView(){
   for(const field of $('settings').querySelectorAll('[data-delete-run],#clear-run-history,[data-history-undo]'))field.disabled=true;
  }
 }
+const sharedTools=installWorksheetToolDock(data=>online.showTools(data),online.canWrite);
 online.attach({
- viewport:positionWorksheetTools,
+ toolAction:sharedTools.action,
  applyRun:run=>{const applied=applyWorksheetRun(run);protectSharedView();updateSharedHeight();return applied;},
  applySettings:applyOnlineSettings,
  settingsDirty:()=>JSON.stringify(settingsSnapshot())!==JSON.stringify(committedSettings),
