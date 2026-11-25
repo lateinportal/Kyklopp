@@ -114,7 +114,11 @@
    button.type='button';button.textContent='Kopieren';
    button.onclick=async()=>{try{await navigator.clipboard.writeText(input.value);button.textContent='Kopiert';}
     catch{input.focus();input.select();button.textContent='Link markieren';}};
-   row.append(text,input,button);$('link-fields').append(row);
+   const actions=document.createElement('div');actions.className='link-actions';
+   const open=document.createElement('a');open.className='link-open';open.textContent='Öffnen';
+   open.href=input.value;open.target='_blank';open.rel='noopener noreferrer';
+   open.setAttribute('aria-label',label+' öffnen (neuer Tab)');
+   actions.append(button,open);row.append(text,input,actions);$('link-fields').append(row);
   }
  }
  async function loadFrame(){
