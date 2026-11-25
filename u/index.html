@@ -18,33 +18,30 @@
  <main>
   <div class="setup-grid">
   <section id="create" hidden>
-   <h2>Persönlichen Zugang erstellen</h2>
-   <p>Wähle eine Übungsvorlage aus. Jeder Zugang erhält eigene Einstellungen und Bearbeitungsstände.</p>
+   <h2>Link erstellen</h2>
    <form id="create-form">
     <label for="training-template">Übungsvorlage</label>
     <select id="training-template" required></select>
     <label for="training-title">Titel</label>
     <input id="training-title" maxlength="120" required>
-    <button type="submit">Persönliche Links erstellen</button>
+    <button type="submit">Link erstellen</button>
    </form>
    <p id="login-note" hidden>Melde dich zuerst in der <a href="../assignments/lehrer.html" target="_blank" rel="noopener">Lehrerverwaltung</a> an. Kehre danach hierher zurück.</p>
   </section>
   <section id="library" hidden>
-   <h2>Übungsbibliothek</h2>
-   <p>Veröffentliche hier weitere eigenständige HTML-Übungen.</p>
+   <h2>Übung veröffentlichen</h2>
    <form id="publish-form">
     <label for="template-title">Name der Vorlage</label>
     <input id="template-title" maxlength="120" required>
     <label for="template-file">HTML-Datei</label>
     <input id="template-file" type="file" accept=".html,.htm,text/html" required>
-    <p class="upload-note">Bilder, Schriftarten und Skripte müssen in der Datei enthalten sein. Die HTML-Datei sollte ihren Übungsstand speichern. Für neue Übungen steht die Kyklopp-Speicherschnittstelle bereit.</p>
-    <button type="submit">Neue Übung hinzufügen</button>
+    <button type="submit">Übung veröffentlichen</button>
    </form>
    <p id="library-status" role="status"></p>
   </section>
   </div>
   <section id="existing" hidden>
-   <h2>Bereits erstellte Übungen</h2>
+   <h2>Übungen</h2>
    <p id="list-status" role="status"></p>
    <div id="training-list"></div>
   </section>
