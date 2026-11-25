@@ -1,4 +1,4 @@
-import {installWorksheetToolDock} from './dock.js?v=b994bc617549';
+import {installWorksheetToolDock} from './dock.js?v=1a16b3679553';
 // Runs inside the isolated HTML exercise. The parent only accepts messages from its own frame.
 export function embeddedExercise(config){
  const channel=config.channel;

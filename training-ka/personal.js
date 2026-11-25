@@ -127,7 +127,8 @@
     templateDocument??=await rpc('document',{p_token:token});
     embedChannel=crypto.randomUUID();
     embedSettingsDirty=false;embedLive=false;
-    frame.setAttribute('sandbox','allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    // Local checkers need submit events; the injected CSP still blocks form navigation.
+    frame.setAttribute('sandbox','allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox');
     frame.removeAttribute('src');
     frame.srcdoc=prepareEmbeddedHTML(templateDocument.html,{channel:embedChannel,role:snapshot.role,
      writable:snapshot.role==='student'&&claimed&&!blocked,settings:snapshot.settings,run:memory});
