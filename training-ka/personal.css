@@ -7,7 +7,7 @@ body{margin:0;background:#fafafa;color:#233b50;font:15px/1.6 system-ui,sans-seri
 section,details{background:#fff;border:1px solid #dce5ed;border-radius:12px;padding:20px;margin-bottom:16px}
 summary{cursor:pointer;font-weight:600}
 h2{margin-top:0}
-.setup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.setup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:stretch}
 .setup-grid>section{min-width:0}
 @media(max-width:800px){.setup-grid{grid-template-columns:1fr;gap:0}}
 button.danger{background:#fff;color:#bc293d;border-color:#e8abb5}
