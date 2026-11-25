@@ -1,10 +1,21 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=c632fd05a758';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=c632fd05a758';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=f28c7852327c';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=f28c7852327c';
 export function installTabletKeyboardNavigation(){
- const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+ const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
+ const textSelector='input:not([type]),input[type=text],input[type=search],input[type=email],input[type=number],input[type=url],input[type=tel],input[type=password],textarea';
+ const usable=node=>!node.matches(':disabled')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible';
+ const style=document.createElement('style');
+ style.textContent='#response input[type=text],#response textarea{font-size:16px!important}';
+ (document.head||document.documentElement).append(style);
  document.addEventListener('keydown',event=>{
   if(event.key!=='Tab'||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey)return;
+  const response=event.target.closest('#response');
+  if(response&&event.target.matches(textSelector)){
+   const fields=[...response.querySelectorAll(textSelector)].filter(node=>node.tabIndex>=0&&usable(node));
+   const index=fields.indexOf(event.target),next=fields[index+(event.shiftKey?-1:1)];
+   if(index>=0&&next){event.preventDefault();next.focus({preventScroll:true});return;}
+  }
   const dialog=document.querySelector('dialog[open]'),scope=dialog||document;
   const candidates=[...scope.querySelectorAll('input,textarea,select,button,a[href],[tabindex],[contenteditable=true]')]
    .filter(node=>node.tabIndex>=0&&!node.matches(':disabled,input[type=hidden]')&&!node.closest('[hidden],[inert]')&&node.getClientRects().length&&getComputedStyle(node).visibility==='visible');
@@ -17,8 +28,8 @@ export function installTabletKeyboardNavigation(){
   if(current<0)return;
   const next=fields[current+(event.shiftKey?-1:1)];
   if(!next)return;
-  event.preventDefault();next.focus();
- },false);
+  event.preventDefault();next.focus({preventScroll:true});
+ },true);
 }
 
 export function installInputVisibility(send){
@@ -30,9 +41,9 @@ export function installInputVisibility(send){
   const rect=field.getBoundingClientRect();
   send({top:rect.top,bottom:rect.bottom});
  };
- const schedule=()=>{requestAnimationFrame(report);clearTimeout(timer);timer=setTimeout(report,400);};
+ const schedule=()=>{clearTimeout(timer);timer=setTimeout(report,150);};
  document.addEventListener('focusin',schedule);
- document.addEventListener('input',schedule);
+ // Do not re-scroll on every character; keyboard resize and focus are enough.
  window.addEventListener('resize',schedule);
  window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='kyklopp-focus-viewport')schedule();});
 }
