@@ -15,7 +15,7 @@ export function worksheetStars(stars,animate=true){
 export function worksheetResult(stars,base){
  const tier=stars<=1?'practice':stars<=1.5?'progress':stars===2?'strong':'perfect';
  const alt={practice:'Kloppo ermutigt zum Weiterüben',progress:'Kloppo zeigt deinen Fortschritt',strong:'Kloppo zeigt den Daumen nach oben',perfect:'Kloppo jubelt'};
- return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
+ return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" width="600" height="400" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
 }
 const css=`
 .kyklopp-rating{display:inline-flex;justify-content:center;gap:6px;font:56px/1.2 Arial,sans-serif;vertical-align:middle;letter-spacing:0}

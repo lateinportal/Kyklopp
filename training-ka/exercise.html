@@ -2535,7 +2535,7 @@ function worksheetStars(stars,animate=true){
 function worksheetResult(stars,base){
  const tier=stars<=1?'practice':stars<=1.5?'progress':stars===2?'strong':'perfect';
  const alt={practice:'Kloppo ermutigt zum Weiterüben',progress:'Kloppo zeigt deinen Fortschritt',strong:'Kloppo zeigt den Daumen nach oben',perfect:'Kloppo jubelt'};
- return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
+ return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" width="600" height="400" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
 }
 function progressRows(){
   return names.map((name,i)=>{
@@ -3044,6 +3044,8 @@ function updateSharedHeight(){
  online.height(Math.ceil(content.getBoundingClientRect().bottom+window.scrollY+16));
 }
 window.addEventListener('resize',updateSharedHeight);
+new ResizeObserver(updateSharedHeight).observe(document.querySelector('main'));
+document.addEventListener('load',event=>{if(event.target instanceof HTMLImageElement)updateSharedHeight();},true);
 protectSharedView();
 updateSharedHeight();
 for(const type of ['click','change','input','drop','dragstart','pointerdown']){
