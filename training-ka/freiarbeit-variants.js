@@ -56,16 +56,13 @@ export function improveFreiarbeitVariants(source){
   .replace("Die Verknüpfung des Nebensatzes verändert die Konstruktion.","Konstruktionsfehler: Prüfe, wie die lateinische Satzkonstruktion ins Deutsche übertragen wird, zum Beispiel ein AcI, PC, Ablativus absolutus, Relativsatz oder relativer Satzanschluss.")
   .replace("return issue('S','right',actual.length>=4||expected.length>=4?1:.5,'Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.');","return issue('Nest','right',actual.length>=4||expected.length>=4?1:.5,'Zusammenhängendes Fehlernest: Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.',{nest:true});")
   .replace("return issue.nest?'('+amount+') '+issue.code:(amount?amount+' ':'')+issue.code;","return issue.nest?(amount||issue.code):(amount?amount+' ':'')+issue.code;")
-  .replace(":esc(value.slice(issue.start,issue.end));",":esc(value.slice(issue.start,issue.end))+(issue.nest?'<span class=\"fa-nest-weight\" aria-hidden=\"true\">'+esc(faCorrectionLabel(issue))+'</span>':'');")
+  .replace('class="fa-correction-symbol" title=',`class="fa-correction-symbol'+(issue.nest?' fa-correction-nest':'')+'" title=`)
   .replace('function freiarbeitSentenceMatches(value,variants){','function freiarbeitSentenceMatches(value,variants){\n variants=kykloppFreiarbeitVariants(variants,value);')
   .replace('function analyze(text,variants,options={}){','function analyze(text,variants,options={}){\n variants=kykloppFreiarbeitVariants(variants,text);');
 }
 
 export function improveFreiarbeitCorrectionStyle(source){
  if(!source.includes('.fa-error-nest{'))return source;
- return source+`\n.fa-error-nest::before{content:'';left:-4px;right:-4px;bottom:-.75em;height:.9em;box-sizing:border-box;border:1.5px solid currentColor;border-top:0;border-radius:0 0 7px 7px}
-.fa-error-nest::after{display:none}
-.fa-nest-weight{position:absolute;left:50%;top:calc(100% + 1px);transform:translateX(-50%);padding:0 3px;background:#fff;color:#c02630;font:10px/1 Arial,sans-serif}
-.fa-correction-dim .fa-nest-weight{color:#aeb4bc}
+ return source+`\n.fa-correction-symbol.fa-correction-nest{min-width:30px;min-height:21px;padding:0 5px 3px;text-align:center;box-sizing:border-box;border:1.5px solid currentColor;border-top:0;border-radius:0 0 8px 8px}
 `;
 }
