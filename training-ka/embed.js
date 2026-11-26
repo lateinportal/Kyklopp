@@ -1,5 +1,6 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=506d7ff7779d';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=506d7ff7779d';
+import {improveWorksheetResults} from './results.js?v=525509068e3e';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=525509068e3e';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=525509068e3e';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -142,7 +143,8 @@ export function embeddedExercise(config){
 }
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
-export function improveWorksheetFeedback(source){
+export function improveWorksheetFeedback(source,artBase){
+ source=improveWorksheetResults(source,artBase);
  if(source.includes('function vocabularySenses(record){')){
   source=source.replace('const records=[record,...sheet.filter(item=>item.la===record.la&&(!record.type||item.type===record.type))];','const records=[record];');
   const start=source.indexOf('function liamVocabularyRecords(pool){'),end=source.indexOf('function liamPrincipal(',start);
@@ -217,7 +219,7 @@ export function prepareEmbeddedHTML(html,config){
  doc.head.insertBefore(bootstrap,meta.nextSibling);
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
-  for(const script of originalScripts)script.textContent=improveFreiarbeitVariants(improveWorksheetFeedback(script.textContent));
+  for(const script of originalScripts)script.textContent=improveFreiarbeitVariants(improveWorksheetFeedback(script.textContent,new URL('../vokabelbilder/grammatik-ergebnisse/',import.meta.url).href));
   for(const style of doc.querySelectorAll('style'))style.textContent=improveWorksheetFeedback(style.textContent);
   doc.documentElement.dataset.kykloppWorksheet='';
   const layout=doc.createElement('style');
