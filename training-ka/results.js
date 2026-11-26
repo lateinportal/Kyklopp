@@ -74,6 +74,7 @@ export function improveWorksheetResults(source,base='../vokabelbilder/grammatik-
   source=source.replace('return {name,total,done,score:','return {rating:worksheetTaskRating(state),name,total,done,score:');
   source=source.replace('?{round,pos,locked,score,tries,good,historyRows}:drafts.get(i)','?{round,pos,locked,score,tries,good,historyRows,fieldResults}:drafts.get(i)');
   source=source.replace('name:row.name,total:row.total','rating:row.rating,name:row.name,total:row.total');
+  source=source.replace("stars===3?'Gut gemacht!':stars===2?'Gut geübt.':'Weiter üben lohnt sich.'","stars>=2.5?'Sehr gut gemacht!':stars===2?'Gut gemacht!':'Weiter üben lohnt sich.'");
   source=source.replace("+' '+sum.right+' von '+sum.total+' Übungsteilen richtig.'",'');
   source=source.replace('ready?Math.round(3*sum.right/sum.total):0','ready?worksheetRating(rows):0')
    .replace('complete?Math.round(3*right/total):null','complete?worksheetRating(tasks):null')
