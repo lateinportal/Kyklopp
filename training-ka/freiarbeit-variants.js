@@ -1,4 +1,4 @@
-import {kykloppPCVariants} from './pc-variants.js?v=3858526e369b';
+import {kykloppPCVariants} from './pc-variants.js?v=72301e371f38';
 export function kykloppSyntaxIssues(actual,expected,text){
  const issues=[],add=(start,end,hint)=>issues.push({code:'Sb',side:'left',weight:.5,start,end,actual:text.slice(start,end),expected:'',hint});
  if(/^(wo|wer|was|wann|warum|wie|wohin|woher|weshalb|wieso)$/.test(expected[0]?.key)){
@@ -78,6 +78,7 @@ export function kykloppFreiarbeitVariants(variants,value){
 export function improveFreiarbeitVariants(source){
  if(!source.includes('const freiarbeitData=')||!source.includes('function freiarbeitSentenceMatches(value,variants){'))return source;
  return kykloppPCVariants.toString()+'\n'+kykloppSyntaxIssues.toString()+'\n'+kykloppFreiarbeitVariants.toString()+'\n'+source
+  .replace("['kommen',['komme','kommst','kommt','kommen','kommt','kommen'],", "['irren',['irre','irrst','irrt','irren','irrt','irren'],['irrte','irrtest','irrte','irrten','irrtet','irrten']],\n  ['kommen',['komme','kommst','kommt','kommen','kommt','kommen'],")
   .replace('const entirelyMissing=issues.length===1&&issues[0].missing;',"const syntax=kykloppSyntaxIssues(actual,expected,text);if(syntax.length)return {issues:[...(best.score>.65?[]:issues.filter(item=>!syntax.some(mark=>item.start<mark.end&&item.end>mark.start))),...syntax].sort((a,b)=>a.start-b.start||a.end-b.end),reference:best.variant,uncertain:false};const entirelyMissing=issues.length===1&&issues[0].missing;")
   .replace('let best=null;for(const variant of variants){',"let best=null;const actualKey=actual.map(word=>word.key).join(' '),exactVariant=variants.find(variant=>words(variant).map(word=>word.key).join(' ')===actualKey);if(exactVariant)variants=[exactVariant];for(const variant of variants){")
   .replace("Die Verknüpfung des Nebensatzes verändert die Konstruktion.","Konstruktionsfehler: Prüfe, wie die lateinische Satzkonstruktion ins Deutsche übertragen wird, zum Beispiel ein AcI, PC, Ablativus absolutus, Relativsatz oder relativer Satzanschluss.")
