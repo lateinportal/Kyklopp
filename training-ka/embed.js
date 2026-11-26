@@ -1,6 +1,6 @@
-import {improveWorksheetResults} from './results.js?v=026fef5765bd';
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=026fef5765bd';
-import {improveFreiarbeitVariants,improveFreiarbeitCorrectionStyle} from './freiarbeit-variants.js?v=026fef5765bd';
+import {improveWorksheetResults} from './results.js?v=c4fc486fd30b';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=c4fc486fd30b';
+import {improveFreiarbeitVariants,improveFreiarbeitCorrectionStyle} from './freiarbeit-variants.js?v=c4fc486fd30b';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
