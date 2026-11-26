@@ -12,7 +12,19 @@ export function createWorksheetDock(owner,source,onAction){
  frame.style.cssText='position:sticky;display:block;width:100%;height:100px;border:0;flex-shrink:0;pointer-events:auto;background:transparent';
  frame.srcdoc='<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\';script-src \'unsafe-inline\';style-src \'unsafe-inline\';img-src data:;font-src data:"><style id="tools-style"></style><div id="tools"></div><script>('+renderDock.toString()+')('+JSON.stringify(channel)+');</scr'+'ipt>';
  box.append(frame);root.document.body.append(box);
- let data=null,ready=false,lastContent='';
+ let data=null,ready=false,lastContent='',dragGhost=null;
+ function clearDragGhost(){dragGhost?.remove();dragGhost=null;}
+ function showDragGhost(text,x,y){
+  if(!dragGhost){
+   dragGhost=root.document.createElement('span');dragGhost.className='worksheet-drag-preview';
+   dragGhost.setAttribute('aria-hidden','true');
+   dragGhost.style.cssText='position:fixed;left:0;top:0;z-index:2147482000;pointer-events:none;padding:9px 15px;border:1px solid #d5b773;border-radius:4px;background:#ffdf9a;color:#343434;box-shadow:0 4px 9px #0005;font:16px/1.5 Arial,sans-serif;white-space:nowrap';
+   root.document.body.append(dragGhost);
+  }
+  const caption=String(text||'').slice(0,160);
+  if(dragGhost.textContent!==caption)dragGhost.textContent=caption;
+  dragGhost.style.transform='translate3d('+x+'px,'+y+'px,0) translate(-50%,-50%) rotate(-4deg)';
+ }
  function frameOffset(){
   let current=owner,x=source.getBoundingClientRect().left,y=source.getBoundingClientRect().top;
   while(current!==root){const rect=current.frameElement.getBoundingClientRect();x+=rect.left;y+=rect.top;current=current.parent;}
@@ -31,6 +43,7 @@ export function createWorksheetDock(owner,source,onAction){
   sendBounds();
  }
  function update(next){
+  if(!next)clearDragGhost();
   data=next;position();
   if(!next||!ready)return;
   const content=next.html+next.css;
@@ -44,6 +57,7 @@ export function createWorksheetDock(owner,source,onAction){
  function message(event){
   if(event.source!==frame.contentWindow||event.data?.channel!==channel)return;
   const action=event.data;
+  if(action.type==='cancel-drag'){clearDragGhost();return;}
   if(action.type==='ready'){ready=true;update(data);return;}
   if(action.type==='height'&&Number.isFinite(action.height)){
    frame.style.height=Math.max(1,Math.min(2000,action.height))+'px';sendBounds();return;
@@ -52,16 +66,18 @@ export function createWorksheetDock(owner,source,onAction){
   const offset=frameOffset(),rect=frame.getBoundingClientRect();
   const point={x:rect.left+action.x,y:rect.top+action.y};
   if(action.type==='drag'){
+   showDragGhost(action.text,point.x,point.y);
    if(point.y<70)root.scrollBy(0,-18);
    else if(point.y>root.innerHeight-35)root.scrollBy(0,18);
    return;
   }
+  clearDragGhost();
   onAction({...action,x:point.x-offset.x,y:point.y-offset.y});
  }
  root.addEventListener('message',message);
  root.addEventListener('resize',position);
  root.addEventListener('scroll',sendBounds,{passive:true,capture:true});
- return {update,position,destroy(){root.removeEventListener('message',message);root.removeEventListener('resize',position);root.removeEventListener('scroll',sendBounds,true);box.remove();}};
+ return {update,position,destroy(){clearDragGhost();root.removeEventListener('message',message);root.removeEventListener('resize',position);root.removeEventListener('scroll',sendBounds,true);box.remove();}};
 }
 
 function renderDock(channel){
@@ -91,20 +107,21 @@ function renderDock(channel){
  tools.addEventListener('pointerdown',event=>{
   const button=event.target.closest('[data-board-token]');
   if(!button||button.disabled||event.button!==0)return;
-  drag={token:Number(button.dataset.boardToken),x:event.clientX,y:event.clientY,moved:false};
+  drag={token:Number(button.dataset.boardToken),text:button.textContent,x:event.clientX,y:event.clientY,moved:false};
   button.setPointerCapture(event.pointerId);
  });
  tools.addEventListener('pointermove',event=>{
   if(!drag)return;
   if(Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>6)drag.moved=true;
-  if(drag.moved)send({type:'drag',token:drag.token,x:event.clientX,y:event.clientY});
+  if(drag.moved)send({type:'drag',token:drag.token,text:drag.text,x:event.clientX,y:event.clientY});
  });
  tools.addEventListener('pointerup',event=>{
   if(!drag)return;
   if(drag.moved){suppressClick=true;setTimeout(()=>{suppressClick=false;},0);send({type:'drop',token:drag.token,x:event.clientX,y:event.clientY});}
   drag=null;
  });
- tools.addEventListener('pointercancel',()=>{drag=null;});
+ tools.addEventListener('pointercancel',()=>{drag=null;send({type:'cancel-drag'});});
+ tools.addEventListener('lostpointercapture',()=>{if(drag){drag=null;send({type:'cancel-drag'});}});
  tools.addEventListener('click',event=>{
   if(suppressClick){suppressClick=false;return;}
   const button=event.target.closest('button');if(!button||button.disabled)return;
