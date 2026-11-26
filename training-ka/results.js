@@ -32,6 +32,7 @@ const css=`
 export function improveWorksheetResults(source,base='../vokabelbilder/grammatik-ergebnisse/'){
  if(source.includes('function progressRows(){')&&!source.includes('function worksheetRating(')){
   source=source.replace('function progressRows(){',[worksheetRating,worksheetStars,worksheetResult].map(fn=>fn.toString().replace(/^export /,'')).join('\n')+'\nfunction progressRows(){');
+  source=source.replace("+' '+sum.right+' von '+sum.total+' Übungsteilen richtig.'",'');
   source=source.replace('ready?Math.round(3*sum.right/sum.total):0','ready?worksheetRating(rows):0')
    .replace('complete?Math.round(3*right/total):null','complete?worksheetRating(tasks):null')
    .replace('Number.isInteger(item.stars)&&item.stars>=0','Number.isFinite(item.stars)&&Number.isInteger(item.stars*2)&&item.stars>=0');

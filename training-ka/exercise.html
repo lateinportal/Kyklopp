@@ -2615,7 +2615,7 @@ function showOverview(refresh=false){
   const sum=rows.reduce((result,row)=>({right:result.right+row.score,total:result.total+row.total}),{right:0,total:0});
   const stars=ready?worksheetRating(rows):0;
   const title=ready?'Dein Ergebnis':'Löse erst alle Aufgaben.';
-  const feedbackText=ready?(stars===3?'Gut gemacht!':stars===2?'Gut geübt.':'Weiter üben lohnt sich.')+' '+sum.right+' von '+sum.total+' Übungsteilen richtig.':'Dein Ergebnis erscheint, wenn du alle Aufgaben erledigt hast.';
+  const feedbackText=ready?(stars===3?'Gut gemacht!':stars===2?'Gut geübt.':'Weiter üben lohnt sich.'):'Dein Ergebnis erscheint, wenn du alle Aufgaben erledigt hast.';
   const mark=ready?worksheetResult(stars,"../vokabelbilder/grammatik-ergebnisse/"):'';
   const progress=rows.map((row,i)=>'<li><button type="button" class="circle '+(row.finished&&row.total?(row.score===row.total?'solved':'mistakes'):'')+'" data-action="overview-task" data-task="'+i+'" aria-label="Aufgabe '+(i+1)+(row.finished&&row.total?(row.score===row.total?', gelöst':', mit Fehlern abgeschlossen'):', offen')+' öffnen">'+(i+1)+'</button>'+attemptDots(row)+'</li>').join('');
   const resume=resumeTask(rows,t);
