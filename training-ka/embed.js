@@ -1,5 +1,5 @@
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=d22f5dd6c8d6';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=d22f5dd6c8d6';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=506d7ff7779d';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=506d7ff7779d';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -143,6 +143,17 @@ export function embeddedExercise(config){
 
 // Shared by the built-in worksheet build and existing uploaded worksheet templates.
 export function improveWorksheetFeedback(source){
+ if(source.includes('function vocabularySenses(record){')){
+  source=source.replace('const records=[record,...sheet.filter(item=>item.la===record.la&&(!record.type||item.type===record.type))];','const records=[record];');
+  const start=source.indexOf('function liamVocabularyRecords(pool){'),end=source.indexOf('function liamPrincipal(',start);
+  if(start>=0&&end>start){
+   const original=source.slice(start,end);
+   const updated=original.replace('for(const record of pool){',    "for(const record of pool){\n  const key=(record.sourceKind==='Verb'||record.type==='v')?record.la:JSON.stringify([record.la,record.type,record.sourceGrammar||'',record.de]);")
+    .replaceAll('records.get(record.la)','records.get(key)').replaceAll('records.set(record.la,record)','records.set(key,record)');
+   source=source.slice(0,start)+updated+source.slice(end);
+  }
+  source=source.replace("esc(entry.word)+'</td><td>'+field('grammar-'",   "esc(entry.word)+(entry.record?.la==='cum'?'<small class=\"muted\" style=\"display:block\">Lektion '+esc(entry.record.lesson)+' · '+esc(entry.record.sourceGrammar||'')+'</small>':'')+'</td><td>'+field('grammar-'");
+ }
  return source.replace("Geschrei:'Schreie'","Geschrei:'Schreie|Geschreie'").replace('liveTimer=setTimeout(()=>{liveTimer=null;check(true)},400);',
    'liveTimer=setTimeout(()=>{liveTimer=null;check(true);saveSession()},400);')
  .replace("window.scrollTo({top:0,left:0,behavior:'instant'});",`window.scrollTo({top:0,left:0,behavior:'instant'});
