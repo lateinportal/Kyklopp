@@ -13,7 +13,7 @@ export function worksheetStars(stars,animate=true){
  return '<span class="kyklopp-rating'+(animate?' is-animated':'')+'" role="img" aria-label="'+String(stars).replace('.',',')+' von 3 Sternen">'+[0,1,2].map(index=>'<span class="kyklopp-star" aria-hidden="true" style="--fill:'+Math.min(100,Math.max(0,(stars-index)*100))+'%;--delay:'+(index*.25)+'s"><span>★</span><b>★</b></span>').join('')+'</span>';
 }
 export function worksheetResult(stars,base){
- const tier=stars<=.5?'practice':stars<=1.5?'progress':stars===2?'strong':'perfect';
+ const tier=stars<=1?'practice':stars<=1.5?'progress':stars===2?'strong':'perfect';
  const alt={practice:'Kloppo ermutigt zum Weiterüben',progress:'Kloppo zeigt deinen Fortschritt',strong:'Kloppo zeigt den Daumen nach oben',perfect:'Kloppo jubelt'};
  return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
 }
