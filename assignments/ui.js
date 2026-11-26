@@ -1017,9 +1017,8 @@ function teacherPage(){
  if(teacherSection==='students'&&who(managedStudent))return studentManagementPage(who(managedStudent));
  const questions=state.tasks.filter(t=>!t.deletedAt&&(t.studentReview==='question'||(t.status!=='submitted'&&hasUnreadDiscussion(t))));
  const pending=state.tasks.filter(t=>!t.deletedAt&&t.status==='submitted'),requests=state.purchases.filter(p=>p.status==='pending'),title={reviews:'Abgaben',students:'Deine Schüler',requests:'Belohnungsanfragen'}[teacherSection];
- const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div><div class="review-actions"><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></div></header>';
+ const heading='<header class="page-head"><div><h1>'+title+'</h1>'+(teacherSection==='students'?'':'<p class="quiet-subtitle">'+(teacherSection==='reviews'?'Prüfe die Fotos in Discord und gib hier Rückmeldung.':'Bestätige Belohnungen nach gemeinsamer Absprache.')+'</p>')+'</div>'+(teacherSection==='students'?'<div class="review-actions teacher-overview-actions"><button class="btn secondary" data-grant-denare>'+icon('denar')+' Denare vergeben</button><button class="btn secondary" data-new-task>'+icon('plus')+' Aufgabe zuweisen</button></div>':'')+'</header>';
  if(teacherSection==='students')return heading+
- '<div class="denare-grant-action"><button class="btn secondary" data-deduct-denare>Denare abziehen</button><button class="btn" data-grant-denare>Denare vergeben</button></div>'+
  '<div class="student-table"><table class="students-overview"><thead><tr><th scope="col">Schüler</th><th scope="col">Aufgaben</th><th scope="col">Abgeschlossen</th><th scope="col">Abgaben</th><th scope="col">Denare</th><th scope="col">Belohnungsanfragen</th><th scope="col"><span class="student-action-label">Verwaltung</span></th></tr></thead><tbody>'+
  profiles.map(p=>{
   const tasks=myTasks(p.id),submitted=tasks.filter(task=>task.status==='submitted').length;

@@ -820,3 +820,6 @@ body[data-mode="student"] .page-head h1{font-family:var(--hub-heading-family,'Li
 @media(max-width:350px){body[data-mode="student"] .assignment-page-head>h1{font-size:30px}}
 
 #personal-training-panel>.page-head[hidden]{display:none}
+
+.page-head>.teacher-overview-actions{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.teacher-overview-actions .btn{white-space:nowrap}
