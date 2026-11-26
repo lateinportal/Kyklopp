@@ -12,6 +12,7 @@ export function kykloppPCVariants(variants,value){
  else if(first.includes('Höhle verließen')&&first.includes('hörten wir'))kind='leave';
  if(!kind)return variants;
  let family='',shape='';
+ if(kind==='think')shape=/\ban\s+viele Dinge\b/iu.test(text)?'viele Dinge':/\ban\s+viel\b/iu.test(text)?'viel':'vieles';
  if(kind==='hunger'){
   family=/^Aus\b/iu.test(text)?'prep':/^Wir,\s*die/iu.test(text)?'relative':/^Von\b/iu.test(text)?'literal':/^Wir\s+(?:wurden|waren)/iu.test(text)?'coordinate':'subordinate';
   shape=[family,/\bdie\s+\S+\s+Speisen\b/u.test(text),/nahmen wir gern/u.test(text),/\bworden waren\b/u.test(text)?'anterior':/\b(?:getrieben|gequält) waren\b/u.test(text)?'state':'past',/^Als\b/iu.test(text)?'Als':/^Während\b/iu.test(text)?'Während':/^Da\b/iu.test(text)?'Da':/^Nachdem\b/iu.test(text)?'Nachdem':'Weil'].join('|');
@@ -87,6 +88,13 @@ export function kykloppPCVariants(variants,value){
    add('Unter vielen Überlegungen '+answer);
    add('Ich dachte '+adverb+' über vieles nach und antwortete ihm '+plea+': '+tail);
    add('Ich antwortete ihm '+adverb+' '+plea+', während ich über vieles nachdachte: '+tail);
+   add('An '+shape+' denkend, '+answer);
+   for(const link of ['Als','Während'])add(link+' ich an '+shape+' dachte, '+answer);
+   add('Ich, der an '+shape+' dachte, '+answer.replace(/^antwortete ich /u,'antwortete '));
+   add('Beim Denken an '+shape+' '+answer);
+   add('Ich dachte '+adverb+' an '+shape+' und antwortete ihm '+plea+': '+tail);
+   add('Ich dachte an '+shape+' und antwortete ihm '+adverb+' '+plea+': '+tail);
+   add('Ich antwortete ihm '+adverb+' '+plea+', während ich an '+shape+' dachte: '+tail);
   }
  }
  if(kind==='leave'){
