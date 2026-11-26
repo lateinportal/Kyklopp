@@ -15,7 +15,7 @@ export function worksheetStars(stars,animate=true){
 export function worksheetResult(stars,base){
  const tier=stars<=.5?'practice':stars<=1.5?'progress':stars===2?'strong':'perfect';
  const alt={practice:'Kloppo ermutigt zum Weiterüben',progress:'Kloppo zeigt deinen Fortschritt',strong:'Kloppo zeigt den Daumen nach oben',perfect:'Kloppo jubelt'};
- return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"><p class="kyklopp-rating-note">1. Versuch: volle Wertung · 2. Versuch: halbe Wertung · 3. Versuch: ein Viertel</p></div>';
+ return '<div class="kyklopp-result">'+worksheetStars(stars)+'<img class="kyklopp-result-art" src="'+base+'kloppo-'+tier+'.webp" alt="'+alt[tier]+'"></div>';
 }
 const css=`
 .kyklopp-rating{display:inline-flex;justify-content:center;gap:6px;font:56px/1.2 Arial,sans-serif;vertical-align:middle;letter-spacing:0}
@@ -24,7 +24,6 @@ const css=`
 .kyklopp-rating.is-animated .kyklopp-star>b{animation:kyklopp-star-fill .55s ease-out var(--delay) both}
 .kyklopp-rating.is-animated .kyklopp-star{animation:kyklopp-star-pop .45s ease-out var(--delay) both}
 .kyklopp-result-art{display:block;width:min(280px,85%);height:auto;margin:12px auto 8px}
-.kyklopp-rating-note{font:13px/1.6 Arial,sans-serif;color:#5b6370;margin:8px auto 20px;max-width:480px}
 .history-stars .kyklopp-rating{font-size:23px;gap:2px}
 @keyframes kyklopp-star-fill{from{width:0}to{width:var(--fill)}}
 @keyframes kyklopp-star-pop{from{opacity:0;transform:scale(.75)}to{opacity:1;transform:scale(1)}}
