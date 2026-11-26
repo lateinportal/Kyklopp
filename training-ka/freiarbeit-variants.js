@@ -1,4 +1,4 @@
-import {kykloppPCVariants} from './pc-variants.js?v=72301e371f38';
+import {kykloppPCVariants} from './pc-variants.js?v=756e7b3f7f18';
 export function kykloppSyntaxIssues(actual,expected,text){
  const issues=[],add=(start,end,hint)=>issues.push({code:'Sb',side:'left',weight:.5,start,end,actual:text.slice(start,end),expected:'',hint});
  if(/^(wo|wer|was|wann|warum|wie|wohin|woher|weshalb|wieso)$/.test(expected[0]?.key)){

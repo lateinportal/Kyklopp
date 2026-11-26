@@ -15,6 +15,7 @@
  let templateDocument=null,embedChannel=null,embedSettingsDirty=false,embedLive=false,embeddedModal=false;
  let toolDock=null,toolData=null,dockLoading=null;
  let trainingListFingerprint=null,trainingListRequest=0,openingTraining=false;
+ let libraryFingerprint=null,libraryRequest=0,deletingTemplate=false;
  async function showToolDock(data){
   if(data?.kind==='drag-preview'){
    if(data.active!==true){toolDock?.dragPreview({active:false});return;}
@@ -433,15 +434,51 @@
   }
  }
  async function loadLibrary(selected){
+  if(deletingTemplate)return;
+  const request=++libraryRequest;
   const items=await rpc('templates',{},await teacherToken());
+  if(request!==libraryRequest||deletingTemplate)return;
   const selector=$('training-template');
   const selection=selected??selector.value;
+  const fingerprint=JSON.stringify(items);
+  if(fingerprint===libraryFingerprint){if(selected!==undefined)selector.value=items.some(item=>item.id===selected)?selected:'';return;}
+  libraryFingerprint=fingerprint;
   selector.replaceChildren();
   const placeholder=new Option('Auswählen','',true,true);placeholder.disabled=true;selector.add(placeholder);
   for(const item of items){
    selector.add(new Option(item.title,item.id));
   }
   selector.value=items.some(item=>item.id===selection)?selection:'';
+  $('template-management').hidden=false;
+  $('template-list').replaceChildren();
+  const uploaded=items.filter(item=>item.kind==='html');
+  $('template-status').textContent=uploaded.length?'':'Noch keine eigenen Übungsvorlagen vorhanden.';
+  for(const item of uploaded){
+   const row=document.createElement('div'),title=document.createElement('strong'),remove=document.createElement('button');
+   row.className='template-entry';row.dataset.templateId=item.id;title.textContent=item.title;
+   const copy=document.createElement('div');copy.append(title);
+   const created=new Date(item.createdAt);
+   if(item.createdAt&&!Number.isNaN(created.valueOf())){
+    const note=document.createElement('small');note.textContent='Hinzugefügt: '+created.toLocaleString('de-DE',{dateStyle:'short',timeStyle:'medium'});copy.append(note);
+   }
+   remove.type='button';remove.className='danger delete-access';remove.textContent='×';remove.title='Übungsvorlage löschen';
+   remove.setAttribute('aria-label','Übungsvorlage „'+item.title+'“ löschen');
+   remove.onclick=async()=>{
+    if(deletingTemplate||!confirm('Übungsvorlage „'+item.title+'“ löschen? Sie steht danach nicht mehr für neue Links zur Auswahl. Bereits erstellte persönliche Übungen, Links und Bearbeitungsstände bleiben erhalten.'))return;
+    deletingTemplate=true;++libraryRequest;
+    $('template-list').querySelectorAll('button').forEach(button=>button.disabled=true);
+    try{
+     await rpc('delete_template',{p_id:item.id},await teacherToken());
+     deletingTemplate=false;await loadLibrary();
+     $('template-status').textContent='Übungsvorlage gelöscht. Bereits erstellte persönliche Übungen bleiben erhalten.';
+    }catch(error){
+     $('template-status').textContent=/function|PGRST202/.test(error.message)?'Bitte zuerst das SQL-Update „Übungsvorlagen löschen“ in Supabase ausführen.':error.message;
+    }finally{
+     deletingTemplate=false;$('template-list').querySelectorAll('button').forEach(button=>button.disabled=false);
+    }
+   };
+   row.append(copy,remove);$('template-list').append(row);
+  }
  }
  async function boot(){
   if(!token){

@@ -12,6 +12,12 @@ h2{margin-top:0}
 @media(max-width:800px){.setup-grid{grid-template-columns:1fr;gap:0}}
 button.danger{background:#fff;color:#bc293d;border-color:#e8abb5}
 button.delete-access{width:44px;min-height:44px;padding:0;font-size:24px;line-height:1}
+.template-entry{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid #dce5ed}
+.template-entry:last-child{border-bottom:0}
+.template-entry strong{overflow-wrap:anywhere;min-width:0}
+.template-entry>div{min-width:0}
+.template-entry small{display:block;color:#526b80}
+.template-entry button{flex-shrink:0}
 button,input,select{font:inherit}
 label{display:block;margin-bottom:6px}
 input,select{width:100%;min-height:44px;border:1px solid #b7cadd;border-radius:7px;padding:9px 12px;margin-bottom:12px}
