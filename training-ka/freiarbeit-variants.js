@@ -63,7 +63,12 @@ export function improveFreiarbeitVariants(source){
   .replace("Die Verknüpfung des Nebensatzes verändert die Konstruktion.","Konstruktionsfehler: Prüfe, wie die lateinische Satzkonstruktion ins Deutsche übertragen wird, zum Beispiel ein AcI, PC, Ablativus absolutus, Relativsatz oder relativer Satzanschluss.")
   .replace("return issue('S','right',actual.length>=4||expected.length>=4?1:.5,'Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.');","return issue('Nest','right',actual.length>=4||expected.length>=4?1:.5,'Zusammenhängendes Fehlernest: Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.',{nest:true});")
   .replace("return issue.nest?'('+amount+') '+issue.code:(amount?amount+' ':'')+issue.code;","return issue.nest?(amount||issue.code):(amount?amount+' ':'')+issue.code;")
-  .replace('class="fa-correction-symbol" title=',`class="fa-correction-symbol'+(issue.nest?' fa-correction-nest':'')+'" title=`)
+  .replace("if(best.cost&&bagA===bagB)return {issues:[],reference:best.variant,uncertain:true,note:'Die Wörter stimmen weitgehend überein. Diese Satzstellung lässt sich automatisch nicht sicher beurteilen.'};", "if(best.cost&&bagA===bagB)return {issues:[...issues.filter(item=>item.side==='left'),{...issue('Sb?','left',0,'Die Wörter stimmen überein. Bitte die Satzstellung prüfen; dies ist kein festgestellter Fehler und wird nicht abgezogen.',{advisory:true}),start:0,end:0,actual:'',expected:''}].sort((a,b)=>a.start-b.start||a.end-b.end),reference:best.variant,uncertain:true,advisoryOnly:true};")
+  .replace("return !analysis.uncertain&&analysis.issues.length>0", "return (!analysis.uncertain||analysis.advisoryOnly)&&analysis.issues.length>0")
+  .replace('if(analysis.uncertain){const note=', 'if(analysis.uncertain&&!analysis.advisoryOnly){const note=')
+  .replace("if(['Z','L','Ff'].includes(item.code))continue;", "if(item.advisory||['Z','L','Ff'].includes(item.code))continue;")
+  .replace("const style=issue.missing?'gap':", "const style=issue.advisory?'advisory':issue.missing?'gap':")
+  .replace('class="fa-correction-symbol" title=',`class="fa-correction-symbol'+(issue.nest?' fa-correction-nest':'')+(issue.advisory?' fa-correction-advisory':'')+'" title=`)
   .replace('function freiarbeitSentenceMatches(value,variants){','function freiarbeitSentenceMatches(value,variants){\n variants=kykloppFreiarbeitVariants(variants,value);')
   .replace('function analyze(text,variants,options={}){','function analyze(text,variants,options={}){\n variants=kykloppFreiarbeitVariants(variants,text);');
 }
@@ -71,5 +76,7 @@ export function improveFreiarbeitVariants(source){
 export function improveFreiarbeitCorrectionStyle(source){
  if(!source.includes('.fa-error-nest{'))return source;
  return source+`\n.fa-correction-symbol.fa-correction-nest{min-width:30px;min-height:21px;padding:0 5px 3px;text-align:center;box-sizing:border-box;border:1.5px solid currentColor;border-top:0;border-radius:0 0 8px 8px}
+.fa-error-advisory{text-decoration:none}
+.fa-correction-symbol.fa-correction-advisory{color:#65768a}
 `;
 }
