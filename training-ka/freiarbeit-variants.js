@@ -1,7 +1,9 @@
+import {kykloppPCVariants} from './pc-variants.js?v=026fef5765bd';
 // Generate equivalent wording and clause orders for identified L28 sentences only.
 // These candidates are transient, so stored rounds do not grow or lose answers.
 export function kykloppFreiarbeitVariants(variants,value){
  if(!Array.isArray(variants)||!variants.length)return variants;
+ variants=kykloppPCVariants(variants,value);
  const first=variants[0],text=String(value||'');
  if(first.includes('großartigen Mann')&&first.includes('Liebe beunruhigt')){
   const expanded=new Set(variants);
@@ -59,7 +61,8 @@ export function kykloppFreiarbeitVariants(variants,value){
 
 export function improveFreiarbeitVariants(source){
  if(!source.includes('const freiarbeitData=')||!source.includes('function freiarbeitSentenceMatches(value,variants){'))return source;
- return kykloppFreiarbeitVariants.toString()+'\n'+source
+ return kykloppPCVariants.toString()+'\n'+kykloppFreiarbeitVariants.toString()+'\n'+source
+  .replace('let best=null;for(const variant of variants){',"let best=null;const actualKey=actual.map(word=>word.key).join(' '),exactVariant=variants.find(variant=>words(variant).map(word=>word.key).join(' ')===actualKey);if(exactVariant)variants=[exactVariant];for(const variant of variants){")
   .replace("Die Verknüpfung des Nebensatzes verändert die Konstruktion.","Konstruktionsfehler: Prüfe, wie die lateinische Satzkonstruktion ins Deutsche übertragen wird, zum Beispiel ein AcI, PC, Ablativus absolutus, Relativsatz oder relativer Satzanschluss.")
   .replace("return issue('S','right',actual.length>=4||expected.length>=4?1:.5,'Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.');","if(actual.length===1){if(allExpected.some(word=>word.key===actual[0].key))return issue('Sb?','left',0,'Dieses Wort kommt in der Vergleichsübersetzung an einer anderen Stelle vor. Bitte die Wortstellung prüfen; kein gesicherter Fehler.',{advisory:true});return issue('V','right',.5,'Prüfe die Bedeutung dieses einzelnen Wortes.');}return issue('Nest','right',actual.length>=4||expected.length>=4?1:.5,'Zusammenhängendes Fehlernest: Prüfe den Inhalt dieser Wortgruppe und ihre Zuordnung im Satz.',{nest:true});")
   .replace("if(articles.has(a)&&articles.has(b))return issue('Gr'", "if(/^(dies|jen)(e|er|es|en|em)$/.test(a)&&/^(dies|jen)(e|er|es|en|em)$/.test(b)&&a.replace(/^(dies|jen)/,'')===b.replace(/^(dies|jen)/,'')&&!((a.startsWith('dies')&&b.startsWith('dies'))||(a.startsWith('jen')&&b.startsWith('jen'))))return issue('V','right',.5,'Prüfe die Bedeutung des Demonstrativpronomens: dieser und jener sind hier nicht gleichbedeutend.');if(articles.has(a)&&articles.has(b))return issue('Gr'")
