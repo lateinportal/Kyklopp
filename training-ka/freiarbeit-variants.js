@@ -17,7 +17,9 @@ export function kykloppFreiarbeitVariants(variants,value){
   return [...expanded];
  }
  let kind='',shape='';
- if(/Hunger.*Durst/.test(first)&&first.includes('Speisen')&&first.includes('Polyphem')&&/^wir\s+nahm/iu.test(text)){
+ if(first.includes('unbekannten Ort')&&first.includes('Höhle')&&/^ich\s+(?:kam|gelangte|bin)\b/iu.test(text)){
+  kind='arrival';shape=/;\s*ich\b/iu.test(text)?'subject':'place';
+ }else if(/Hunger.*Durst/.test(first)&&first.includes('Speisen')&&first.includes('Polyphem')&&/^wir\s+nahm/iu.test(text)){
   kind='food';
   shape=[/^wir\s+\S+\s+gern\b/iu.test(text),/\bzu uns\b/iu.test(text),/\bworden waren\b/iu.test(text)?'prior':/\b(?:getrieben|gequält) waren\b/iu.test(text)?'state':'past'].join('|');
  }else if(first.includes('Auge fehlte')&&first.includes('Höhle')&&first.includes('fragte')&&/^(?:dieser|er)\s+(?:bemerkte|merkte|verstand|erkannte)\b/iu.test(text))kind='cave';
@@ -27,7 +29,12 @@ export function kykloppFreiarbeitVariants(variants,value){
  const key=kind+'|'+shape;if(entries.has(key))return entries.get(key);
  const result=new Set();
  for(const variant of variants){
-  if(kind==='food'){
+  if(kind==='arrival'){
+   const match=/^(Einst|Einmal) (kam|gelangte|bin) ich (.+); (an diesem Ort|dort) (fand|habe) ich (.+)$/u.exec(variant);
+   if(!match)continue;
+   const [,when,verb,body,place,secondVerb,ending]=match;
+   result.add('Ich '+verb+' '+when.toLowerCase()+' '+body+'; '+(shape==='subject'?'ich '+secondVerb+' '+place:place+' '+secondVerb+' ich')+' '+ending);
+  }else if(kind==='food'){
    const match=/^Weil ([^,]+), nahmen wir gern (.+), als (.+)$/u.exec(variant);
    if(!match)continue;
    let [,cause,food,ending]=match;
