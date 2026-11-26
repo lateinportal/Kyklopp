@@ -1090,8 +1090,8 @@ function newTask(task=null){
  const description=[task?.description??'',...(task?.links??[])].filter(Boolean).join(String.fromCharCode(10,10));
  modal(task?'Aufgabe bearbeiten':'Eine Aufgabe zuweisen',
  '<form id="assign-form">'+recipientPickerMarkup('assign-recipient')+
- '<label>Aufgabentitel<input name="reference" placeholder="Arbeitsheft, S. 24 · Aufgabe 3" value="'+esc(task?.reference??'')+'" required maxlength="1000"></label>'+
- '<label>Arbeitsauftrag (optional)<textarea id="assignment-description" name="description" rows="4" maxlength="4000" placeholder="[Beispiel Text](https://beispiel.de)">'+esc(description)+'</textarea></label><button class="link assignment-grammar-link" type="button" id="insert-grammar-link">Grammatikübersicht verlinken</button>'+
+ '<label>Aufgabentitel<input name="reference" value="'+esc(task?.reference??'')+'" required maxlength="1000"></label>'+
+ '<label>Arbeitsauftrag (optional)<textarea id="assignment-description" name="description" rows="1" maxlength="4000" placeholder="[Beispiel Text](https://beispiel.de)">'+esc(description)+'</textarea></label><button class="link assignment-grammar-link" type="button" id="insert-grammar-link">Grammatikübersicht verlinken</button>'+
  '<label class="attachment-picker">PDFs und Bilder<input id="task-files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" multiple></label><div id="attachment-draft"></div>'+
  '<div class="assignment-metrics"><label>Dauer (min, optional)<input name="plannedMinutes" type="number" min="1" max="999" value="'+(task?.plannedMinutes??'')+'"></label>'+
  '<label>Denare<input name="points" type="number" min="'+Math.max(1,awarded)+'" value="'+(task?.points??'')+'" required></label>'+

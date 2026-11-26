@@ -776,6 +776,8 @@ dialog.denare-dialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) au
 
 .management-book { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--muted); }
 
+#assignment-description{height:calc(1lh + 22px);min-height:calc(1lh + 22px);resize:vertical}
+
 /* The student module lives inside the existing trainer layout. */
 body { font-family: 'DM Sans', 'Segoe UI', Arial, sans-serif; }
 main { margin: 0; padding: 0; max-width: none; }
