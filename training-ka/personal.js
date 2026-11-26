@@ -16,6 +16,11 @@
  let toolDock=null,toolData=null,dockLoading=null;
  let trainingListFingerprint=null,trainingListRequest=0,openingTraining=false;
  async function showToolDock(data){
+  if(data?.kind==='drag-preview'){
+   if(data.active!==true){toolDock?.dragPreview({active:false});return;}
+   if(Number.isFinite(data.x)&&Number.isFinite(data.y)&&typeof data.text==='string'&&data.text.length<=1000&&!activeDialog&&!embeddedModal)toolDock?.dragPreview(data);
+   return;
+  }
   if(data){
    if(!['aci','bank'].includes(data.kind)||typeof data.html!=='string'||typeof data.css!=='string'||data.html.length+data.css.length>200000||!['left','top','width','height'].every(key=>Number.isFinite(data[key])))return;
    data={...data,...Object.fromEntries(['left','top','width','height'].map(key=>[key,Math.max(0,Math.min(100000,data[key]))]))};

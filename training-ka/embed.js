@@ -1,6 +1,6 @@
-import {improveWorksheetResults} from './results.js?v=b9709e7fc6f3';
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=b9709e7fc6f3';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=b9709e7fc6f3';
+import {improveWorksheetResults} from './results.js?v=0d3b98e158b8';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=0d3b98e158b8';
+import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=0d3b98e158b8';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -125,7 +125,7 @@ export function embeddedExercise(config){
   }
  });
  function report(){
-  const height=Math.max(...[...document.body.children].filter(node=>!['SCRIPT','STYLE'].includes(node.tagName))
+  const height=Math.max(...[...document.body.children].filter(node=>!['SCRIPT','STYLE'].includes(node.tagName)&&!node.matches('.card-drag-ghost'))
    .map(node=>node.getBoundingClientRect().bottom+scrollY+16),300);
   send('height',{height});
   send('modal',{open:Boolean(document.querySelector('dialog[open]'))});

@@ -57,7 +57,7 @@ export function createWorksheetDock(owner,source,onAction){
  function message(event){
   if(event.source!==frame.contentWindow||event.data?.channel!==channel)return;
   const action=event.data;
-  if(action.type==='cancel-drag'){clearDragGhost();return;}
+  if(action.type==='cancel-drag'){clearDragGhost();onAction({type:'hover-clear'});return;}
   if(action.type==='ready'){ready=true;update(data);return;}
   if(action.type==='height'&&Number.isFinite(action.height)){
    frame.style.height=Math.max(1,Math.min(2000,action.height))+'px';sendBounds();return;
@@ -67,17 +67,23 @@ export function createWorksheetDock(owner,source,onAction){
   const point={x:rect.left+action.x,y:rect.top+action.y};
   if(action.type==='drag'){
    showDragGhost(action.text,point.x,point.y);
+   onAction({type:'hover',x:point.x-offset.x,y:point.y-offset.y});
    if(point.y<70)root.scrollBy(0,-18);
    else if(point.y>root.innerHeight-35)root.scrollBy(0,18);
    return;
   }
   clearDragGhost();
+  onAction({type:'hover-clear'});
   onAction({...action,x:point.x-offset.x,y:point.y-offset.y});
  }
  root.addEventListener('message',message);
  root.addEventListener('resize',position);
  root.addEventListener('scroll',sendBounds,{passive:true,capture:true});
- return {update,position,destroy(){clearDragGhost();root.removeEventListener('message',message);root.removeEventListener('resize',position);root.removeEventListener('scroll',sendBounds,true);box.remove();}};
+ function dragPreview(value){
+  if(!value.active){clearDragGhost();return;}
+  const offset=frameOffset();showDragGhost(value.text,offset.x+value.x,offset.y+value.y);
+ }
+ return {update,position,dragPreview,destroy(){clearDragGhost();root.removeEventListener('message',message);root.removeEventListener('resize',position);root.removeEventListener('scroll',sendBounds,true);box.remove();}};
 }
 
 function renderDock(channel){
@@ -132,7 +138,16 @@ function renderDock(channel){
 
 // Serialized into the original worksheet's lexical scope by both integrations.
 export function installWorksheetToolDock(send,canWrite){
- let active=null,previous='',dockBounds=null;
+ let active=null,previous='',dockBounds=null,hovered=null,previewing=false;
+ function clearHover(){hovered?.classList.remove('card-over');hovered=null;}
+ document.addEventListener('pointermove',event=>{
+  if(!canWrite()||typeof boardDrag==='undefined'||!boardDrag?.ghost)return;
+  boardDrag.ghost.style.visibility='hidden';previewing=true;
+  send({kind:'drag-preview',active:true,text:boardDrag.ghost.textContent,x:event.clientX,y:event.clientY});
+ });
+ for(const type of ['pointerup','pointercancel'])document.addEventListener(type,()=>{
+  if(previewing){previewing=false;send({kind:'drag-preview',active:false});}
+ });
  if(typeof boardTargetAt==='function'){
   const original=boardTargetAt;
   boardTargetAt=(x,y)=>{
@@ -158,7 +173,13 @@ export function installWorksheetToolDock(send,canWrite){
  }
  function action(value){
   if(value.type==='bounds'){dockBounds=value.rect;return;}
+  if(value.type==='hover-clear'){clearHover();return;}
   if(!canWrite())return;
+  if(value.type==='hover'){
+   const target=document.elementFromPoint(value.x,value.y)?.closest('[data-board-drop]')||null;
+   if(target!==hovered){clearHover();hovered=target;hovered?.classList.add('card-over');}
+   return;
+  }
   const toolbar=document.querySelector('.aci-toolbar,.card-bank');if(!toolbar)return;
   if(value.type==='click'){
    const number=Number(value.marker??value.token??value.home);

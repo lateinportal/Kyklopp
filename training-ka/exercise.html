@@ -2950,7 +2950,16 @@ function installWorksheetTouchActions(){
  const style=document.createElement('style');style.textContent='.overview-actions button,.repeat-actions button{touch-action:manipulation}';document.head.append(style);
 }
 function installWorksheetToolDock(send,canWrite){
- let active=null,previous='',dockBounds=null;
+ let active=null,previous='',dockBounds=null,hovered=null,previewing=false;
+ function clearHover(){hovered?.classList.remove('card-over');hovered=null;}
+ document.addEventListener('pointermove',event=>{
+  if(!canWrite()||typeof boardDrag==='undefined'||!boardDrag?.ghost)return;
+  boardDrag.ghost.style.visibility='hidden';previewing=true;
+  send({kind:'drag-preview',active:true,text:boardDrag.ghost.textContent,x:event.clientX,y:event.clientY});
+ });
+ for(const type of ['pointerup','pointercancel'])document.addEventListener(type,()=>{
+  if(previewing){previewing=false;send({kind:'drag-preview',active:false});}
+ });
  if(typeof boardTargetAt==='function'){
   const original=boardTargetAt;
   boardTargetAt=(x,y)=>{
@@ -2976,7 +2985,13 @@ function installWorksheetToolDock(send,canWrite){
  }
  function action(value){
   if(value.type==='bounds'){dockBounds=value.rect;return;}
+  if(value.type==='hover-clear'){clearHover();return;}
   if(!canWrite())return;
+  if(value.type==='hover'){
+   const target=document.elementFromPoint(value.x,value.y)?.closest('[data-board-drop]')||null;
+   if(target!==hovered){clearHover();hovered=target;hovered?.classList.add('card-over');}
+   return;
+  }
   const toolbar=document.querySelector('.aci-toolbar,.card-bank');if(!toolbar)return;
   if(value.type==='click'){
    const number=Number(value.marker??value.token??value.home);
