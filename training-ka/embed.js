@@ -1,6 +1,6 @@
-import {improveWorksheetResults} from './results.js?v=0d3b98e158b8';
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=0d3b98e158b8';
-import {improveFreiarbeitVariants} from './freiarbeit-variants.js?v=0d3b98e158b8';
+import {improveWorksheetResults} from './results.js?v=659ddf35e0c1';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=659ddf35e0c1';
+import {improveFreiarbeitVariants,improveFreiarbeitCorrectionStyle} from './freiarbeit-variants.js?v=659ddf35e0c1';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -220,7 +220,7 @@ export function prepareEmbeddedHTML(html,config){
  for(const link of doc.querySelectorAll('a'))link.rel='noopener noreferrer';
  if(originalScripts.some(script=>script.textContent.includes('function settingsSnapshot(){')&&script.textContent.includes('const exerciseStorageKey='))){
   for(const script of originalScripts)script.textContent=improveFreiarbeitVariants(improveWorksheetFeedback(script.textContent,new URL('../vokabelbilder/grammatik-ergebnisse/',import.meta.url).href));
-  for(const style of doc.querySelectorAll('style'))style.textContent=improveWorksheetFeedback(style.textContent);
+  for(const style of doc.querySelectorAll('style'))style.textContent=improveFreiarbeitCorrectionStyle(improveWorksheetFeedback(style.textContent));
   doc.documentElement.dataset.kykloppWorksheet='';
   const layout=doc.createElement('style');
   layout.textContent='html[data-kyklopp-worksheet] body>main{padding-left:0;padding-right:0;max-width:none;margin-left:0;margin-right:0}';
