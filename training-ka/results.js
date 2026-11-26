@@ -43,7 +43,7 @@ export function worksheetRating(rows){
   if(attempts!==1||score!==row.total)perfect=false;
   return sum+score*(attempts===1?1:attempts===2?.5:.25);
  },0);
- return perfect?3:Math.min(2.5,Math.max(0,Math.floor(6*earned/total+1e-9)/2));
+ return perfect?3:Math.min(2.5,Math.max(earned>0?.5:0,Math.floor(6*earned/total+1e-9)/2));
 }
 export function worksheetStars(stars,animate=true){
  const svg='<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 2 61.8 36.2 98 36.2 68.8 57.4 80 92 50 70.6 20 92 31.2 57.4 2 36.2 38.2 36.2Z"/></svg>';
@@ -72,6 +72,7 @@ export function improveWorksheetResults(source,base='../vokabelbilder/grammatik-
   source=source.replace('function progressRows(){',[worksheetCaptureRating,worksheetTaskRating,worksheetRating,worksheetStars,worksheetResult].map(fn=>fn.toString().replace(/^export /,'')).join('\n')+'\nfunction progressRows(){');
   source=source.replace('tries++;good=',"tries++;worksheetCaptureRating(q,[...fieldResults.filter(field=>!(type===6&&field.id?.startsWith('grammar-')&&!vocabularyGrammarSpec(q.entries[Number(field.id.slice(8))]).required)),...(type===1?boardTokens(q).map(({word},index)=>({id:'board-'+index,result:q.entries[word].keys.includes(cardPlaces[index]??10)?'correct':'review'})):[]),...(type===4?marks.flatMap((row,index)=>aciExpectedKeys(q.entries[index]).map((key,role)=>({id:'mark-'+index+'-'+role,result:row[role]===key?'correct':'review'}))):[])],tries);good=");
   source=source.replace('return {name,total,done,score:','return {rating:worksheetTaskRating(state),name,total,done,score:');
+  source=source.replace('?{round,pos,locked,score,tries,good,historyRows}:drafts.get(i)','?{round,pos,locked,score,tries,good,historyRows,fieldResults}:drafts.get(i)');
   source=source.replace('name:row.name,total:row.total','rating:row.rating,name:row.name,total:row.total');
   source=source.replace("+' '+sum.right+' von '+sum.total+' Übungsteilen richtig.'",'');
   source=source.replace('ready?Math.round(3*sum.right/sum.total):0','ready?worksheetRating(rows):0')
