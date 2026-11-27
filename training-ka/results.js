@@ -1,3 +1,4 @@
+import {improveStamatiaMeaningRating} from './stamatia-rating.js?v=03a25ee42501';
 export function worksheetCaptureRating(question,fields,attempt){
  const evidence=question.worksheetEvidence??={units:{},attempts:0};
  evidence.attempts=Math.max(evidence.attempts,attempt);
@@ -84,5 +85,5 @@ export function improveWorksheetResults(source,base='../vokabelbilder/grammatik-
   source=source.replace('function ensureRunMeta(){','runHistory=runHistory.map(item=>item.complete?{...item,stars:worksheetRating(item.tasks)}:item);\nfunction ensureRunMeta(){');
  }
  if(source.includes('.result-stars{'))source=source.includes('</style>')?source.replace('</style>',css+'\n</style>'):source+'\n'+css;
- return source;
+ return improveStamatiaMeaningRating(source);
 }
