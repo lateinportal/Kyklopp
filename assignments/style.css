@@ -825,3 +825,6 @@ body[data-mode="student"] .page-head h1{font-family:var(--hub-heading-family,'Li
 
 .page-head>.teacher-overview-actions{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;gap:10px}
 .teacher-overview-actions .btn{white-space:nowrap}
+#personal-training-panel>.page-head{gap:20px}
+#personal-training-panel .teacher-overview-actions .btn svg{width:22px;height:22px;flex:none}
+@media(max-width:700px){#personal-training-panel>.page-head{flex-wrap:wrap}#personal-training-panel>.page-head>.teacher-overview-actions{justify-content:flex-start}}

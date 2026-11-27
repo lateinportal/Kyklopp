@@ -48,3 +48,10 @@ body[data-training-role="student"] main{padding-top:0}
 .link-open:focus-visible{outline:3px solid #91c5f6;outline-offset:3px}
 
 .training-back{display:inline-block;margin-bottom:12px}
+.manager-list-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:18px}
+.manager-list-header>h1,.manager-list-header>p{grid-column:1}
+.manager-list-header>.manager-actions{grid-column:2;grid-row:1/4}
+.manager-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.manager-actions button{display:inline-flex;align-items:center;gap:8px;min-height:48px;background:white;color:#086cc3;border-color:#c5d9ee;border-radius:10px;white-space:nowrap}
+.manager-actions svg{width:21px;height:21px;flex:none}
+@media(max-width:650px){.manager-list-header{display:block}.manager-actions{justify-content:flex-start;margin-top:16px}.manager-actions button{min-height:44px}}

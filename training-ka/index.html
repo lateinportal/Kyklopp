@@ -6,19 +6,23 @@
  <meta name="referrer" content="no-referrer">
  <title>Persönliches Lateintraining</title>
  <link rel="icon" type="image/x-icon" href="favicon.ico">
- <link rel="stylesheet" href="personal.css?v=03a25ee42501">
- <script src="personal.js?v=03a25ee42501" defer></script>
+ <link rel="stylesheet" href="personal.css?v=6d54ac3bf10a">
+ <script src="personal.js?v=6d54ac3bf10a" defer></script>
 </head>
 <body>
  <header class="training-header">
   <h1 id="title">Persönliches Lateintraining</h1>
   <p id="mode"></p>
   <p id="status" role="status" aria-live="polite">Wird geladen …</p>
+  <div id="manager-actions" class="manager-actions" hidden>
+   <button type="button" data-manager-form="create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m10 13 4-4m-6 6-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 2 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></svg>Link erstellen</button>
+   <button type="button" data-manager-form="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg>Übung hinzufügen</button>
+  </div>
  </header>
  <main>
-  <div class="setup-grid">
+  <div id="manager-forms" hidden>
   <section id="create" hidden>
-   <h2>Link erstellen</h2>
+   <h2 id="create-heading">Link erstellen</h2>
    <form id="create-form">
     <label for="training-template">Übungsvorlage</label>
     <select id="training-template" required></select>
@@ -29,7 +33,7 @@
    <p id="login-note" hidden>Melde dich zuerst in der <a href="../assignments/lehrer.html" target="_blank" rel="noopener">Lehrerverwaltung</a> an. Kehre danach hierher zurück.</p>
   </section>
   <section id="library" hidden>
-   <h2>Übung hinzufügen</h2>
+   <h2 id="library-heading">Übung hinzufügen</h2>
    <form id="publish-form">
     <label for="template-title">Name der Vorlage</label>
     <input id="template-title" maxlength="120" required>

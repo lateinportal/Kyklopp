@@ -7,7 +7,35 @@
  const assets=new URL('.',document.currentScript.src);
  const buildVersion=new URL(document.currentScript.src).searchParams.get('v');
  const linkBase=new URL('../u/',assets).href;
- const $=id=>document.getElementById(id);
+ let managerDialog=null;
+ const $=id=>document.getElementById(id)||managerDialog?.querySelector('#'+id);
+ function openManagerForm(which,trigger){
+  if(token||!['create','library'].includes(which)||managerDialog)return false;
+  const formSection=$(which),home=formSection.parentNode,after=formSection.nextSibling;
+  let host=document;
+  try{if(parent!==window&&parent.location.origin===location.origin&&parent.document.getElementById('personal-training-panel'))host=parent.document;}catch{}
+  if(!host.getElementById('personal-manager-dialog-style')){
+   const style=host.createElement('style');style.id='personal-manager-dialog-style';style.textContent=`
+   .personal-manager-dialog{box-sizing:border-box;width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;margin:auto;padding:28px;border:1px solid #dce5ed;border-radius:16px;background:white;color:#233b50;font:15px/1.6 system-ui,sans-serif}
+   .personal-manager-dialog::backdrop{background:rgba(24,43,62,.35)}
+   .personal-manager-dialog>section{background:transparent;border:0;padding:0;margin:0;border-radius:0}
+   .personal-manager-dialog h2{font:700 25px/1.3 system-ui,sans-serif;margin:0 32px 22px 0}
+   .personal-manager-dialog label{display:block;margin:0 0 6px}
+   .personal-manager-dialog input,.personal-manager-dialog select{box-sizing:border-box;display:block;width:100%;min-height:44px;margin:0 0 16px;padding:9px 12px;border:1px solid #b7cadd;border-radius:8px;font:inherit}
+   .personal-manager-dialog button{min-height:42px;padding:8px 14px;border:1px solid #216fbb;border-radius:8px;background:#216fbb;color:#fff;font:inherit;cursor:pointer}
+   .personal-manager-dialog .manager-dialog-close{position:absolute;top:12px;right:12px;min-height:32px;width:32px;padding:0;background:white;border:0;color:#526b80;font-size:25px}
+   .personal-manager-dialog :focus-visible{outline:3px solid #91c5f6;outline-offset:2px}
+   .personal-manager-dialog button:disabled{opacity:.6;cursor:wait}`;host.head.append(style);
+  }
+  const dialog=host.createElement('dialog');managerDialog=dialog;dialog.className='personal-manager-dialog';dialog.setAttribute('aria-labelledby',which+'-heading');
+  const close=host.createElement('button');close.type='button';close.className='manager-dialog-close';close.textContent='×';close.setAttribute('aria-label','Schließen');close.onclick=()=>dialog.close();
+  formSection.hidden=false;dialog.append(close,formSection);host.body.append(dialog);
+  const previousOverflow=host.documentElement.style.overflow;host.documentElement.style.overflow='hidden';
+  dialog.addEventListener('close',()=>{formSection.hidden=true;home.insertBefore(formSection,after?.parentNode===home?after:null);dialog.remove();managerDialog=null;host.documentElement.style.overflow=previousOverflow;if(trigger?.isConnected)trigger.focus({preventScroll:true});},{once:true});
+  dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();});
+  dialog.showModal();formSection.querySelector('input,select')?.focus({preventScroll:true});return true;
+ }
+ if(!token)window.KykloppPersonalManager={open:openManagerForm};
  const journalKey='kyklopp-personal-draft-'+token;
  let snapshot,memory={},adapter,claimed=false,blocked=false,dirty=false,saving=false,pendingAnswers=false;
  let generation=0,timer,polling=false,pendingRequest=null,pendingGeneration=0,settingsBusy=false,teacherRefresh;
@@ -486,13 +514,14 @@
  async function boot(){
   if(!token){
    $('title').textContent='Persönliche Übungen';
-   $('create').hidden=false;status('Übungsvorlagen und persönliche Zugänge');
-   $('library').hidden=false;
+   $('manager-actions').hidden=false;document.querySelector('.training-header').classList.add('manager-list-header');status('Übungsvorlagen und persönliche Zugänge');
+   document.querySelectorAll('[data-manager-form]').forEach(button=>button.onclick=()=>openManagerForm(button.dataset.managerForm,button));
    $('create-form').onsubmit=async event=>{
     event.preventDefault();const button=event.target.querySelector('button');button.disabled=true;
     try{
      const accessToken=await teacherToken();
      const links=await rpc('create_for_template',{p_title:$('training-title').value.trim(),p_template:$('training-template').value},accessToken);
+     managerDialog?.close();
      location.href=linkBase+'#'+links.adminToken;
     }catch(error){
      $('login-note').hidden=false;

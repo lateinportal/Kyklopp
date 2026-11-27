@@ -55,6 +55,9 @@ function renderPersonalTraining(){
   const heading=document.createElement('header');
   heading.className='page-head';
   heading.innerHTML='<div><h1>Persönliche Übungen</h1><p class="quiet-subtitle">Übungsvorlagen und persönliche Zugänge</p></div>';
+  const actions=document.createElement('div');actions.className='review-actions teacher-overview-actions';
+  actions.innerHTML='<button type="button" class="btn secondary" data-personal-form="create" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m10 13 4-4m-6 6-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 2 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></svg> Link erstellen</button><button type="button" class="btn secondary" data-personal-form="library" disabled>'+icon('plus')+' Übung hinzufügen</button>';
+  heading.append(actions);
   panel.append(heading);
   const frame=document.createElement('iframe');
   frame.title='Persönliche Übungen und Übungsbibliothek';
@@ -71,6 +74,10 @@ function renderPersonalTraining(){
    const library=!frame.contentWindow.location.hash;
    heading.hidden=!library;
    if(library)style.textContent+=' .training-header{display:none} body>main{padding-top:0;padding-bottom:0}';
+   for(const button of actions.querySelectorAll('button')){
+    button.disabled=!library||!frame.contentWindow.KykloppPersonalManager;
+    button.onclick=()=>frame.contentWindow.KykloppPersonalManager?.open(button.dataset.personalForm,button);
+   }
    doc.head.append(style);
    const resize=()=>{frame.style.height=Math.ceil(doc.body.getBoundingClientRect().height)+1+'px';};
    observer=new ResizeObserver(resize);

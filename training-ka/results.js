@@ -1,4 +1,4 @@
-import {improveStamatiaMeaningRating} from './stamatia-rating.js?v=03a25ee42501';
+import {improveStamatiaMeaningRating} from './stamatia-rating.js?v=6d54ac3bf10a';
 export function worksheetCaptureRating(question,fields,attempt){
  const evidence=question.worksheetEvidence??={units:{},attempts:0};
  evidence.attempts=Math.max(evidence.attempts,attempt);
