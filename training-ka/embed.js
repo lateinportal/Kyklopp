@@ -1,6 +1,6 @@
-import {improveWorksheetResults} from './results.js?v=756e7b3f7f18';
-import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=756e7b3f7f18';
-import {improveFreiarbeitVariants,improveFreiarbeitCorrectionStyle} from './freiarbeit-variants.js?v=756e7b3f7f18';
+import {improveWorksheetResults} from './results.js?v=f54d67a40078';
+import {installWorksheetToolDock,installWorksheetTouchActions} from './dock.js?v=f54d67a40078';
+import {improveFreiarbeitVariants,improveFreiarbeitCorrectionStyle} from './freiarbeit-variants.js?v=f54d67a40078';
 export function installTabletKeyboardNavigation(){
  const tablet=/iPad/i.test(navigator.userAgent)||(/Macintosh|MacIntel/i.test(navigator.userAgent+' '+navigator.platform)&&navigator.maxTouchPoints>0);
  if(!tablet)return;
@@ -97,7 +97,7 @@ export function embeddedExercise(config){
   const message=event.data;
   if(message.type==='settings-result'){
    const request=requests.get(message.id);if(!request)return;
-   if(message.saved){settings=request.next;send('settings-dirty',{dirty:false});}
+   if(message.saved){settings=message.settings||request.next;send('settings-dirty',{dirty:false});}
    request.resolve(message.saved);requests.delete(message.id);
   }
   if(message.type==='settings-update'){

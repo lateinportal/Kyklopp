@@ -96,11 +96,14 @@
  }
  async function saveSettings(settings){
   if(settingsBusy||snapshot.role==='view'||blocked)return false;
+  // Lesson changes must not erase the teacher's separate corrections.
+  if(!Object.hasOwn(settings,'translationReviews')&&snapshot.settings.translationReviews)settings={...settings,translationReviews:snapshot.settings.translationReviews};
   settingsBusy=true;
   status('Einstellungen werden gespeichert …');
   try{
    const result=await rpc('settings',{p_token:token,p_revision:snapshot.settingsRevision,p_settings:settings});
    snapshot.settings=result.settings;snapshot.settingsRevision=result.settingsRevision;
+   if(embedChannel)postEmbed('settings-update',{settings:result.settings});
    status('Einstellungen gespeichert');
    return true;
   }catch(error){
@@ -348,7 +351,7 @@
   }
   if(message.type==='settings'){
    const saved=await saveSettings(message.settings);
-   postEmbed('settings-result',{id:message.id,saved});
+   postEmbed('settings-result',{id:message.id,saved,settings:snapshot.settings});
   }
   if(message.type==='height'&&!embeddedModal)window.KAPersonal.height(message.height);
   if(message.type==='modal')embeddedOverlay(message.open===true);
